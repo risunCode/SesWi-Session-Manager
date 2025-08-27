@@ -8,4 +8,6 @@ a Chrome Extension that simply manage cookie &amp; session securely
 - Add a fallback when detected website doesnt support it*
 
 # Work in progress!
-<img width="506" height="389" alt="image" src="https://github.com/user-attachments/assets/b356b101-1581-40aa-9248-e7be9ff3843f" />
+- REDesign :V
+- Theme?, nah its WIN 16 Tobacco click themes :ROFL: with Mango orange + blue shores gradient
+<img width="481" height="711" alt="image" src="https://github.com/user-attachments/assets/61409f74-3b28-4f24-9364-d8ffe0d2c14e" />
