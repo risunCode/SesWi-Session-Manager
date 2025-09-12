@@ -33,6 +33,11 @@ untuk menyimpan dan mengelola sesi login per domain.
 - **Group Sessions**: semua sesi, expandable per domain.
 - **Manage**: backup/restore, grouped action, clean tab.
 
+> [!IMPORTANT]
+> Petunjuk untuk Google/Microsoft/etc
+> - Hanya login 1 akun per website,
+> - Multi akun login menyebabkan session break dan restore mungkin gagal (auth failed)
+> - Gunakan/ceklis fitur `Clear data after saving session (Recommended)` untuk menyimpan sesi lebih dari 1
 ---
 
 ## 🔐 Izin
