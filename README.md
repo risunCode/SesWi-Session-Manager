@@ -58,43 +58,12 @@ Detail lebih lanjut ada di `docs/Permissions.md`.
 
 Selengkapnya: `docs/BackupRestore.md`.
 
-## Struktur Proyek
-```
-SesWi/
-├─ manifest.json
-├─ popup.html
-├─ popup.js
-├─ background/
-│  └─ service-worker.js
-├─ modules/
-│  ├─ ChromeAPI/
-│  │  ├─ DataManager.js
-│  │  ├─ CookieGrabber.js
-│  │  ├─ LocalGrabber.js
-│  │  └─ IconsGrabber.js
-│  ├─ Tabs/
-│  │  ├─ Current-Tab.js
-│  │  ├─ Group-Tabs.js
-│  │  ├─ Manage-Tab.js
-│  │  └─ ModalManager.js
-│  ├─ Encryption/
-│  │  ├─ EncryptionUtils.js
-│  │  └─ sjcl.js
-│  └─ Utilities/
-│     ├─ GlobalUtility.js
-│     ├─ GlobalPagination.js
-│     ├─ BackupRestoreJSON.js
-│     ├─ BackupRestoreOWI.js
-│     └─ BackupDataValidator.js
-├─ style/
-│  ├─ BaseStyle.css
-│  ├─ CurrentTabStyle.css
-│  ├─ GroupTabStye.css
-│  ├─ ManageTabStyle.css
-│  └─ ModalPopUP.css
-└─ assets/
-   └─ icons/ (16, 48, 128)
-```
+## Screenshoots 
+<div style="display: flex; gap: 20px; justify-content: center;">
+  <img src="https://github.com/user-attachments/assets/aef1d8f1-0a1d-4874-b49d-6cacf7ea2dda" width="492" height="731" alt="Current Session">
+  <img src="https://github.com/user-attachments/assets/519420d1-f1a1-4798-9eee-51ccca3fd67f" width="492" height="731" alt="Session Action">
+  <img src="https://github.com/user-attachments/assets/d15c860b-7452-4610-b437-60cdddccf9d5" width="492" height="731" alt="Manage Session">
+</div>
 
 Rincian tiap modul tersedia di `docs/Modules.md`.
 
