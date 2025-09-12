@@ -60,7 +60,6 @@ Detail: `docs/Permissions.md`.
 <div style="display: flex; gap: 20px; justify-content: center;">
   <img src="https://github.com/user-attachments/assets/aef1d8f1-0a1d-4874-b49d-6cacf7ea2dda" width="300" alt="Current Session">
   <img src="https://github.com/user-attachments/assets/519420d1-f1a1-4798-9eee-51ccca3fd67f" width="300" alt="Session Action">
-  <img src="https://github.com/user-attachments/assets/d15c860b-7452-4610-b437-60cdddccf9d5" width="300" alt="Manage Session">
 </div>
 
 ---
