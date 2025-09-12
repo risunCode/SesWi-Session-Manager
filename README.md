@@ -88,3 +88,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 ## 🙏 Kredit
 - **SJCL** (Stanford Javascript Crypto Library) untuk enkripsi.
+- **ICONS** (https://www.iconarchive.com/show/christmas-icons-by-iconarchive/Christmas-Cookie-icon.html) untuk icon extension.
