@@ -1,6 +1,8 @@
 # SesWi — Advanced Session Manager (Chrome Extension)
 
-**SesWi** adalah ekstensi Chrome (Manifest V3) untuk menyimpan dan mengelola sesi login per domain. Mendukung cookies, `localStorage`, `sessionStorage`, backup/restore (JSON & OWI terenkripsi), serta pembersihan data tab.
+**SesWi** adalah ekstensi Chrome (Manifest V3) 
+untuk menyimpan dan mengelola sesi login per domain.
+- Mendukung cookies, `localStorage`, `sessionStorage`, backup/restore (JSON & OWI terenkripsi), serta pembersihan data tab.
 
 ---
 
@@ -43,14 +45,7 @@ Detail: `docs/Permissions.md`.
 ## 🔒 Keamanan
 - Data lokal disimpan di `chrome.storage.local` (plain).
 - Backup OWI terenkripsi AES-CCM 256-bit (SJCL).  
-- Domain kompleks (Google/Microsoft) mungkin tidak sepenuhnya kompatibel.
-
----
-
-## 🧠 Arsitektur
-- **Service Worker**: pusat event/message.
-- **Popup UI**: 3 tab utama (Current, Group, Manage).
-- **Modules**: abstraksi Chrome API, logika UI, utilitas umum.
+- Domain (Google/Microsoft) partially compatible, with some tricks :XD: 
 
 ---
 
