@@ -1,0 +1,76 @@
+/* SesWi - Other Sessions Tab CSS */
+.other-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.domain-group {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.domain-header {
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.domain-header:hover {
+  background: #f1f5f9;
+}
+
+.domain-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.domain-count {
+  font-size: 11px;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  color: #64748b;
+  transition: transform 0.2s;
+}
+
+.domain-header.expanded .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.domain-sessions {
+  display: none;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.domain-sessions.show {
+  display: block;
+}
+
+.domain-sessions .session-item {
+  margin-bottom: 6px;
+}
+
+.domain-sessions .session-item:last-child {
+  margin-bottom: 0;
+}
+
+/* New group styles for this project */
+.group-sessions { display: none; padding: 8px; background: #ffffff; }
+.group-card.expanded .group-sessions { display: block; }
+.group-card .group-arrow { transition: transform 0.2s; }
+.group-card.expanded .group-arrow { transform: rotate(180deg); }
+.group-favicon { width: 18px; height: 18px; border-radius: 4px; background: #e2e8f0; object-fit: cover; margin-right: 8px; }

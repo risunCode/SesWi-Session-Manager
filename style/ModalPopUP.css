@@ -1,0 +1,529 @@
+/* ==================================================================
+   MODAL CSS - Phase4 refined styles ported for SesWi
+   ================================================================== */
+
+/* 1) Base modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 12px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Session Actions width */
+#sessionActionsModal .modal-content { width: 380px; max-width: 90vw; }
+
+/* 2) Header/Body/Footer */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.modal-close {
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  background: none;
+  border: none;
+}
+.modal-close:hover { color: #1e293b; }
+
+.modal-body { padding: 16px; }
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  justify-content: space-between; /* cancel left, save right */
+}
+
+/* 3) Forms */
+.modal-body label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+.modal-body input[type="text"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s ease;
+}
+.modal-body input[type="text"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 4) Buttons - Compact styles only */
+
+/* Compact Save Buttons */
+.btn-save-compact {
+  background: #3b82f6;
+  color: white;
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-save-compact:hover {
+  background: #2563eb;
+}
+
+.btn-save-compact:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+/* Compact Cancel Buttons */
+.btn-cancel-compact {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel-compact:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* 5) Info Card */
+.modal-info-card { 
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.info-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #374151; }
+.info-row + .info-row { margin-top: 6px; }
+.info-label { font-weight: 600; color: #64748b; }
+.info-value { font-weight: 700; color: #1e293b; }
+
+/* 5b) Session Actions: compact session info card */
+#sessionActionsModal .session-summary-card { margin-bottom: 8px; }
+#sessionActionsModal .session-summary-card .session-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px; /* compact */
+  cursor: default;
+}
+#sessionActionsModal .sa-compact-left { display: flex; flex-direction: column; gap: 2px; }
+#sessionActionsModal .sa-compact-left .session-header { display: flex; align-items: center; gap: 8px; }
+#sessionActionsModal .sa-compact-left .session-name { font-size: 12.5px; font-weight: 700; color: #0f172a; }
+#sessionActionsModal .sa-compact-left .session-meta { font-size: 11.5px; color: #475569; }
+#sessionActionsModal .sa-compact-right { display: flex; align-items: center; }
+#sessionActionsModal .sa-compact-right .btn-cancel-compact { padding: 6px 10px; font-size: 12px; }
+
+/* Inline domain and separator styling */
+#sessionActionsModal .sa-domain-inline { color: #475569; }
+#sessionActionsModal .sa-sep { color: #94a3b8; font-weight: 700; }
+
+/* Prevent hover lift on summary card */
+#sessionActionsModal .session-summary-card .session-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Colored background variant */
+#sessionActionsModal .sa-compact-card.colored {
+  background: linear-gradient(135deg, #e0f2fe, #c7d2fe); /* light sky to indigo */
+  border: 1px solid #93c5fd;
+  box-shadow: 0 1px 6px rgba(29,78,216,0.12);
+}
+
+/* Visit button primary style */
+#sessionActionsModal .btn-visit {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#sessionActionsModal .btn-visit:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+#sessionActionsModal .btn-visit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 6) Messages */
+.modal-message {
+  margin: 6px 0;
+  font-size: 12px;
+  min-height: 16px;
+  color: #475569;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.modal-message:empty {
+  display: none;
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  margin: 0;
+  background: transparent;
+}
+.modal#sessionActionsModal .modal-message { display: none; }
+#sessionModal .modal-message { display: none; }
+.modal-message.success { color: #065f46; background: #ecfdf5; border-color: #10b981; }
+.modal-message.error { color: #991b1b; background: #fef2f2; border-color: #ef4444; }
+
+/* Restore Modal persistent control styles */
+#restoreSessionsModal #rsmInspect,
+#restoreSessionsModal #rsmSelectAll,
+#restoreSessionsModal #rsmClear,
+#restoreSessionsModal #rsmDeselectDupes {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+/* 7) Cookie Expiration banner */
+.cookie-expiration-container { margin-bottom: 6px; border-radius: 8px; overflow: hidden; }
+.cookie-expiration-preview {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; cursor: pointer; transition: all 0.3s ease;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b; border-radius: 8px; font-size: 12px; user-select: none;
+}
+.cookie-expiration-preview:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(245,158,11,0.15); }
+.cookie-expiration-preview.valid { background: linear-gradient(135deg, #d1fae5, #a7f3d0); border: 1px solid #10b981; }
+.cookie-expiration-preview.warning { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1px solid #f59e0b; }
+.cookie-expiration-preview.expired { background: linear-gradient(135deg, #fee2e2, #fecaca); border: 1px solid #ef4444; }
+.cookie-expiration-preview.expired:hover { box-shadow: 0 2px 8px rgba(239,68,68,0.15); }
+.status-toggle-group { display: flex; align-items: center; gap: 8px; }
+.preview-status-box { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; }
+.cookie-expiration-preview.valid .preview-status-box { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+.cookie-expiration-preview.warning .preview-status-box { background: #fffbeb; border-color: #f59e0b; color: #d97706; }
+.cookie-expiration-preview.expired .preview-status-box { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
+.toggle-icon { display: inline-block; transition: transform 0.3s ease; font-size: 12px; color: #6b7280; }
+.cookie-expiration-preview.expanded .toggle-icon { transform: rotate(180deg); }
+.cookie-expiration-details { display: none; padding: 10px; background: linear-gradient(135deg,#f9fafb,#f3f4f6); border-radius: 0 0 8px 8px; border-top: 1px solid rgba(226,232,240,0.5); }
+.cookie-expiration-details.show { display: block; }
+.cookie-expiration-details h4 { font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 8px 0; }
+#saExpirationList { display: flex; flex-direction: column; }
+.cookie-expiration-pill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; padding: 6px 10px; border-radius: 16px; font-size: 11px; background: linear-gradient(135deg,#ffffff,#f9fafb); color:#374151; border:1px solid rgba(209,213,219,0.5); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.cookie-expiration-pill:last-child { margin-bottom: 0; }
+.pill-label { font-weight: 700; margin-right: 8px; color: #1f2937; max-width: 60%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pill-date { color: #6b7280; font-weight: 500; }
+
+/* 8) Actions grid */
+.modal-actions-grid-6 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-top: 6px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+.modal-action-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px;
+  font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;
+  min-height: 40px; background: #ffffff; color: #6b7280;
+}
+.modal-action-btn.active { border-color: #10b981; color: #065f46; background: #ecfdf5; box-shadow: 0 0 0 2px rgba(16,185,129,0.15) inset; }
+.modal-action-btn.restore { border-color: #10b981; color: #10b981; }
+.modal-action-btn.restore:hover { background: #10b981; color: #ffffff; }
+.modal-action-btn.delete { border-color: #ef4444; color: #ef4444; }
+.modal-action-btn.delete:hover { background: #ef4444; color: #ffffff; }
+.modal-action-btn.edit { border-color: #6366f1; color: #6366f1; }
+.modal-action-btn.edit:hover { background: #6366f1; color: #ffffff; }
+.modal-action-btn.export { border-color: #f59e0b; color: #f59e0b; }
+.modal-action-btn.export:hover { background: #f59e0b; color: #ffffff; }
+.modal-action-btn.backup-encrypted { border-color: #8b5cf6; color: #8b5cf6; }
+.modal-action-btn.backup-encrypted:hover { background: #8b5cf6; color: #ffffff; }
+.modal-action-btn.replace { border-color: #8b5cf6; color: #8b5cf6; }
+.modal-action-btn.replace:hover { background: #8b5cf6; color: #ffffff; }
+.modal-action-btn.disabled { background: #ffffff !important; border-color: #d1d5db !important; color: #9ca3af !important; cursor: not-allowed !important; pointer-events: none !important; opacity: 0.5 !important; }
+.modal-action-btn.disabled:hover { background: #ffffff !important; border-color: #d1d5db !important; color: #9ca3af !important; }
+.modal-action-btn.restore.disabled, .modal-action-btn.replace.disabled { border-color: #d1d5db; color: #9ca3af; opacity: 0.6; }
+.action-emoji { font-size: 14px; }
+
+/* === Phase4 Card Style Options (Backup format list) === */
+.modal-option-list { display: flex; flex-direction: column; gap: 10px; }
+.modal-option-card {
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; background: #ffffff;
+  cursor: pointer; transition: all .2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.modal-option-card:hover { background: #f9fafb; }
+.modal-option-card.active { border-color: #10b981; background: #ecfdf5; box-shadow: 0 0 0 2px rgba(16,185,129,0.15) inset; }
+.modal-option-left { display: flex; align-items: center; gap: 10px; }
+.modal-option-icon { font-size: 18px; }
+.modal-option-text { display: flex; flex-direction: column; }
+.modal-option-title { font-weight: 700; font-size: 13px; color: #111827; }
+.modal-option-subtitle { font-size: 12px; color: #64748b; }
+.modal-option-arrow { color: #94a3b8; }
+
+/* Password input inline with card list */
+.modal-inline-input { margin-top: 10px; }
+.modal-inline-input input[type="password"] { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
+.modal-inline-input input[type="password"]:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+/* Restore dropzone */
+.restore-dropzone { margin-top: 10px; border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 10px; padding: 16px; text-align: center; color: #475569; font-size: 12px; cursor: pointer; }
+.restore-dropzone.dragover { border-color: #3b82f6; background: #eff6ff; }
+
+/* Grouped selection list */
+.group-select-list { max-height: 300px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.group-select-item { display: flex; align-items: center; justify-content: space-between; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; }
+.group-select-left { display: flex; align-items: center; gap: 10px; }
+.group-domain { font-weight: 600; color: #1f2937; }
+.group-count { font-size: 12px; color: #6b7280; }
+
+/* === Utilities used by Manage-Tab modals (migrated from inline styles) === */
+.hidden { display: none; }
+.flex-1 { flex: 1 1 auto; }
+.modal-row { display: flex; gap: 8px; align-items: center; width: 100%; }
+.form-label-sm { min-width: 72px; color: #475569; font-size: 12px; }
+.modal-topbar { display: flex; gap: 8px; align-items: center; margin-top: 10px; background: #f1f5f9; border-radius: 8px; padding: 6px 8px; }
+.summary-text { font-size: 12px; color: #475569; }
+.inspector-area { margin-top: 10px; }
+.control-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; background: #f8fafc; border-radius: 8px; padding: 6px 8px; }
+.btn-group { display: flex; gap: 8px; align-items: center; }
+.warn-text { font-size: 12px; color: #ef4444; }
+.group-list { max-height: 220px; overflow: auto; }
+.modal-subtext { margin: 4px 0 10px 0; color: #475569; }
+.text-green { color: #16a34a; }
+.text-red { color: #dc2626; }
+.space-between { justify-content: space-between; }
+.mb-8 { margin-bottom: 8px; }
+.with-top-border { border-top: 1px solid #e2e8f0; }
+
+/* 9) Cookie Details (scrollable modal) */
+#cookieDetailsModal .modal-content.cookie-details-modal {
+  width: 520px;
+  max-width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+#cookieDetailsModal .modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#cookieDetailsModal .modal-header h3 {
+  flex: 1 1 auto;
+}
+#cookieDetailsModal .modal-body {
+  overflow: auto;
+  padding: 12px 16px;
+}
+.cookie-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cookie-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.cookie-row-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+.cookie-row-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.cookie-row-flags {
+  font-size: 11px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.cookie-row-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: #111827;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  word-break: break-all;
+}
+.cookie-empty {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 10) More details button under pills */
+.cookie-more-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cookie-more-btn:hover {
+  background: #f3f4f6;
+}
+
+/* 11) Expiry status coloring inside Cookie Details */
+.cookie-exp-strong.valid { color: #15803d; }    /* green */
+.cookie-exp-strong.warning { color: #b45309; }  /* amber */
+.cookie-exp-strong.expired { color: #b91c1c; }  /* red */
+
+/* 12) Copy JSON button in Cookie Details header */
+#cookieDetailsModal .modal-copy-btn {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#cookieDetailsModal .modal-copy-btn:hover { background: #f3f4f6; }
+
+/* Add Session: input with favicon on the left */
+.modal-input-with-icon { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.modal-input-with-icon .modal-favicon { width: 20px; height: 20px; border-radius: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; object-fit: cover; }
+.modal-input-with-icon input[type="text"] { flex: 1 1 auto; margin-bottom: 0; }
+
+/* Checkbox: clear after save */
+.modal-checkbox-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px 0; font-size: 12px; color: #374151; }
+.modal-checkbox-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: #3b82f6; }
+.modal-checkbox-row .recommend-tag { color: #2563eb; font-weight: 700; font-size: 11px; }
+
+/* Clear-after-save card (compact, like modal-info-card) */
+.clear-after-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px; /* compact */
+  margin: 8px 0;
+}
+.clear-after-card .modal-checkbox-row {
+  margin: 0; /* inside card, remove extra margins */
+  font-size: 12px; /* compact text */
+}
+.clear-after-card .helper-text {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6b7280; /* muted */
+  line-height: 1.4;
+}
+
+/* Compact warning inside modal-info-card */
+.modal-info-card .info-card-warning-compact {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #fff3cd;
+  border-left: 2px solid #ffc107;
+  border-radius: 2px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* 13) Expandable guidance card (match betause) */
+.info-card-expandable { margin: 4px 0 6px 0; border: 1px solid #e0e0e0; border-radius: 4px; background: #f8f9fa; }
+.info-card-header { padding: 8px 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f1f3f4; border-radius: 4px 4px 0 0; }
+.info-card-header-text { font-size: 12px; font-weight: 500; color: #5f6368; }
+.info-card-expand-icon { font-size: 10px; color: #5f6368; transition: transform 0.2s; }
+.info-card-content { display: none; padding: 8px; font-size: 11px; line-height: 1.4; color: #666; }
+.info-card-content.show { display: block; }
+.info-card-warning { margin-bottom: 6px; padding: 6px; background: #fff3cd; border-left: 2px solid #ffc107; border-radius: 2px; }
+.info-card-steps { background: white; padding: 8px; border-radius: 3px; border: 1px solid #e9ecef; }
+.info-card-steps-title { font-weight: 500; margin-bottom: 6px; color: #495057; font-size: 11px; }
+.info-card-steps-list { margin: 0; padding-left: 16px; color: #6c757d; font-size: 10px; }
+.info-card-steps-item { margin-bottom: 3px; }
+.info-card-steps-item:last-child { margin-bottom: 0px; }
+
+/* Blocked compact (domain notice) - copied from betause */
+.blocked-compact {
+  padding: 8px 12px;
+  margin: 8px 0;
+  background: #fef2f2;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #78716c;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+}
+.blocked-compact-title {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #d73502;
+  display: block;
+}

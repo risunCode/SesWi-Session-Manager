@@ -1,0 +1,76 @@
+/* SesWi - Manage Tab CSS */
+
+/* New Manage Cards (no placeholder content) */
+.manage-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* match .sessions-container gap */
+}
+
+.manage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px; /* match .session-card padding */
+  border-radius: 8px; /* match .session-card radius */
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.9); /* match .session-card background */
+  cursor: pointer;
+  transition: all 0.2s ease; /* match .session-card transition */
+  text-align: left;
+}
+
+.manage-card:hover {
+  background: linear-gradient(135deg, #fde68a, #93c5fd); /* match .session-card hover */
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+}
+
+.manage-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.card-title { 
+  font-weight: 600; /* match .session-name weight */
+  color: #1e293b; 
+  font-size: 13px; /* match .session-name size */
+}
+
+.card-subtitle { 
+  color: #6b7280; 
+  font-size: 11px; /* align with meta text sizing */
+}
+
+.card-arrow { 
+  color: #6b7280; 
+  font-size: 14px; 
+}
+
+/* Removed modal-related styles as Manage tab no longer uses notifications/modals */

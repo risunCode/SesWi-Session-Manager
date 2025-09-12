@@ -1,0 +1,82 @@
+/* SesWi - Current Sessions Tab CSS */
+.current-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0; /* reduce top padding */ 
+}
+
+.session-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-item:hover {
+  background: #f8fafc;
+  border-color: #6366f1;
+}
+
+.session-info {
+  flex: 1;
+}
+
+.session-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.session-details {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.session-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-restore, .btn-delete {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.btn-restore {
+  background: #6366f1;
+  color: white;
+}
+
+.btn-delete {
+  background: #ef4444;
+  color: white;
+}
+
+.session-active {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+/* Highlight effect for just-saved session (3s) */
+.session-card.just-saved {
+  position: relative;
+  border: 1px solid #10b981 !important;
+  background: linear-gradient(0deg, #ecfdf5, #ffffff) !important;
+  box-shadow: 0 0 0 0 rgba(16,185,129,0.35);
+  animation: savedPulse 3s ease-out 1;
+}
+
+@keyframes savedPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.35); }
+  40% { box-shadow: 0 0 0 8px rgba(16,185,129,0.15); }
+  80% { box-shadow: 0 0 0 0 rgba(16,185,129,0.0); }
+  100% { box-shadow: none; }
+}

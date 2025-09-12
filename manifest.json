@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "SesWi - Advanced Session manager",
+  "version": "1.0.0",
+  "description": "Advanced Session Manager that simply backup/restore easily",
+  "permissions": [
+    "tabs",
+    "cookies",
+    "storage",
+    "scripting",
+    "history",
+    "browsingData"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "assets/icons/16.png",
+    "48": "assets/icons/48.png",
+    "128": "assets/icons/128.png"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SesWi",
+    "default_icon": {
+      "16": "assets/icons/16.png",
+      "48": "assets/icons/48.png",
+      "128": "assets/icons/128.png"
+    }
+  } 
+}

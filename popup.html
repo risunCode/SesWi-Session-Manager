@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SesWi - Session Manager</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style/BaseStyle.css">
+    <link rel="stylesheet" href="style/CurrentTabStyle.css">
+    <link rel="stylesheet" href="style/GroupTabStye.css">
+    <link rel="stylesheet" href="style/ManageTabStyle.css">
+    <link rel="stylesheet" href="style/ModalPopUP.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-left">
+                <div class="cookie-icon">🍪</div>
+                <h1 class="app-title">SesWi</h1>
+            </div>
+            <div class="header-right">
+                <div class="current-domain" id="currentDomain">extensions</div>
+                <button id="addSession" class="btn-add-session">
+                    <span>+</span>
+                    <span>Add Session</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="current-session">📋 Current</button>
+                <button class="tab-btn" data-tab="group-sessions">📚 Group Sessions</button>
+                <button class="tab-btn" data-tab="manage">⚙️ Manage</button>
+            </div>
+
+            <div class="tab-content active" id="current-session">
+                <div id="currentSessionsContainer" class="sessions-container"></div>
+            </div>
+
+            <div class="tab-content" id="group-sessions">
+                <div id="groupSessionsContainer" class="groups-container"></div>
+            </div>
+
+            <div class="tab-content" id="manage">
+                <div class="manage-cards">
+                    <button class="manage-card" id="backupAll">
+                        <div class="card-left">
+                            <div class="card-icon">📂</div>
+                            <div class="card-text">
+                                <div class="card-title">Backup All Sessions</div>
+                                <div class="card-subtitle">Export all sessions to JSON / OWI</div>
+                            </div>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+
+                    <button class="manage-card" id="restoreSessions">
+                        <div class="card-left">
+                            <div class="card-icon">📥</div>
+                            <div class="card-text">
+                                <div class="card-title">Restore Sessions</div>
+                                <div class="card-subtitle">Import sessions from backup file</div>
+                            </div>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+
+                    <button class="manage-card" id="selectGroupedAction">
+                        <div class="card-left">
+                            <div class="card-icon">📦</div>
+                            <div class="card-text">
+                                <div class="card-title">Select Grouped Action</div>
+                                <div class="card-subtitle">Backup or delete selected session groups</div>
+                            </div>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+
+                    <button class="manage-card" id="cleanCurrentTabData">
+                        <div class="card-left">
+                            <div class="card-icon">🧹</div>
+                            <div class="card-text">
+                                <div class="card-title">Clean Current Tab Data</div>
+                                <div class="card-subtitle">Clear history, cache, and cookies for current domain</div>
+                            </div>
+                        </div>
+                        <div class="card-arrow">→</div>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <div class="footer-text">🍪 Advanced Session Manager by risunCode</div>
+            <div class="shortcuts-info">
+                <span>Ctrl+N: Add Session</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Simple Modal -->
+    <div id="sessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Session</h3>
+                <span class="modal-close" id="modalClose">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-input-with-icon">
+                    <img id="modalFavicon" class="modal-favicon" src="" alt="" />
+                    <input type="text" id="sessionName" placeholder="Session name..." maxlength="50">
+                </div>
+                <div id="modalMessage" class="modal-message"></div>
+                <div class="modal-info-card" id="modalInfoCard">
+                    <div class="info-row">
+                        <span class="info-label">Web Name</span>
+                        <span class="info-value" id="modalDomain">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cookies Count</span>
+                        <span class="info-value" id="modalCookieCount">0</span>
+                    </div>
+                </div>
+
+                <!-- Domain info alert -->
+                <div class="blocked-compact" id="domainInfoAlert">
+                    <span class="blocked-compact-title">⚠️ Domain Notice</span>
+                    <span id="domainInfoText"></span>
+                </div>
+                
+                <!-- Clear-after-save option (recommended) -->
+                <div class="clear-after-card">
+                    <label class="modal-checkbox-row">
+                        <input type="checkbox" id="clearAfterSave">
+                        <span>Clear data after saving session <span class="recommend-tag">(Recommended)</span></span>
+                    </label>
+                    <div class="helper-text">Clearing data after saving session allows you to log in with more accounts and store them cleanly.</div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="btn-cancel-compact">Cancel</button>
+                <button id="modalSave" class="btn-save-compact">Save Session</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ensure SJCL is loaded globally before module scripts -->
+    <script src="modules/Encryption/sjcl.js"></script>
+    <script type="module" src="popup.js"></script>
+</body>
+</html>
