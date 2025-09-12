@@ -2,10 +2,6 @@
 
 SesWi adalah ekstensi Chrome (Manifest V3) untuk menyimpan dan mengelola sesi login per-domain dengan mudah. Ekstensi ini dapat menyimpan cookies serta snapshot `localStorage` dan `sessionStorage`, menampilkan daftar sesi aktif per domain, mengelompokkan sesi lintas domain, melakukan backup/restore (format JSON biasa atau OWI terenkripsi), serta membersihkan data tab saat ini secara selektif.
 
-- Versi: 1.0.0
-- Nama paket: `SesWi - Advanced Session manager`
-- MV: 3 (Service Worker background)
-
 ## Fitur Utama
 - Simpan sesi per domain (cookies + `localStorage` + `sessionStorage`).
 - Pulihkan cookies untuk domain yang sama (hanya saat tab domain tersebut aktif).
@@ -74,8 +70,6 @@ Rincian tiap modul tersedia di `docs/Modules.md`.
 - `modules/Tabs/` menyediakan logika UI dan interaksi per tab + modal.
 - `modules/Utilities/` berisi utilitas umum (logging, format waktu, validator backup, pagination, dsb.).
 
-Diagram alur dan penjelasan detail: `docs/Architecture.md`.
-
 ## Backup & Restore
 - JSON: format terbuka, mudah dibaca, tidak terenkripsi. Di-`export` via `Backup All Sessions` (Manage tab) atau `Backup JSON` di `Session Actions`.
 - OWI: format terenkripsi menggunakan password (AES-CCM 256-bit via SJCL). Dapat membuat backup per-item atau semua sesi.
@@ -86,29 +80,27 @@ Diagram alur dan penjelasan detail: `docs/Architecture.md`.
 
 Spesifikasi format dan proses lengkap: `docs/BackupRestore.md`.
 
-## Pengembangan
-- Tidak ada proses build khusus; cukup `Load unpacked` di Chrome.
-- Aktifkan log debug dengan menyetel di DevTools Console:
-  ```js
-  localStorage.setItem('__SES_DEBUG__', '1');
-  // atau di runtime
-  window.__SES_DEBUG__ = true;
-  ```
-- Buka DevTools pada popup untuk memantau error dan log.
-
-Panduan developer lebih lengkap: `docs/Development.md`.
-
-## Roadmap (Saran)
-- Opsi pembersihan cache selektif per-origin (ketika dukungan API memadai).
-- Penyaringan/penandaan sesi yang mendekati kadaluwarsa.
-- Ekspor sebagian (per-domain) langsung dari Group tab.
-- Sinkronisasi opsional (mis. `chrome.storage.sync`) — periksa batasan ukuran terlebih dahulu.
-
-## Kontribusi
-Kontribusi sangat dihargai. Silakan buat issue atau Pull Request.
-
 ## Lisensi
-Tambahkan berkas lisensi pilihan Anda (mis. MIT) pada root repo.
+```
+MIT License
+
+Copyright (c) 2025 risuncode
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+derivative works of the Software, subject to the following conditions:
+
+1. The Software may be used for commercial purposes as part of a larger system or service.
+2. The Software itself may not be sold as a standalone product or bundled and sold directly.
+3. The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
 
 ## Kredit
 - SJCL (Stanford Javascript Crypto Library) untuk enkripsi.
