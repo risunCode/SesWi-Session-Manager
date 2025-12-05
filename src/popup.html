@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SesWi - Session Manager</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="./styles/fontawesome.css">
+  <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-cookie-bite text-xl"></i>
+        <h1 class="text-base font-bold">SesWi</h1>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <span class="current-domain" id="currentDomain">-</span>
+        <button id="addSession" class="btn-add">
+          <i class="fa-solid fa-plus"></i>
+          <span>Add Session</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation">
+      <button class="tab-btn active" data-tab="current-session">
+        <i class="fa-solid fa-list-ul mr-1"></i> Current
+      </button>
+      <button class="tab-btn" data-tab="group-sessions">
+        <i class="fa-solid fa-layer-group mr-1"></i> Groups
+      </button>
+      <button class="tab-btn" data-tab="manage">
+        <i class="fa-solid fa-gear mr-1"></i> Manage
+      </button>
+    </nav>
+
+    <!-- Tab Content -->
+    <main class="main-content">
+      <div class="tab-content active" id="current-session">
+        <div id="currentSessionsContainer" class="sessions-container"></div>
+      </div>
+
+      <div class="tab-content" id="group-sessions">
+        <div id="groupSessionsContainer" class="groups-container"></div>
+      </div>
+
+      <div class="tab-content" id="manage">
+        <div class="manage-cards">
+          <button class="manage-card" id="backupAll">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-folder-open"></i></span>
+              <div class="card-text">
+                <div class="card-title">Backup All Sessions</div>
+                <div class="card-desc">Export to JSON or OWI</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <button class="manage-card" id="restoreSessions">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-download"></i></span>
+              <div class="card-text">
+                <div class="card-title">Restore Sessions</div>
+                <div class="card-desc">Import from backup file</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <button class="manage-card" id="groupManage">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-layer-group"></i></span>
+              <div class="card-text">
+                <div class="card-title">Group Manage</div>
+                <div class="card-desc">Backup or delete by domain</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <button class="manage-card" id="cleanCurrentTabData">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-broom"></i></span>
+              <div class="card-text">
+                <div class="card-title">Clean Current Tab</div>
+                <div class="card-desc">Select data to clear</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="footer-link">
+        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi v2.1
+      </a>
+    </footer>
+  </div>
+
+  <!-- Add Session Modal -->
+  <div id="addSessionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle mr-2 text-blue-500"></i>Add New Session</h3>
+        <span class="modal-close" id="addModalClose">&times;</span>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="sessionNameInput" placeholder="Session name..." maxlength="50">
+        <div class="modal-info-enhanced">
+          <div class="modal-domain-row">
+            <span class="modal-favicon-wrap" id="modalFaviconWrap">
+              <img class="modal-favicon" id="modalFavicon" src="" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span class="modal-favicon-fallback" style="display:none"><i class="fa-solid fa-globe"></i></span>
+            </span>
+            <span class="modal-domain-text" id="modalDomain">-</span>
+          </div>
+          <div class="modal-stats-row">
+            <span class="stat-item" id="statCookies" title="Cookies"><i class="fa-solid fa-cookie text-amber-500"></i><strong id="modalCookies">0</strong></span>
+            <span class="stat-item" id="statLocalStorage" title="localStorage items"><i class="fa-solid fa-database text-emerald-500"></i><strong id="modalLocalStorage">0</strong></span>
+            <span class="stat-item" id="statSessionStorage" title="sessionStorage items"><i class="fa-solid fa-hard-drive text-blue-500"></i><strong id="modalSessionStorage">0</strong></span>
+            <button type="button" class="stats-info-btn" id="statsInfoBtn" title="What's this?"><i class="fa-solid fa-circle-question"></i></button>
+          </div>
+        </div>
+        <div class="stats-info-text hidden" id="statsInfoText">
+          <div class="stats-info-item"><i class="fa-solid fa-cookie text-amber-500"></i> <strong>Cookies:</strong> Login tokens, session IDs</div>
+          <div class="stats-info-item"><i class="fa-solid fa-database text-emerald-500"></i> <strong>localStorage:</strong> Persistent data (survives browser close)</div>
+          <div class="stats-info-item"><i class="fa-solid fa-hard-drive text-blue-500"></i> <strong>sessionStorage:</strong> Temporary data (cleared on tab close)</div>
+        </div>
+        <!-- Domain warning for sensitive sites -->
+        <div class="blocked-compact hidden" id="domainWarning">
+          <span class="blocked-compact-title"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Domain Notice</span>
+          <span id="domainWarningText"></span>
+        </div>
+        <!-- Additional options -->
+        <div class="add-options-card">
+          <div class="add-options-title">Additional:</div>
+          <label class="modal-checkbox-row">
+            <input type="checkbox" id="saveLocalStorage" checked>
+            <span>Save localStorage for this domain</span>
+          </label>
+          <label class="modal-checkbox-row">
+            <input type="checkbox" id="saveSessionStorage" checked>
+            <span>Save sessionStorage for this domain</span>
+          </label>
+          <label class="modal-checkbox-row warning-row">
+            <input type="checkbox" id="clearAfterSave">
+            <span>Clear data after saving</span>
+            <button type="button" class="info-btn" id="clearInfoBtn" title="Click for info"><i class="fa-solid fa-circle-info"></i></button>
+          </label>
+          <div class="clear-info-text hidden" id="clearInfoText">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i>
+            Clears cookies, localStorage & sessionStorage after saving. Useful for storing multiple accounts cleanly.
+          </div>
+        </div>
+        <div class="modal-message" id="addModalMessage"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="addModalCancel">Cancel</button>
+        <button class="btn-primary" id="addModalSave"><i class="fa-solid fa-save mr-1"></i>Save Session</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./lib/sjcl.min.js"></script>
+  <script type="module" src="./popup.js"></script>
+</body>
+</html>
