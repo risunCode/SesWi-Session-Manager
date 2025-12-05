@@ -29,6 +29,9 @@ SesWi is a Chrome extension (Manifest V3) for saving and restoring login session
 - Unified utility functions in `utils.js`
 - Backward compatible — existing sessions will work without migration
 
+## Alpha version
+- https://github.com/risunCode/SesWi-Session-Manager/tree/Alpha
+
 ## Features
 
 - **Save sessions per domain**: cookies + `localStorage` + `sessionStorage`
