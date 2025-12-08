@@ -19,7 +19,8 @@ export const Cookies = {
       const cookies = await chrome.cookies.getAll({});
       const filtered = cookies.filter(c => {
         const d = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
-        return d.endsWith(domain);
+        // Fix: exact match OR subdomain match (must have dot before domain)
+        return d === domain || d.endsWith('.' + domain);
       });
       return Response.success(filtered);
     } catch (e) {
