@@ -199,7 +199,7 @@ export const GroupTab = {
       <div class="group-card${isExpanded ? ' expanded' : ''}" data-domain="${group.domain}">
         <div class="group-header">
           <div class="group-left flex items-center gap-2">
-            <img class="group-favicon" src="${faviconUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="group-favicon-fallback" style="display:none"><i class="fa-solid fa-globe"></i></span>
+            <img class="group-favicon" src="${faviconUrl}" alt=""><span class="group-favicon-fallback"><i class="fa-solid fa-globe"></i></span>
             <div class="group-domain">${DOM.escapeHtml(group.domain)}</div>
           </div>
           <div class="group-right">
@@ -251,6 +251,19 @@ export const GroupTab = {
   },
 
   _wireGroupHandlers(container, groups) {
+    // Wire favicon error handlers
+    container.querySelectorAll('.group-favicon').forEach(img => {
+      const fallback = img.nextElementSibling;
+      img.onerror = () => {
+        img.style.display = 'none';
+        if (fallback) fallback.style.display = 'flex';
+      };
+      img.onload = () => {
+        img.style.display = 'block';
+        if (fallback) fallback.style.display = 'none';
+      };
+    });
+    
     // Header click to expand/collapse
     container.querySelectorAll('.group-header').forEach(header => {
       header.onclick = () => {
