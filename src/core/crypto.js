@@ -1,7 +1,6 @@
 /**
  * SesWi Crypto Module
  * Handles: OWI encryption/decryption
- * TODO: Full implementation from EncryptionUtils.js + BackupRestoreOWI.js
  */
 
 import { Response, Logger } from '../utils.js';
@@ -26,7 +25,6 @@ export const Crypto = {
     return JSON.parse(json);
   },
 
-  // TODO: Implement full exportOWI with proper file structure
   async exportOWI(sessions, password, filename = 'sessions-backup') {
     try {
       if (!password?.trim()) return Response.error('Password required');

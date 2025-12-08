@@ -396,12 +396,18 @@ export const Modal = {
   },
 
   // ========== Clean Tab Modal ==========
+  _cleanTabData: { cookies: [], localStorage: {}, sessionStorage: {}, domain: '' },
+  
   async openCleanTab() {
     this._ensureCleanTabModal();
     const modal = document.getElementById('cleanTabModal');
     modal.querySelector('#ctMessage').textContent = '';
     modal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
     modal.querySelector('#ctCache').checked = false;
+    
+    // Reset expand states
+    modal.querySelectorAll('.ct-data-preview').forEach(el => el.classList.remove('show'));
+    modal.querySelectorAll('.ct-expand-icon').forEach(el => el.classList.remove('expanded'));
     
     // Load counts
     const { TabInfo, BrowserStorage } = await import('../core/storage.js');
@@ -410,22 +416,156 @@ export const Modal = {
     const tabInfo = await TabInfo.getCurrent();
     if (tabInfo.success) {
       const tabId = tabInfo.data.tabId;
+      const domain = tabInfo.data.domain;
       const [cookieRes, localRes, sessionRes] = await Promise.all([
         Cookies.getCurrentTab(),
         BrowserStorage.getLocal(tabId),
         BrowserStorage.getSession(tabId)
       ]);
       
-      const cookieCount = cookieRes.data?.cookies?.length || 0;
-      const lsCount = Object.keys(localRes.data || {}).length;
-      const ssCount = Object.keys(sessionRes.data || {}).length;
+      // Fetch history for domain
+      let historyItems = [];
+      try {
+        if (chrome.history?.search) {
+          const results = await chrome.history.search({ text: domain, maxResults: 1000, startTime: 0 });
+          historyItems = results.filter(item => {
+            try {
+              const hostname = new URL(item.url).hostname;
+              return hostname === domain || hostname.endsWith('.' + domain);
+            } catch { return false; }
+          });
+        }
+      } catch {}
+      
+      // Store data for preview
+      this._cleanTabData = {
+        cookies: cookieRes.data?.cookies || [],
+        localStorage: localRes.data || {},
+        sessionStorage: sessionRes.data || {},
+        history: historyItems,
+        domain
+      };
+      
+      const cookieCount = this._cleanTabData.cookies.length;
+      const lsCount = Object.keys(this._cleanTabData.localStorage).length;
+      const ssCount = Object.keys(this._cleanTabData.sessionStorage).length;
       
       modal.querySelector('#ctCookieCount').textContent = cookieCount;
       modal.querySelector('#ctLSCount').textContent = lsCount;
       modal.querySelector('#ctSSCount').textContent = ssCount;
+      modal.querySelector('#ctHistoryCount').textContent = historyItems.length || '—';
+      modal.querySelector('#ctHistoryPreview').innerHTML = this._renderCleanTabHistory();
+      modal.querySelector('#ctDomainLabel').textContent = domain;
+      
+      // Pre-render data previews
+      modal.querySelector('#ctCookiePreview').innerHTML = this._renderCleanTabCookies();
+      modal.querySelector('#ctLSPreview').innerHTML = this._renderCleanTabStorage('localStorage');
+      modal.querySelector('#ctSSPreview').innerHTML = this._renderCleanTabStorage('sessionStorage');
     }
     
     modal.style.display = 'block';
+  },
+  
+  _renderCleanTabCookies() {
+    const cookies = this._cleanTabData.cookies;
+    if (!cookies.length) return '<div class="empty-data-msg">No cookies</div>';
+    
+    return cookies.map(c => {
+      const flags = [c.secure ? 'Secure' : '', c.httpOnly ? 'HttpOnly' : ''].filter(Boolean).join(' · ') || '—';
+      const value = (c.value || '').slice(0, 40) + ((c.value || '').length > 40 ? '...' : '');
+      
+      // Expiration
+      let expDisplay = 'Session';
+      let expClass = 'session';
+      if (!c.session && c.expirationDate) {
+        const now = Date.now() / 1000;
+        const daysLeft = Math.ceil((c.expirationDate - now) / 86400);
+        const expDate = new Date(c.expirationDate * 1000).toLocaleDateString();
+        if (daysLeft <= 0) {
+          expDisplay = 'Expired';
+          expClass = 'expired';
+        } else if (daysLeft <= 7) {
+          expDisplay = `${daysLeft}d left`;
+          expClass = 'expired';
+        } else if (daysLeft <= 30) {
+          expDisplay = `${daysLeft}d left`;
+          expClass = 'warning';
+        } else {
+          expDisplay = expDate;
+          expClass = 'valid';
+        }
+      }
+      
+      return `
+        <div class="ct-data-row">
+          <div class="ct-data-header">
+            <span class="ct-data-name">${DOM.escapeHtml(c.name || '')}</span>
+            <span class="ct-data-exp ${expClass}">${expDisplay}</span>
+          </div>
+          <div class="ct-data-flags">${flags}</div>
+          <div class="ct-data-value">${DOM.escapeHtml(value)}</div>
+        </div>
+      `;
+    }).join('');
+  },
+  
+  _renderCleanTabStorage(type) {
+    const data = type === 'localStorage' ? this._cleanTabData.localStorage : this._cleanTabData.sessionStorage;
+    const entries = Object.entries(data);
+    if (!entries.length) return `<div class="empty-data-msg">No ${type}</div>`;
+    
+    return entries.slice(0, 15).map(([key, value]) => {
+      const displayValue = typeof value === 'string' ? value : JSON.stringify(value);
+      const shortValue = displayValue.length > 50 ? displayValue.slice(0, 47) + '...' : displayValue;
+      return `
+        <div class="ct-data-row">
+          <div class="ct-data-name">${DOM.escapeHtml(key)}</div>
+          <div class="ct-data-value">${DOM.escapeHtml(shortValue)}</div>
+        </div>
+      `;
+    }).join('') + (entries.length > 15 ? `<div class="ct-more">+${entries.length - 15} more...</div>` : '');
+  },
+  
+  _renderCleanTabHistory() {
+    const history = this._cleanTabData.history || [];
+    if (!history.length) return '<div class="empty-data-msg">No history</div>';
+    
+    // Sort by lastVisitTime descending (most recent first)
+    const sorted = [...history].sort((a, b) => (b.lastVisitTime || 0) - (a.lastVisitTime || 0));
+    
+    return sorted.map(item => {
+      const title = item.title || 'Untitled';
+      const shortTitle = title.length > 40 ? title.slice(0, 37) + '...' : title;
+      const url = item.url || '';
+      const shortUrl = url.length > 50 ? url.slice(0, 47) + '...' : url;
+      
+      // Format visit time
+      let visitTime = '';
+      if (item.lastVisitTime) {
+        const date = new Date(item.lastVisitTime);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) visitTime = 'Just now';
+        else if (diffMins < 60) visitTime = `${diffMins}m ago`;
+        else if (diffHours < 24) visitTime = `${diffHours}h ago`;
+        else if (diffDays < 7) visitTime = `${diffDays}d ago`;
+        else visitTime = date.toLocaleDateString();
+      }
+      
+      return `
+        <div class="ct-data-row ct-history-row">
+          <div class="ct-data-header">
+            <span class="ct-data-name">${DOM.escapeHtml(shortTitle)}</span>
+            <span class="ct-data-time">${visitTime}</span>
+          </div>
+          <div class="ct-data-url">${DOM.escapeHtml(shortUrl)}</div>
+        </div>
+      `;
+    }).join('');
   },
 
   _ensureCleanTabModal() {
@@ -439,32 +579,48 @@ export const Modal = {
             <span class="modal-close" id="ctClose">&times;</span>
           </div>
           <div class="modal-body">
-            <p class="text-sm text-slate-600 mb-3">Select data to clear for current domain:</p>
+            <p class="text-sm text-slate-600 mb-2">Data for <strong id="ctDomainLabel">—</strong></p>
             <div class="clean-options">
-              <label class="clean-option">
-                <input type="checkbox" id="ctCookies" checked>
-                <i class="fa-solid fa-cookie text-amber-500"></i>
-                <span class="clean-label">Cookies</span>
-                <span class="clean-count" id="ctCookieCount">-</span>
-              </label>
-              <label class="clean-option">
-                <input type="checkbox" id="ctLocalStorage" checked>
-                <i class="fa-solid fa-database text-emerald-500"></i>
-                <span class="clean-label">localStorage</span>
-                <span class="clean-count" id="ctLSCount">-</span>
-              </label>
-              <label class="clean-option">
-                <input type="checkbox" id="ctSessionStorage" checked>
-                <i class="fa-solid fa-hard-drive text-blue-500"></i>
-                <span class="clean-label">sessionStorage</span>
-                <span class="clean-count" id="ctSSCount">-</span>
-              </label>
-              <label class="clean-option">
-                <input type="checkbox" id="ctHistory" checked>
-                <i class="fa-solid fa-clock-rotate-left text-violet-500"></i>
-                <span class="clean-label">History</span>
-                <span class="clean-count">—</span>
-              </label>
+              <div class="clean-option-wrap">
+                <label class="clean-option">
+                  <input type="checkbox" id="ctCookies" checked>
+                  <i class="fa-solid fa-cookie text-amber-500"></i>
+                  <span class="clean-label">Cookies</span>
+                  <span class="clean-count" id="ctCookieCount">-</span>
+                  <i class="fa-solid fa-chevron-down ct-expand-icon" data-target="ctCookiePreview"></i>
+                </label>
+                <div class="ct-data-preview" id="ctCookiePreview"></div>
+              </div>
+              <div class="clean-option-wrap">
+                <label class="clean-option">
+                  <input type="checkbox" id="ctLocalStorage" checked>
+                  <i class="fa-solid fa-database text-emerald-500"></i>
+                  <span class="clean-label">localStorage</span>
+                  <span class="clean-count" id="ctLSCount">-</span>
+                  <i class="fa-solid fa-chevron-down ct-expand-icon" data-target="ctLSPreview"></i>
+                </label>
+                <div class="ct-data-preview" id="ctLSPreview"></div>
+              </div>
+              <div class="clean-option-wrap">
+                <label class="clean-option">
+                  <input type="checkbox" id="ctSessionStorage" checked>
+                  <i class="fa-solid fa-hard-drive text-blue-500"></i>
+                  <span class="clean-label">sessionStorage</span>
+                  <span class="clean-count" id="ctSSCount">-</span>
+                  <i class="fa-solid fa-chevron-down ct-expand-icon" data-target="ctSSPreview"></i>
+                </label>
+                <div class="ct-data-preview" id="ctSSPreview"></div>
+              </div>
+              <div class="clean-option-wrap">
+                <label class="clean-option">
+                  <input type="checkbox" id="ctHistory" checked>
+                  <i class="fa-solid fa-clock-rotate-left text-violet-500"></i>
+                  <span class="clean-label">History</span>
+                  <span class="clean-count" id="ctHistoryCount">—</span>
+                  <i class="fa-solid fa-chevron-down ct-expand-icon" data-target="ctHistoryPreview"></i>
+                </label>
+                <div class="ct-data-preview" id="ctHistoryPreview"></div>
+              </div>
               <label class="clean-option">
                 <input type="checkbox" id="ctCache">
                 <i class="fa-solid fa-box text-slate-500"></i>
@@ -492,6 +648,20 @@ export const Modal = {
     modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
     modal.querySelector('#ctClose').onclick = () => modal.style.display = 'none';
     modal.querySelector('#ctCancel').onclick = () => modal.style.display = 'none';
+    
+    // Wire expand icons
+    modal.querySelectorAll('.ct-expand-icon').forEach(icon => {
+      icon.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const targetId = icon.dataset.target;
+        const preview = modal.querySelector('#' + targetId);
+        if (preview) {
+          preview.classList.toggle('show');
+          icon.classList.toggle('expanded');
+        }
+      };
+    });
     
     modal.querySelector('#ctClean').onclick = async () => {
       const options = {

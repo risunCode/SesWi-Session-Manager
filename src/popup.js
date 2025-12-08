@@ -87,10 +87,18 @@ function initAddSessionModal() {
     
     // Set favicon
     const favicon = document.getElementById('modalFavicon');
+    const faviconFallback = favicon?.nextElementSibling;
     if (favicon && domain !== '-') {
       const iconUrl = tabIcons.getFaviconUrl(domain, info.data?.url);
+      favicon.onerror = () => {
+        favicon.style.display = 'none';
+        if (faviconFallback) faviconFallback.style.display = 'flex';
+      };
+      favicon.onload = () => {
+        favicon.style.display = 'block';
+        if (faviconFallback) faviconFallback.style.display = 'none';
+      };
       favicon.src = iconUrl;
-      favicon.style.display = 'block';
     }
     
     // Show domain warning for sensitive sites
@@ -109,12 +117,6 @@ function initAddSessionModal() {
     document.getElementById('clearAfterSave').checked = false;
     document.getElementById('clearInfoText')?.classList.add('hidden');
     document.getElementById('statsInfoText')?.classList.add('hidden');
-    
-    // Reset favicon fallback
-    const faviconImg = document.getElementById('modalFavicon');
-    const faviconFallback = faviconImg?.nextElementSibling;
-    if (faviconImg) faviconImg.style.display = 'block';
-    if (faviconFallback) faviconFallback.style.display = 'none';
     
     input.value = '';
     msg.textContent = '';

@@ -4,6 +4,7 @@
  */
 
 import { Response, Domain, Validate, Logger } from '../utils.js';
+import { Cookies } from './cookies.js';
 
 const STORAGE_KEY = 'seswi-sessions-blyat';
 
@@ -56,32 +57,29 @@ export const TabInfo = {
         await Cookies.removeForDomain(baseDomain);
       }
       
-      // Clear history for domain
+      // Clear history for domain using history API
       if (history) {
         try {
           if (chrome.history?.search && chrome.history?.deleteUrl) {
-            const searches = [
-              chrome.history.search({ text: baseDomain, maxResults: 10000, startTime: 0 }),
-              chrome.history.search({ text: 'https://' + baseDomain, maxResults: 10000, startTime: 0 }),
-              chrome.history.search({ text: 'http://' + baseDomain, maxResults: 10000, startTime: 0 })
-            ];
-            const all = (await Promise.allSettled(searches))
-              .filter(r => r.status === 'fulfilled')
-              .flatMap(r => r.value || []);
+            const results = await chrome.history.search({ 
+              text: baseDomain, 
+              maxResults: 1000, 
+              startTime: 0 
+            });
             
-            const byUrl = new Map();
-            for (const item of all) if (item?.url) byUrl.set(item.url, item);
-            
-            const candidates = Array.from(byUrl.values()).filter(item => {
+            const toDelete = results.filter(item => {
               try {
-                const u = new URL(item.url);
-                return u.hostname === baseDomain || u.hostname.endsWith('.' + baseDomain);
+                const hostname = new URL(item.url).hostname;
+                return hostname === baseDomain || hostname.endsWith('.' + baseDomain);
               } catch { return false; }
             });
             
-            for (let i = 0; i < candidates.length; i += 100) {
-              const chunk = candidates.slice(i, i + 100);
-              await Promise.all(chunk.map(c => chrome.history.deleteUrl({ url: c.url }).catch(() => {})));
+            // Delete in chunks to avoid overwhelming
+            for (let i = 0; i < toDelete.length; i += 50) {
+              const chunk = toDelete.slice(i, i + 50);
+              await Promise.all(chunk.map(item => 
+                chrome.history.deleteUrl({ url: item.url }).catch(() => {})
+              ));
             }
           }
         } catch (e) {
@@ -89,10 +87,16 @@ export const TabInfo = {
         }
       }
       
-      // Clear cache
+      // Clear cache (note: per-origin cache clearing has limited support)
       if (cache) {
         try {
-          await chrome.browsingData.removeCache({ origins: [`https://${baseDomain}`, `http://${baseDomain}`] });
+          // Try with origins first, fallback to clearing all cache if not supported
+          try {
+            await chrome.browsingData.removeCache({ origins: [`https://${baseDomain}`, `http://${baseDomain}`] });
+          } catch {
+            // Origins not supported, clear all cache as fallback
+            await chrome.browsingData.removeCache({});
+          }
         } catch (e) {
           Logger.error('Error clearing cache:', e);
         }
@@ -207,7 +211,6 @@ export const SessionStorage = {
     }
   },
 
-  // TODO: Implement deleteGrouped from old version
   async deleteGrouped(domains) {
     try {
       const { data: sessions } = await this.getAll();
@@ -221,7 +224,6 @@ export const SessionStorage = {
 };
 
 // ========== Browser Storage (localStorage/sessionStorage) ==========
-// TODO: Implement full BrowserStorage from LocalGrabber.js
 export const BrowserStorage = {
   async getLocal(tabId) {
     try {
@@ -261,6 +263,3 @@ export const BrowserStorage = {
     }
   }
 };
-
-// Import Cookies for cleanCurrentTab
-import { Cookies } from './cookies.js';

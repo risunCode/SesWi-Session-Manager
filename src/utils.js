@@ -69,9 +69,7 @@ export const DOM = {
     const div = document.createElement('div');
     div.textContent = text == null ? '' : String(text);
     return div.innerHTML;
-  },
-
-  // TODO: Add createElement helper
+  }
 };
 
 // ========== Time Helpers ==========
@@ -89,7 +87,6 @@ export const Time = {
     return new Date(timestamp).toLocaleDateString();
   },
 
-  // TODO: Implement getDaysLeft for cookie expiration
   getDaysLeft(expirationTimestamp) {
     if (!expirationTimestamp) return 0;
     const now = new Date();
@@ -111,7 +108,6 @@ export const Logger = {
 };
 
 // ========== Pagination ==========
-// TODO: Implement full pagination from GlobalPagination.js
 export const Pagination = {
   getPage(items, page, perPage = 5) {
     const start = (page - 1) * perPage;

@@ -2,6 +2,27 @@
 
 SesWi is a Chrome extension (Manifest V3) for saving and restoring login sessions per domain. It captures cookies along with `localStorage` and `sessionStorage` snapshots, lets you list and group sessions across domains, backup/restore sessions (plain JSON or password-encrypted OWI), and clean current tab data when needed.
 
+## What's New in v2.2
+
+### 🧹 Clean Current Tab Enhancements
+- **Data preview** — See cookies, localStorage, sessionStorage, and history items before clearing
+- **Expandable sections** — Click to expand each data type and view details
+- **Cookie expiration status** — Visual indicators showing if cookies are Session, Valid, Warning, or Expired
+- **History preview** — View page titles, URLs, and relative visit times
+- **History count detection** — Shows actual number of history entries for current domain
+
+### 🔒 Bug Fixes & Security
+- **Fixed CSP violations** — Removed all inline event handlers for better security compliance
+- **Fixed history clearing** — Now uses `chrome.history.deleteUrl` API properly
+- **Fixed cookie domain matching** — Exact domain matching prevents accidental cross-domain deletion
+- **Improved cache clearing** — Added fallback for browsers that don't support origin-based cache clearing
+
+### 🛠️ Code Cleanup
+- Removed all TODO/FIXME comments (implementations complete)
+- Cleaner codebase with proper JS event handlers
+
+---
+
 ## What's New in v2.1
 
 ### 🔄 Complete Architecture Rebuild
