@@ -3,6 +3,9 @@
 <head>
   <title>SesWi - Session Manager</title>
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/fontawesome.css">
   <link rel="stylesheet" href="./styles/main.css">
 </head>
@@ -16,7 +19,7 @@
       </div>
       <div class="flex items-center gap-2.5">
         <span class="current-domain" id="currentDomain">-</span>
-        <button id="addSession" class="btn-add">
+        <button id="addSession" class="btn-add-session">
           <i class="fa-solid fa-plus"></i>
           <span>Add Session</span>
         </button>
@@ -39,15 +42,50 @@
     <!-- Tab Content -->
     <main class="main-content">
       <div class="tab-content active" id="current-session">
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="currentSearchInput" placeholder="Search sessions..." class="search-input">
+        </div>
         <div id="currentSessionsContainer" class="sessions-container"></div>
       </div>
 
       <div class="tab-content" id="group-sessions">
+        <div class="search-bar">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="groupSearchInput" placeholder="Search sessions..." class="search-input">
+        </div>
+        <div id="groupOverviewCard" class="group-overview-card">
+          <span class="overview-label">Overview:</span>
+          <div class="overview-stats">
+            <div class="overview-stat">
+              <i class="fa-solid fa-globe"></i>
+              <span id="overviewDomains">0</span>
+              <label>sites</label>
+            </div>
+            <div class="overview-stat">
+              <i class="fa-solid fa-bookmark"></i>
+              <span id="overviewSessions">0</span>
+              <label>sessions</label>
+            </div>
+          </div>
+        </div>
         <div id="groupSessionsContainer" class="groups-container"></div>
       </div>
 
       <div class="tab-content" id="manage">
         <div class="manage-cards">
+          <!-- Quick Action Card (Top) -->
+          <button class="manage-card" id="quickAction">
+            <div class="flex items-center">
+              <span class="card-icon text-amber-500 bg-amber-50"><i class="fa-solid fa-bolt"></i></span>
+              <div class="card-text">
+                <div class="card-title">Quick Action for current tab</div>
+                <div class="card-desc">Export cookies without saving session</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
           <button class="manage-card" id="backupAll">
             <div class="flex items-center">
               <span class="card-icon"><i class="fa-solid fa-folder-open"></i></span>
@@ -91,6 +129,36 @@
             </div>
             <i class="fa-solid fa-chevron-right text-slate-400"></i>
           </button>
+
+          <button class="manage-card" id="deleteExpiredSessions">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-trash-can"></i></span>
+              <div class="card-text">
+                <div class="card-title">Delete Expired</div>
+                <div class="card-desc">Remove sessions with expired cookies</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <!-- Repo Info (Moved) -->
+          <div class="repo-info-card mt-2">
+            <div class="repo-row">
+              <i class="fa-brands fa-github text-lg"></i>
+              <div class="flex flex-col">
+                <span class="repo-label text-xs">Github Repository</span>
+                <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="repo-link">risunCode/SesWi-Session-Manager</a>
+              </div>
+            </div>
+            <div class="repo-row mt-2">
+              <i class="fa-solid fa-user text-lg text-slate-500"></i>
+              <div class="flex flex-col">
+                <span class="repo-label text-xs">Author</span>
+                <span class="repo-value">risunCode</span>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </main>
@@ -98,7 +166,7 @@
     <!-- Footer -->
     <footer class="app-footer">
       <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="footer-link">
-        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi v2.2
+        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi <span id="appVersion">v3.0</span>
       </a>
     </footer>
   </div>
@@ -112,6 +180,7 @@
       </div>
       <div class="modal-body">
         <input type="text" id="sessionNameInput" placeholder="Session name..." maxlength="50">
+
         <div class="modal-info-enhanced">
           <div class="modal-domain-row">
             <span class="modal-favicon-wrap" id="modalFaviconWrap">
@@ -161,13 +230,12 @@
         <div class="modal-message" id="addModalMessage"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-cancel" id="addModalCancel">Cancel</button>
-        <button class="btn-primary" id="addModalSave"><i class="fa-solid fa-save mr-1"></i>Save Session</button>
+        <button class="btn btn-secondary" id="addModalCancel">Cancel</button>
+        <button class="btn btn-primary" id="addModalSave"><i class="fa-solid fa-save mr-1"></i>Save Session</button>
       </div>
     </div>
   </div>
 
-  <script src="./lib/sjcl.min.js"></script>
   <script type="module" src="./popup.js"></script>
 </body>
 </html>

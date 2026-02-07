@@ -55,6 +55,10 @@ export default defineConfig({
             delete bundle[fileName];
           }
         }
+      },
+      transformIndexHtml(html) {
+        // Inject sjcl.min.js before the closing body tag
+        return html.replace('</body>', '<script src="./lib/sjcl.min.js"></script></body>');
       }
     }
   ],

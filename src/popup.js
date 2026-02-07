@@ -2,25 +2,33 @@
  * SesWi Popup Entry Point
  */
 
-import { TabInfo, BrowserStorage } from './core/storage.js';
+import { TabInfo, BrowserStorage, SessionStorage } from './core/storage.js';
 import { Cookies } from './core/cookies.js';
 import { tabIcons } from './core/icons.js';
 import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
 import { Domain } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Load version from manifest
+  const manifest = chrome.runtime.getManifest();
+  const versionEl = document.getElementById('appVersion');
+  if (versionEl) versionEl.textContent = `v${manifest.version}`;
+
   // Initialize tabs
   await initTabs();
   await updateCurrentDomain();
-  
+
+  // Setup search handlers
+  initSearchHandlers();
+
   // Initial render
   await CurrentTab.render();
   await GroupTab.render();
   ManageTab.init();
-  
+
   // Setup Add Session modal
   initAddSessionModal();
-  
+
   // Listen for session changes
   const refresh = () => { CurrentTab.render(); GroupTab.render(); };
   document.addEventListener('seswi:session-updated', refresh);
@@ -47,6 +55,35 @@ async function initTabs() {
   });
 }
 
+function initSearchHandlers() {
+  // Current tab search
+  const currentSearch = document.getElementById('currentSearchInput');
+  if (currentSearch) {
+    let debounce;
+    currentSearch.oninput = (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        CurrentTab.searchQuery = e.target.value;
+        CurrentTab.page = 1;
+        CurrentTab.render();
+      }, 300);
+    };
+  }
+  
+  // Group tab search
+  const groupSearch = document.getElementById('groupSearchInput');
+  if (groupSearch) {
+    let debounce;
+    groupSearch.oninput = (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        GroupTab.searchQuery = e.target.value;
+        GroupTab.render();
+      }, 300);
+    };
+  }
+}
+
 async function updateCurrentDomain() {
   const el = document.getElementById('currentDomain');
   const info = await TabInfo.getCurrent();
@@ -63,28 +100,28 @@ function initAddSessionModal() {
     const cookies = await Cookies.getCurrentTab();
     const domain = info.data?.domain || '-';
     const tabId = info.data?.tabId;
-    
+
     // Get all storage data
     const [localRes, sessionRes] = await Promise.all([
       tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve({ data: {} }),
       tabId ? BrowserStorage.getSession(tabId) : Promise.resolve({ data: {} })
     ]);
-    
+
     const cookieCount = cookies.data?.cookies?.length || 0;
     const lsCount = Object.keys(localRes.data || {}).length;
     const ssCount = Object.keys(sessionRes.data || {}).length;
-    
+
     // Update modal info
     document.getElementById('modalDomain').textContent = domain;
     document.getElementById('modalCookies').textContent = cookieCount;
     document.getElementById('modalLocalStorage').textContent = lsCount;
     document.getElementById('modalSessionStorage').textContent = ssCount;
-    
+
     // Update tooltips with details
     document.getElementById('statCookies').title = `${cookieCount} cookies`;
     document.getElementById('statLocalStorage').title = `${lsCount} localStorage items`;
     document.getElementById('statSessionStorage').title = `${ssCount} sessionStorage items`;
-    
+
     // Set favicon
     const favicon = document.getElementById('modalFavicon');
     const faviconFallback = favicon?.nextElementSibling;
@@ -100,7 +137,7 @@ function initAddSessionModal() {
       };
       favicon.src = iconUrl;
     }
-    
+
     // Show domain warning for sensitive sites
     const warning = document.getElementById('domainWarning');
     const warningText = document.getElementById('domainWarningText');
@@ -110,15 +147,15 @@ function initAddSessionModal() {
     } else {
       warning.classList.add('hidden');
     }
-    
-    // Reset checkboxes and info panels
+
+    // Reset form
+    input.value = '';
     document.getElementById('saveLocalStorage').checked = true;
     document.getElementById('saveSessionStorage').checked = true;
     document.getElementById('clearAfterSave').checked = false;
     document.getElementById('clearInfoText')?.classList.add('hidden');
     document.getElementById('statsInfoText')?.classList.add('hidden');
-    
-    input.value = '';
+
     msg.textContent = '';
     msg.style.display = 'none';
     modal.style.display = 'block';
@@ -134,20 +171,21 @@ function initAddSessionModal() {
       msg.style.display = 'block';
       return;
     }
-    
+
     msg.textContent = 'Saving...';
+    msg.className = 'modal-message';
     msg.style.display = 'block';
-    
+
     const options = {
       saveLocalStorage: document.getElementById('saveLocalStorage').checked,
       saveSessionStorage: document.getElementById('saveSessionStorage').checked
     };
-    
+
     const result = await CurrentTab.handleAddSession(name, options);
     if (result.success) {
       msg.textContent = 'Saved!';
       msg.className = 'modal-message success';
-      
+
       // Check if clear after save is enabled
       const clearCheckbox = document.getElementById('clearAfterSave');
       if (clearCheckbox && clearCheckbox.checked) {
@@ -155,7 +193,7 @@ function initAddSessionModal() {
         await TabInfo.cleanCurrentTab();
         return;
       }
-      
+
       setTimeout(closeModal, 800);
     } else {
       msg.textContent = result.error || 'Failed to save';
@@ -170,7 +208,7 @@ function initAddSessionModal() {
   document.getElementById('addModalSave').onclick = saveSession;
   modal.onclick = e => { if (e.target === modal) closeModal(); };
   input.onkeydown = e => { if (e.key === 'Enter') saveSession(); };
-  
+
   // Clear info toggle
   document.getElementById('clearInfoBtn')?.addEventListener('click', (e) => {
     e.preventDefault();

@@ -211,6 +211,34 @@ export const SessionStorage = {
     }
   },
 
+  async getGroupedByDomain() {
+    try {
+      const { data: sessions } = await this.getAll();
+      const domainGroups = {};
+
+      sessions.forEach(s => {
+        if (!domainGroups[s.domain]) domainGroups[s.domain] = [];
+        domainGroups[s.domain].push(s);
+      });
+
+      // Sort domains by most recent session timestamp
+      const sortedDomains = Object.keys(domainGroups)
+        .sort((a, b) => {
+          const aMax = Math.max(...domainGroups[a].map(s => s.timestamp));
+          const bMax = Math.max(...domainGroups[b].map(s => s.timestamp));
+          return bMax - aMax;
+        })
+        .map(domain => ({
+          domain,
+          sessions: domainGroups[domain].sort((a, b) => (a.index || 0) - (b.index || 0))
+        }));
+
+      return Response.success(sortedDomains);
+    } catch (e) {
+      return Response.error(e, 'SessionStorage.getGroupedByDomain');
+    }
+  },
+
   async deleteGrouped(domains) {
     try {
       const { data: sessions } = await this.getAll();

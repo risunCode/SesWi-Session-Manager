@@ -5,15 +5,18 @@
 
 import { SessionStorage, TabInfo, BrowserStorage } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
+import { Export } from '../core/export.js';
 import { tabIcons } from '../core/icons.js';
 import { DOM, Time, Pagination, Domain, Response } from '../utils.js';
 import { Modal } from './modals.js';
+import { Renderer } from './renderer.js';
 
 // ========== Current Tab ==========
 export const CurrentTab = {
   page: 1,
   perPage: 5,
   justSavedTs: null,
+  searchQuery: '',
 
   async render() {
     const container = document.getElementById('currentSessionsContainer');
@@ -26,10 +29,22 @@ export const CurrentTab = {
       const sessions = await SessionStorage.getByDomain(tabInfo.data.domain);
       if (!sessions.success) throw new Error(sessions.error);
 
-      const items = sessions.data || [];
+      let items = sessions.data || [];
+      
+      // Apply search filter
+      if (this.searchQuery.trim()) {
+        const query = this.searchQuery.toLowerCase();
+        items = items.filter(s => 
+          s.name.toLowerCase().includes(query) ||
+          s.domain.toLowerCase().includes(query)
+        );
+      }
 
       if (items.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>No sessions for this domain</p></div>';
+        const emptyMsg = this.searchQuery.trim() 
+          ? `No sessions matching "${DOM.escapeHtml(this.searchQuery)}"`
+          : 'No sessions for this domain';
+        container.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`;
         return;
       }
 
@@ -39,27 +54,10 @@ export const CurrentTab = {
 
       container.innerHTML = pageItems.map((s, i) => {
         const idx = (this.page - 1) * this.perPage + i + 1;
-        const highlight = this.justSavedTs === String(s.timestamp) ? ' just-saved' : '';
-        const lsCount = Object.keys(s.localStorage || {}).length;
-        const ssCount = Object.keys(s.sessionStorage || {}).length;
-        const fullUrl = s.originalUrl || `https://${s.domain}`;
-        const displayUrl = fullUrl.replace(/^https?:\/\//, '');
-        const shortUrl = displayUrl.length > 25 ? displayUrl.slice(0, 22) + '...' : displayUrl;
-        const cookieCount = s.cookies?.length || 0;
-        return `
-          <div class="session-card${highlight}" data-ts="${s.timestamp}">
-            <div class="session-header">
-              <span class="session-index">${idx}</span>
-              <span class="session-name">${DOM.escapeHtml(s.name)}</span>
-              <span class="session-stats">
-                <span class="cookie-count" title="${cookieCount} cookies"><i class="fa-solid fa-cookie text-amber-500"></i>${cookieCount}</span>
-                ${lsCount > 0 ? `<span class="ls-count" title="${lsCount} localStorage items"><i class="fa-solid fa-database text-emerald-500"></i>${lsCount}</span>` : ''}
-                ${ssCount > 0 ? `<span class="ss-count" title="${ssCount} sessionStorage items"><i class="fa-solid fa-hard-drive text-blue-500"></i>${ssCount}</span>` : ''}
-              </span>
-            </div>
-            <div class="session-meta"><code class="session-url" title="${DOM.escapeHtml(fullUrl)}">${DOM.escapeHtml(shortUrl)}</code> · ${Time.formatRelative(s.timestamp)}</div>
-          </div>
-        `;
+        return Renderer.sessionCard(s, {
+          index: idx,
+          highlight: this.justSavedTs === String(s.timestamp)
+        });
       }).join('') + this._renderPagination(totalPages);
 
       // Wire click handlers
@@ -99,7 +97,7 @@ export const CurrentTab = {
 
   async handleAddSession(name, options = {}) {
     const { saveLocalStorage = true, saveSessionStorage = true } = options;
-    
+
     try {
       const tabInfo = await TabInfo.getCurrent();
       if (!tabInfo.success) return Response.error('No tab info');
@@ -107,13 +105,13 @@ export const CurrentTab = {
       const cookieRes = await Cookies.getCurrentTab();
       const cookies = cookieRes.data?.cookies || [];
       const domain = cookieRes.data?.domain || tabInfo.data?.domain;
-      
+
       if (!domain) return Response.error('No domain detected');
 
       // Get browser storage based on options
       let localData = {};
       let sessionData = {};
-      
+
       if (saveLocalStorage || saveSessionStorage) {
         const [localRes, sessionRes] = await Promise.all([
           saveLocalStorage ? BrowserStorage.getLocal(tabInfo.data.tabId) : Promise.resolve({ data: {} }),
@@ -122,7 +120,7 @@ export const CurrentTab = {
         localData = localRes.data || {};
         sessionData = sessionRes.data || {};
       }
-      
+
       // Check if there's any data to save
       const hasData = cookies.length > 0 || Object.keys(localData).length > 0 || Object.keys(sessionData).length > 0;
       if (!hasData) {
@@ -161,114 +159,129 @@ export const CurrentTab = {
 };
 
 
-// ========== Group Tab ==========
+// ========== Group Tab (Domain-based) ==========
 export const GroupTab = {
-  expandedDomain: null,
-  groupPages: {},
+  expandedDomain: {},
+  domainPages: {},
+  searchQuery: '',
 
   async render() {
     const container = document.getElementById('groupSessionsContainer');
     if (!container) return;
 
     try {
-      const result = await SessionStorage.getGrouped();
+      const result = await SessionStorage.getGroupedByDomain();
       if (!result.success) throw new Error(result.error);
 
-      const groups = result.data || [];
-      if (groups.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>No sessions saved yet</p></div>';
+      let domainGroups = result.data || [];
+
+      // Update overview card (before filtering)
+      const totalDomains = domainGroups.length;
+      const totalSessions = domainGroups.reduce((sum, dg) => sum + dg.sessions.length, 0);
+      const overviewDomains = document.getElementById('overviewDomains');
+      const overviewSessions = document.getElementById('overviewSessions');
+      if (overviewDomains) overviewDomains.textContent = totalDomains;
+      if (overviewSessions) overviewSessions.textContent = totalSessions;
+
+      // Apply search filter
+      if (this.searchQuery.trim()) {
+        const query = this.searchQuery.toLowerCase();
+        domainGroups = domainGroups.map(dg => ({
+          ...dg,
+          sessions: dg.sessions.filter(s =>
+            s.name.toLowerCase().includes(query) ||
+            s.domain.toLowerCase().includes(query)
+          )
+        })).filter(dg => dg.sessions.length > 0);
+      }
+
+      if (domainGroups.length === 0) {
+        const emptyMsg = this.searchQuery.trim()
+          ? `No sessions matching "${DOM.escapeHtml(this.searchQuery)}"`
+          : 'No sessions saved yet';
+        container.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`;
         return;
       }
 
       // Refresh icons cache
       const iconMap = await tabIcons.refresh();
 
-      container.innerHTML = groups.map(g => this._renderGroup(g, iconMap)).join('');
-      this._wireGroupHandlers(container, groups);
+      container.innerHTML = domainGroups.map(dg => this._renderDomainCard(dg, iconMap)).join('');
+      this._wireHandlers(container, domainGroups);
     } catch (e) {
       container.innerHTML = `<div class="error-state"><p>Error: ${DOM.escapeHtml(e.message)}</p></div>`;
     }
   },
 
-  _renderGroup(group, iconMap = {}) {
-    const isExpanded = this.expandedDomain === group.domain;
-    const totalCookies = group.sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
-    const faviconUrl = iconMap[group.domain] || tabIcons.getFaviconUrl(group.domain);
-    
+  _renderDomainCard(domainGroup, iconMap = {}) {
+    const { domain, sessions } = domainGroup;
+    const isExpanded = this.expandedDomain[domain] === true;
+    const totalCookies = sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
+    const faviconUrl = iconMap[domain] || tabIcons.getFaviconUrl(domain);
+
+    // Get auth status for the domain (based on most recent session)
+    const latestSession = sessions[sessions.length - 1];
+    const authStatus = latestSession ? Time.getSessionExpiration(latestSession.cookies) : null;
+    const authBadge = authStatus?.label
+      ? `<span class="exp-badge ${authStatus.status}"><i class="fa-solid ${authStatus.icon}"></i>${authStatus.label}</span>`
+      : (authStatus?.status === 'valid' ? `<span class="exp-badge valid"><i class="fa-solid fa-circle-check"></i></span>` : '');
+
     return `
-      <div class="group-card${isExpanded ? ' expanded' : ''}" data-domain="${group.domain}">
-        <div class="group-header">
-          <div class="group-left flex items-center gap-2">
-            <img class="group-favicon" src="${faviconUrl}" alt=""><span class="group-favicon-fallback"><i class="fa-solid fa-globe"></i></span>
-            <div class="group-domain">${DOM.escapeHtml(group.domain)}</div>
+      <div class="domain-card${isExpanded ? ' expanded' : ''}" data-domain="${domain}">
+        <div class="domain-card-header">
+          <div class="domain-card-left">
+            <img class="domain-favicon" src="${faviconUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <span class="domain-favicon-fallback"><i class="fa-solid fa-globe"></i></span>
+            <div class="domain-info">
+              <span class="domain-name">${DOM.escapeHtml(domain)}</span>
+              <span class="domain-meta">${sessions.length} sessions · ${totalCookies} cookies</span>
+            </div>
           </div>
-          <div class="group-right">
-            <span class="group-info">${group.sessions.length} sessions • ${totalCookies} cookies</span>
-            <i class="fa-solid fa-chevron-${isExpanded ? 'down' : 'right'} text-slate-500 text-xs"></i>
+          <div class="domain-card-right">
+            ${authBadge}
+            <i class="fa-solid fa-chevron-${isExpanded ? 'down' : 'right'} text-slate-400 text-xs"></i>
           </div>
         </div>
-        <div class="group-sessions" style="display:${isExpanded ? 'block' : 'none'}">
-          ${isExpanded ? this._renderGroupSessions(group) : ''}
+        <div class="domain-card-content" style="display:${isExpanded ? 'block' : 'none'}">
+          ${isExpanded ? this._renderSessions(sessions, domain) : ''}
         </div>
       </div>
     `;
   },
 
-  _renderGroupSessions(group) {
-    const page = this.groupPages[group.domain] || 1;
+  _renderSessions(sessions, domain) {
+    const page = this.domainPages[domain] || 1;
     const perPage = 4;
-    const items = Pagination.getPage(group.sessions, page, perPage);
-    const totalPages = Pagination.getTotalPages(group.sessions, perPage);
+    const items = Pagination.getPage(sessions, page, perPage);
+    const totalPages = Pagination.getTotalPages(sessions, perPage);
 
-    return items.map(s => {
-      const lsCount = Object.keys(s.localStorage || {}).length;
-      const ssCount = Object.keys(s.sessionStorage || {}).length;
-      const fullUrl = s.originalUrl || `https://${s.domain}`;
-      const displayUrl = fullUrl.replace(/^https?:\/\//, '');
-      const shortUrl = displayUrl.length > 22 ? displayUrl.slice(0, 19) + '...' : displayUrl;
-      const cookieCount = s.cookies?.length || 0;
-      return `
-        <div class="session-card" data-ts="${s.timestamp}">
-          <div class="session-header">
-            <span class="session-index">${s.index || 1}</span>
-            <span class="session-name">${DOM.escapeHtml(s.name)}</span>
-            <span class="session-stats">
-              <span class="cookie-count" title="${cookieCount} cookies"><i class="fa-solid fa-cookie text-amber-500"></i>${cookieCount}</span>
-              ${lsCount > 0 ? `<span class="ls-count" title="${lsCount} localStorage items"><i class="fa-solid fa-database text-emerald-500"></i>${lsCount}</span>` : ''}
-              ${ssCount > 0 ? `<span class="ss-count" title="${ssCount} sessionStorage items"><i class="fa-solid fa-hard-drive text-blue-500"></i>${ssCount}</span>` : ''}
-            </span>
-          </div>
-          <div class="session-meta"><code class="session-url" title="${DOM.escapeHtml(fullUrl)}">${DOM.escapeHtml(shortUrl)}</code> · ${Time.formatRelative(s.timestamp)}</div>
-        </div>
-      `;
-    }).join('') + (totalPages > 1 ? `
+    return items.map((s, i) => Renderer.sessionCard(s, {
+      index: (page - 1) * perPage + i + 1,
+      showIndex: true
+    })).join('') + (totalPages > 1 ? `
       <div class="pagination">
-        <button class="gpage-btn" data-domain="${group.domain}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹</button>
+        <button class="dpage-btn" data-domain="${domain}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹</button>
         <span>${page}/${totalPages}</span>
-        <button class="gpage-btn" data-domain="${group.domain}" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>›</button>
+        <button class="dpage-btn" data-domain="${domain}" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>›</button>
       </div>
     ` : '');
   },
 
-  _wireGroupHandlers(container, groups) {
+  _wireHandlers(container, domainGroups) {
     // Wire favicon error handlers
-    container.querySelectorAll('.group-favicon').forEach(img => {
-      const fallback = img.nextElementSibling;
+    container.querySelectorAll('.domain-favicon').forEach(img => {
       img.onerror = () => {
         img.style.display = 'none';
+        const fallback = img.nextElementSibling;
         if (fallback) fallback.style.display = 'flex';
       };
-      img.onload = () => {
-        img.style.display = 'block';
-        if (fallback) fallback.style.display = 'none';
-      };
     });
-    
-    // Header click to expand/collapse
-    container.querySelectorAll('.group-header').forEach(header => {
+
+    // Domain card header click
+    container.querySelectorAll('.domain-card-header').forEach(header => {
       header.onclick = () => {
-        const domain = header.closest('.group-card').dataset.domain;
-        this.expandedDomain = this.expandedDomain === domain ? null : domain;
+        const domain = header.closest('.domain-card').dataset.domain;
+        this.expandedDomain[domain] = !this.expandedDomain[domain];
         this.render();
       };
     });
@@ -278,21 +291,26 @@ export const GroupTab = {
       card.onclick = (e) => {
         e.stopPropagation();
         const ts = card.dataset.ts;
-        const domain = card.closest('.group-card').dataset.domain;
-        const group = groups.find(g => g.domain === domain);
-        const session = group?.sessions.find(s => String(s.timestamp) === ts);
+
+        // Find session across all domain groups
+        let session = null;
+        for (const dg of domainGroups) {
+          session = dg.sessions.find(s => String(s.timestamp) === ts);
+          if (session) break;
+        }
+
         if (session) Modal.openSessionActions(session);
       };
     });
 
-    // Group pagination
-    container.querySelectorAll('.gpage-btn').forEach(btn => {
+    // Domain pagination
+    container.querySelectorAll('.dpage-btn').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         const domain = btn.dataset.domain;
         const page = parseInt(btn.dataset.page);
         if (page && !btn.disabled) {
-          this.groupPages[domain] = page;
+          this.domainPages[domain] = page;
           this.render();
         }
       };
@@ -308,6 +326,45 @@ export const ManageTab = {
     document.getElementById('restoreSessions')?.addEventListener('click', () => this.handleRestore());
     document.getElementById('groupManage')?.addEventListener('click', () => this.handleGroupManage());
     document.getElementById('cleanCurrentTabData')?.addEventListener('click', () => this.handleClean());
+    document.getElementById('deleteExpiredSessions')?.addEventListener('click', () => this.handleDeleteExpired());
+
+    // Quick Action (New Modal Flow)
+    document.getElementById('quickAction')?.addEventListener('click', () => Modal.openQuickAction());
+  },
+
+  async handleExportCurrent(format) {
+    try {
+      const res = await Cookies.getCurrentTab();
+      if (!res.success) {
+        alert('Failed to get cookies: ' + res.error);
+        return;
+      }
+
+      const cookies = res.data?.cookies || [];
+      const domain = res.data?.domain || 'unknown';
+
+      if (cookies.length === 0) {
+        alert('No cookies found for this tab.');
+        return;
+      }
+
+      let content, filename, contentType;
+
+      if (format === 'json') {
+        content = Export.toJSON(cookies);
+        filename = `${domain}_cookies.json`;
+        contentType = 'application/json';
+      } else {
+        content = Export.toNetscape(cookies);
+        filename = `${domain}_cookies_netscape.txt`;
+        contentType = 'text/plain';
+      }
+
+      DOM.downloadFile(content, filename, contentType);
+    } catch (e) {
+      console.error('Export failed:', e);
+      alert('Export failed: ' + e.message);
+    }
   },
 
   handleBackup() {
@@ -324,5 +381,9 @@ export const ManageTab = {
 
   handleClean() {
     Modal.openCleanTab();
+  },
+
+  handleDeleteExpired() {
+    Modal.openDeleteExpired();
   }
 };

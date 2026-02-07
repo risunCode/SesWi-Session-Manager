@@ -26,50 +26,109 @@ function getExpirationStatus(daysLeft) {
 }
 
 function renderCookieExpiration(session) {
-  const validCookies = (session.cookies || [])
+  const cookies = session.cookies || [];
+  const totalCookies = cookies.length;
+
+  // No cookies at all
+  if (totalCookies === 0) {
+    return `
+      <div class="exp-info-card neutral" id="authStatusCard">
+        <div class="exp-info-main">
+          <i class="fa-solid fa-cookie-bite exp-info-icon"></i>
+          <span class="exp-info-text">Expiration info <span class="exp-info-status">(No cookies)</span></span>
+        </div>
+        <span class="exp-info-meta">0 cookies</span>
+        <i class="fa-solid fa-chevron-down exp-toggle"></i>
+      </div>
+    `;
+  }
+
+  // Filter cookies with expiration (exclude session cookies)
+  const validCookies = cookies
     .filter(c => !c.session && c.expirationDate)
-    .filter(c => {
-      const expDate = new Date(c.expirationDate * 1000);
-      const now = new Date();
-      const fiveYears = new Date(now.getTime() + 5 * 365 * 24 * 60 * 60 * 1000);
-      return expDate > now && expDate < fiveYears;
-    })
-    .sort((a, b) => a.expirationDate - b.expirationDate);
+    .sort((a, b) => b.expirationDate - a.expirationDate); // Sort by longest first
 
-  if (validCookies.length === 0) return '';
+  const sessionCookies = cookies.filter(c => c.session || !c.expirationDate);
 
-  const critical = validCookies[0];
-  const daysLeft = getDaysLeft(critical.expirationDate);
-  const status = getExpirationStatus(daysLeft);
-  const dayUnit = Math.abs(daysLeft) === 1 ? 'day' : 'days';
-  
-  let statusText = daysLeft <= 0 
-    ? `Expired (${Math.abs(daysLeft)} ${dayUnit} ago)`
-    : `${status.status} (${daysLeft} ${dayUnit} left)`;
+  // Determine status based on LONGEST expiration
+  let statusClass = 'valid';
+  let statusIcon = 'fa-circle-check';
+  let statusText = '';
+  let daysLeft = 0;
 
+  if (validCookies.length > 0) {
+    // Get the cookie with longest expiration (first after sorting desc)
+    const longest = validCookies[0];
+    daysLeft = getDaysLeft(longest.expirationDate);
+
+    if (daysLeft <= 0) {
+      statusClass = 'expired';
+      statusIcon = 'fa-circle-xmark';
+      statusText = `Expired: ${Math.abs(daysLeft)}d ago`;
+    } else if (daysLeft <= 3) {
+      statusClass = 'critical';
+      statusIcon = 'fa-triangle-exclamation';
+      statusText = `Critical: ${daysLeft}d`;
+    } else if (daysLeft <= 7) {
+      statusClass = 'warning';
+      statusIcon = 'fa-clock';
+      statusText = `Warning: ${daysLeft}d`;
+    } else {
+      statusClass = 'valid';
+      statusIcon = 'fa-circle-check';
+      statusText = `Valid: ${daysLeft}d`;
+    }
+  } else if (sessionCookies.length > 0) {
+    statusClass = 'session';
+    statusIcon = 'fa-clock';
+    statusText = 'Session only';
+  }
+
+  // Build cookie pills for details (max 3)
   const pills = validCookies.slice(0, 3).map(c => {
     const d = getDaysLeft(c.expirationDate);
-    const du = Math.abs(d) === 1 ? 'day' : 'days';
     const dateStr = new Date(c.expirationDate * 1000).toLocaleDateString();
-    const expText = d <= 0 ? `${dateStr} (${Math.abs(d)} ${du} ago)` : `${dateStr} (${d} ${du} left)`;
-    const name = c.name.length > 20 ? c.name.slice(0, 17) + '...' : c.name;
-    return `<div class="cookie-expiration-pill"><span class="pill-label">${DOM.escapeHtml(name)}</span><span class="pill-date">${expText}</span></div>`;
+    const expText = d <= 0 ? `Expired` : `${dateStr} (${d}d)`;
+    const name = c.name.length > 16 ? c.name.slice(0, 13) + '...' : c.name;
+    const pillClass = d <= 0 ? 'expired' : d <= 7 ? 'warning' : 'valid';
+    return `<div class="cookie-pill ${pillClass}"><span class="pill-name">${DOM.escapeHtml(name)}</span><span class="pill-exp">${expText}</span></div>`;
   }).join('');
 
   return `
-    <div class="cookie-expiration-container">
-      <div class="cookie-expiration-preview ${status.class}" id="saExpPreview">
-        <span><i class="fa-solid fa-clock mr-1"></i>Cookie Status:</span>
-        <div class="flex items-center gap-2">
-          <span class="preview-status-box">${statusText}</span>
-          <i class="fa-solid fa-chevron-down text-xs text-slate-500 toggle-icon"></i>
+    <div class="exp-info-wrapper">
+      <div class="exp-info-card ${statusClass}" id="authStatusCard">
+        <div class="exp-info-main">
+          <i class="fa-solid ${statusIcon} exp-info-icon"></i>
+          <span class="exp-info-text">Expiration info <span class="exp-info-status">(${statusText})</span></span>
         </div>
+        <span class="exp-info-meta">${validCookies.length} expiring</span>
+        <i class="fa-solid fa-chevron-down exp-toggle"></i>
       </div>
-      <div class="cookie-expiration-details" id="saExpDetails">
-        <h4 class="text-xs font-semibold text-slate-500 mb-2"><i class="fa-solid fa-flask mr-1"></i>Cookie Expiration Info (Experimental)</h4>
-        ${pills}
-        <button class="cookie-more-btn" id="saShowSavedData"><i class="fa-solid fa-database mr-1"></i>View Saved Data</button>
+      <div class="exp-details" id="authDetails">
+        <div class="exp-details-header">
+          <i class="fa-solid fa-cookie"></i>
+          <span>Cookies (${validCookies.length} expiring · ${sessionCookies.length} session)</span>
+        </div>
+        <div class="cookie-pills">${pills}</div>
       </div>
+    </div>
+  `;
+}
+
+function renderSavedDataCard(session) {
+  const cookieCount = session.cookies?.length || 0;
+  const lsCount = Object.keys(session.localStorage || {}).length;
+  const ssCount = Object.keys(session.sessionStorage || {}).length;
+
+  return `
+    <div class="saved-data-card" id="savedDataCard">
+      <span class="sd-label">Saved data</span>
+      <div class="sd-stats">
+        <span class="sd-stat"><i class="fa-solid fa-cookie text-amber-500"></i>${cookieCount}</span>
+        <span class="sd-stat"><i class="fa-solid fa-database text-emerald-500"></i>${lsCount}</span>
+        <span class="sd-stat"><i class="fa-solid fa-hard-drive text-blue-500"></i>${ssCount}</span>
+      </div>
+      <i class="fa-solid fa-chevron-right sd-arrow"></i>
     </div>
   `;
 }
@@ -151,47 +210,59 @@ export function openSessionActions(session) {
   
   const modal = document.getElementById('sessionActionsModal');
   const summary = modal.querySelector('#saSummary');
+  const sessionInfo = modal.querySelector('#saSessionInfo');
   const expContainer = modal.querySelector('#saExpContainer');
   const msg = modal.querySelector('#saMessage');
   
   const visitUrl = session.originalUrl || `https://${session.domain}`;
   
   // Update summary with tooltip on Visit button
+  // Simplified domain (e.g., "facebook" instead of "facebook.com")
+  const simpleDomain = session.domain.replace(/\.(com|net|org|io|co|app|dev|me)$/i, '');
+
   if (summary) {
     summary.innerHTML = `
       <div class="sa-compact">
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0">
           <div class="flex items-center gap-2">
             <span class="session-index">${session.index || 1}</span>
-            <span class="text-sm font-bold text-slate-900">${DOM.escapeHtml(session.name)}</span>
+            <span class="text-xs font-bold text-slate-900">${DOM.escapeHtml(session.name)}</span>
           </div>
-          <div class="text-xs text-slate-500">${Time.formatRelative(session.timestamp)}</div>
+          <div style="font-size: 10px;" class="text-slate-500">${Time.formatRelative(session.timestamp)}</div>
         </div>
-        <button id="saVisitBtn" class="px-2.5 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-300 rounded-md hover:bg-blue-500 hover:text-white" title="${DOM.escapeHtml(visitUrl)}">
-          <i class="fa-solid fa-external-link mr-1"></i>Visit
-        </button>
+        <div class="flex items-center gap-2">
+          <span class="sa-domain-badge">${DOM.escapeHtml(simpleDomain)}</span>
+          <button id="saVisitBtn" class="sa-visit-btn" title="${DOM.escapeHtml(visitUrl)}">
+            <i class="fa-solid fa-external-link"></i>Visit
+          </button>
+        </div>
       </div>
     `;
   }
 
-  // Cookie expiration
+  // Hide session info section (domain moved to header)
+  if (sessionInfo) {
+    sessionInfo.style.display = 'none';
+  }
+
+  // Cookie expiration + Saved data card
   if (expContainer) {
-    expContainer.innerHTML = renderCookieExpiration(session);
-    
-    // Wire toggle
-    const preview = modal.querySelector('#saExpPreview');
-    const details = modal.querySelector('#saExpDetails');
-    if (preview && details) {
-      preview.onclick = () => {
-        preview.classList.toggle('expanded');
-        details.classList.toggle('show');
+    expContainer.innerHTML = renderCookieExpiration(session) + renderSavedDataCard(session);
+
+    // Wire toggle for expiration info card
+    const expCard = modal.querySelector('#authStatusCard');
+    const expDetails = modal.querySelector('#authDetails');
+    if (expCard && expDetails) {
+      expCard.onclick = () => {
+        expCard.classList.toggle('expanded');
+        expDetails.classList.toggle('show');
       };
     }
-    
-    // Wire saved data button
-    const detailsBtn = modal.querySelector('#saShowSavedData');
-    if (detailsBtn) {
-      detailsBtn.onclick = () => openSavedDataModal(session);
+
+    // Wire saved data card click
+    const savedDataCard = modal.querySelector('#savedDataCard');
+    if (savedDataCard) {
+      savedDataCard.onclick = () => openSavedDataModal(session);
     }
   }
   
@@ -200,7 +271,6 @@ export function openSessionActions(session) {
   wireActions();
   modal.style.display = 'block';
 }
-
 
 function openSavedDataModal(session) {
   ensureSavedDataModal();
@@ -249,53 +319,93 @@ function updateSavedDataTabs(modal, activeTab) {
   if (activeTab === 'sessionStorage') modal.querySelector('#sdTabSessionStorage').classList.add('active');
 }
 
+// Helper for animated closing
+function closeModalAnimated(modal) {
+  if (!modal) return;
+  const content = modal.querySelector('.modal-content');
+  if (content) {
+    content.classList.add('closing');
+    content.addEventListener('animationend', () => {
+      modal.style.display = 'none';
+      content.classList.remove('closing');
+    }, { once: true });
+  } else {
+    modal.style.display = 'none';
+  }
+}
+
 function ensureModal() {
   if (document.getElementById('sessionActionsModal')) return;
 
   const html = `
     <div id="sessionActionsModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content sa-modal-improved">
         <div class="modal-header">
+          <div class="traffic-lights">
+            <span class="tl-btn tl-close" id="saTlClose"></span>
+            <span class="tl-btn tl-minimize"></span>
+            <span class="tl-btn tl-maximize"></span>
+          </div>
           <h3><i class="fa-solid fa-gear mr-2 text-slate-500"></i>Session Actions</h3>
-          <span class="modal-close" id="saClose">&times;</span>
         </div>
         <div class="modal-body">
           <div id="saSummary"></div>
+          <div id="saSessionInfo" class="sa-session-info"></div>
           <div id="saExpContainer"></div>
           <div class="modal-message" id="saMessage"></div>
-          <div class="modal-actions-grid">
-            <button class="modal-action-btn restore" id="saRestore"><i class="fa-solid fa-rotate-left mr-1"></i>Restore</button>
-            <button class="modal-action-btn edit" id="saRename"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
-            <button class="modal-action-btn replace" id="saReplace"><i class="fa-solid fa-arrows-rotate mr-1"></i>Replace</button>
-            <button class="modal-action-btn delete" id="saDelete"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
-            <button class="modal-action-btn export" id="saExportJSON"><i class="fa-solid fa-file-code mr-1"></i>JSON</button>
-            <button class="modal-action-btn backup-encrypted" id="saExportOWI"><i class="fa-solid fa-lock mr-1"></i>OWI</button>
+
+          <div class="sa-section">
+            <div class="sa-section-label">Primary Actions</div>
+            <div class="sa-actions-row">
+              <button class="sa-btn sa-btn-primary" id="saRestore"><i class="fa-solid fa-rotate-left"></i><span>Restore</span></button>
+              <button class="sa-btn sa-btn-secondary" id="saRename"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
+            </div>
+          </div>
+
+          <div class="sa-section">
+            <div class="sa-section-label">Other Actions</div>
+            <div class="sa-actions-row">
+              <button class="sa-btn sa-btn-secondary" id="saReplace"><i class="fa-solid fa-arrows-rotate"></i><span>Replace</span></button>
+              <button class="sa-btn sa-btn-secondary" id="saExportJSON"><i class="fa-solid fa-file-code"></i><span>JSON</span></button>
+              <button class="sa-btn sa-btn-secondary" id="saExportOWI"><i class="fa-solid fa-lock"></i><span>OWI</span></button>
+            </div>
+          </div>
+
+          <div class="sa-section sa-danger-zone">
+            <div class="sa-section-label">Danger Zone</div>
+            <button class="sa-btn sa-btn-danger" id="saDelete"><i class="fa-solid fa-trash"></i><span>Delete Session</span></button>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" id="saCancel">Cancel</button>
-          <button class="btn-primary" id="saCopyJSON"><i class="fa-solid fa-copy mr-1"></i>Copy Raw JSON</button>
+          <button class="btn btn-secondary" id="saCancel">Cancel</button>
+          <button class="btn btn-primary" id="saCopyJSON"><i class="fa-solid fa-copy mr-1"></i>Copy Raw JSON</button>
         </div>
       </div>
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', html);
-  
+
   const modal = document.getElementById('sessionActionsModal');
-  modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-  modal.querySelector('#saClose').onclick = () => modal.style.display = 'none';
-  modal.querySelector('#saCancel').onclick = () => modal.style.display = 'none';
+  const close = () => closeModalAnimated(modal);
+
+  modal.onclick = e => { if (e.target === modal) close(); };
+  modal.querySelector('#saTlClose').onclick = close;
+  modal.querySelector('#saCancel').onclick = close;
 }
 
 function ensureSavedDataModal() {
   if (document.getElementById('savedDataModal')) return;
-  
+
   const html = `
     <div id="savedDataModal" class="modal">
       <div class="modal-content saved-data-modal">
         <div class="modal-header">
+          <div class="traffic-lights">
+            <span class="tl-btn tl-close" id="sdTlClose"></span>
+            <span class="tl-btn tl-minimize"></span>
+            <span class="tl-btn tl-maximize"></span>
+          </div>
           <h3><i class="fa-solid fa-database mr-2 text-emerald-500"></i>Saved Data</h3>
-          <span class="modal-close" id="sdClose">&times;</span>
         </div>
         <div class="sd-tabs">
           <button class="sd-tab-btn active" id="sdTabCookies"><i class="fa-solid fa-cookie mr-1"></i>Cookies <span class="tab-count">0</span></button>
@@ -309,10 +419,12 @@ function ensureSavedDataModal() {
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', html);
-  
+
   const modal = document.getElementById('savedDataModal');
-  modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-  modal.querySelector('#sdClose').onclick = () => modal.style.display = 'none';
+  const close = () => closeModalAnimated(modal);
+
+  modal.onclick = e => { if (e.target === modal) close(); };
+  modal.querySelector('#sdTlClose').onclick = close;
 }
 
 
@@ -320,7 +432,7 @@ async function wireActions() {
   const modal = document.getElementById('sessionActionsModal');
   const session = _current.session;
   const msg = modal.querySelector('#saMessage');
-  
+
   const setMsg = (text, type) => {
     msg.textContent = text;
     msg.className = `modal-message ${type || ''}`;
@@ -352,47 +464,34 @@ async function wireActions() {
     setMsg(res.success ? 'Restored!' : res.error, res.success ? 'success' : 'error');
     if (res.success && tabInfo.data.tabId) {
       await chrome.tabs.reload(tabInfo.data.tabId);
-      setTimeout(() => modal.style.display = 'none', 500);
+      setTimeout(() => closeModalAnimated(modal), 500);
     }
   };
 
-  // Rename
+  // Rename - use Edit modal
   modal.querySelector('#saRename').onclick = async () => {
-    const newName = prompt('New name:', session.name);
-    if (!newName || newName.trim() === session.name) return;
-    const updated = { ...session, name: newName.trim() };
-    const res = await SessionStorage.update(updated);
-    setMsg(res.success ? 'Updated!' : res.error, res.success ? 'success' : 'error');
-    if (res.success) {
-      document.dispatchEvent(new CustomEvent('seswi:session-updated'));
-      setTimeout(() => modal.style.display = 'none', 800);
-    }
+    const { Modal } = await import('./modals.js');
+    Modal.openEditSession(session, (updated) => {
+      setMsg('Updated!', 'success');
+      setTimeout(() => closeModalAnimated(modal), 500);
+    });
   };
 
-  // Replace
+  // Replace - use Replace Confirm modal
   modal.querySelector('#saReplace').onclick = async () => {
     if (!allowed) { setMsg(`Open ${session.domain} first`, 'error'); return; }
-    if (!confirm(`Replace "${session.name}" with current data?`)) return;
-    setMsg('Replacing...', '');
-    await SessionStorage.delete(session.timestamp);
-    const { CurrentTab } = await import('./tabs.js');
-    const res = await CurrentTab.handleAddSession(session.name);
-    setMsg(res.success ? 'Replaced!' : res.error, res.success ? 'success' : 'error');
-    if (res.success) {
-      document.dispatchEvent(new CustomEvent('seswi:session-replaced'));
-      setTimeout(() => modal.style.display = 'none', 500);
-    }
+    const { Modal } = await import('./modals.js');
+    Modal.openReplaceConfirm(session, () => {
+      setTimeout(() => closeModalAnimated(modal), 300);
+    });
   };
 
-  // Delete
+  // Delete - use Delete Confirm modal
   modal.querySelector('#saDelete').onclick = async () => {
-    if (!confirm('Delete this session?')) return;
-    const res = await SessionStorage.delete(session.timestamp);
-    setMsg(res.success ? 'Deleted!' : res.error, res.success ? 'success' : 'error');
-    if (res.success) {
-      document.dispatchEvent(new CustomEvent('seswi:session-deleted'));
-      setTimeout(() => modal.style.display = 'none', 300);
-    }
+    const { Modal } = await import('./modals.js');
+    Modal.openDeleteConfirm(session, () => {
+      setTimeout(() => closeModalAnimated(modal), 300);
+    });
   };
 
   // Export JSON
@@ -408,16 +507,16 @@ async function wireActions() {
     setMsg('JSON exported!', 'success');
   };
 
-  // Export OWI
+  // Export OWI - use OWI Export modal
   modal.querySelector('#saExportOWI').onclick = async () => {
-    const password = prompt('Password for encryption:');
-    if (!password) return;
-    const res = await Crypto.exportOWI([session], password, `${session.domain}-${session.name}`);
-    setMsg(res.success ? 'OWI exported!' : res.error, res.success ? 'success' : 'error');
+    const { Modal } = await import('./modals.js');
+    Modal.openOWIExport(session, () => {
+      setMsg('OWI exported!', 'success');
+    });
   };
 }
 
 export function closeSessionActions() {
   const modal = document.getElementById('sessionActionsModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) closeModalAnimated(modal);
 }
