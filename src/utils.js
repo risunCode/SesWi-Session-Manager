@@ -69,6 +69,16 @@ export const DOM = {
     const div = document.createElement('div');
     div.textContent = text == null ? '' : String(text);
     return div.innerHTML;
+  },
+
+  downloadFile(content, filename, contentType) {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 };
 
@@ -92,6 +102,49 @@ export const Time = {
     const now = new Date();
     const exp = new Date(expirationTimestamp * 1000);
     return Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+  },
+
+  /**
+   * Get session expiration status based on longest cookie expiration
+   * Simple logic: find the cookie with the longest expiration date
+   * @param {Array} cookies - Array of cookie objects
+   * @returns {Object|null} { status: string, label: string, days: number, icon: string }
+   */
+  getSessionExpiration(cookies) {
+    if (!cookies?.length) return null;
+
+    const now = Date.now() / 1000;
+
+    // Filter cookies with expiration dates (exclude session cookies)
+    const expiringCookies = cookies.filter(c => c.expirationDate && !c.session);
+
+    // All cookies are session-based (no expiration)
+    if (!expiringCookies.length) {
+      const hasSessionCookies = cookies.some(c => c.session || !c.expirationDate);
+      if (hasSessionCookies) {
+        return { status: 'session', label: 'Session', days: null, icon: 'fa-clock' };
+      }
+      return null;
+    }
+
+    // Find the LONGEST expiration (latest date)
+    const latest = Math.max(...expiringCookies.map(c => c.expirationDate));
+    const daysLeft = Math.ceil((latest - now) / 86400);
+
+    if (daysLeft <= 0) {
+      return { status: 'expired', label: 'Expired', days: daysLeft, icon: 'fa-circle-exclamation' };
+    }
+    if (daysLeft <= 3) {
+      return { status: 'critical', label: `${daysLeft}d`, days: daysLeft, icon: 'fa-triangle-exclamation' };
+    }
+    if (daysLeft <= 7) {
+      return { status: 'warning', label: `${daysLeft}d`, days: daysLeft, icon: 'fa-clock' };
+    }
+    if (daysLeft <= 30) {
+      return { status: 'notice', label: `${daysLeft}d`, days: daysLeft, icon: 'fa-clock' };
+    }
+    // Valid for more than 30 days
+    return { status: 'valid', label: `${daysLeft}d`, days: daysLeft, icon: 'fa-circle-check' };
   }
 };
 

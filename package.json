@@ -1,6 +1,6 @@
 {
   "name": "seswi-session-manager",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Advanced Session Manager Chrome Extension",
   "type": "module",
   "scripts": {
