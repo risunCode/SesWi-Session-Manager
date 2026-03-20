@@ -14,11 +14,9 @@ export const Renderer = {
   sessionCard(session, options = {}) {
     const { showIndex = true, index = 1, highlight = false } = options;
 
-    const fullUrl = session.originalUrl || `https://${session.domain}`;
-    const displayUrl = fullUrl.replace(/^https?:\/\//, '');
-    const shortUrl = displayUrl.length > 25 ? displayUrl.slice(0, 22) + '...' : displayUrl;
+    const cookieCount = session.cookies?.length || 0;
 
-    // Expiration badge - show icon and label based on status
+    // Expiration badge
     const exp = Time.getSessionExpiration(session.cookies);
     let expBadge = '';
     if (exp) {
@@ -36,28 +34,10 @@ export const Renderer = {
           <span class="session-name">${DOM.escapeHtml(session.name)}</span>
           ${expBadge}
         </div>
-        <div class="session-meta"><code class="session-url" title="${DOM.escapeHtml(fullUrl)}">${DOM.escapeHtml(shortUrl)}</code><span class="session-time">${Time.formatRelative(session.timestamp)}</span></div>
-      </div>
-    `;
-  },
-
-  /**
-   * Render pagination controls
-   * @param {number} currentPage - Current page number
-   * @param {number} totalPages - Total number of pages
-   * @param {string} dataAttr - Additional data attribute for buttons (e.g., 'data-group-key="key"')
-   */
-  pagination(currentPage, totalPages, dataAttr = '') {
-    if (totalPages <= 1) return '';
-    return `
-      <div class="pagination">
-        <button class="btn btn-ghost btn-sm page-btn" ${dataAttr} data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''}>
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <span class="page-info">${currentPage} / ${totalPages}</span>
-        <button class="btn btn-ghost btn-sm page-btn" ${dataAttr} data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
+        <div class="session-meta">
+          <span class="session-time">${Time.formatRelative(session.timestamp)}</span>
+          <span class="session-cookie-count"><i class="fa-solid fa-cookie-bite"></i>${cookieCount}</span>
+        </div>
       </div>
     `;
   }

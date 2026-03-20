@@ -5,27 +5,12 @@
 
 import { SessionStorage } from '../core/storage.js';
 import { Crypto } from '../core/crypto.js';
-import { DOM, Time } from '../utils.js';
+import { DOM, Time, Normalize } from '../utils.js';
 import { openSessionActions, closeSessionActions } from './sessionModal.js';
 
 export const Modal = {
   openSessionActions,
   closeSessionActions,
-
-  // Helper for closing with animation
-  _close(modal) {
-    if (!modal) return;
-    const content = modal.querySelector('.modal-content');
-    if (content) {
-      content.classList.add('closing');
-      content.addEventListener('animationend', () => {
-        modal.style.display = 'none';
-        content.classList.remove('closing');
-      }, { once: true });
-    } else {
-      modal.style.display = 'none';
-    }
-  },
 
   // ========== Backup Format Modal ==========
   openBackupFormat() {
@@ -89,7 +74,7 @@ export const Modal = {
     const msg = modal.querySelector('#bfMessage');
     let format = 'json';
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#bfTlClose').onclick = close;
     modal.querySelector('#bfCancel').onclick = close;
@@ -112,31 +97,19 @@ export const Modal = {
       const { data: sessions } = await SessionStorage.getAll();
       
       if (format === 'json') {
-        const totalCookies = sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
-        const totalLocalStorage = sessions.reduce((sum, s) => sum + Object.keys(s.localStorage || {}).length, 0);
-        const payload = { 
-          version: '1.0', 
-          exportDate: new Date().toISOString(), 
-          info: {
-            sessions: sessions.length,
-            cookies: totalCookies,
-            localStorage: totalLocalStorage
-          },
-          sessions 
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'sessions-backup.json';
         a.click();
         URL.revokeObjectURL(url);
-        this._close(modal);
+        DOM.closeModal(modal);
       } else {
         const password = pwdInput.value.trim();
         if (!password) { msg.textContent = 'Password required'; msg.classList.add('error'); return; }
         const res = await Crypto.exportOWI(sessions, password);
-        if (res.success) this._close(modal);
+        if (res.success) DOM.closeModal(modal);
         else { msg.textContent = res.error; msg.classList.add('error'); }
       }
     };
@@ -199,7 +172,7 @@ export const Modal = {
     let parsedSessions = [];
     let fileType = null;
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#rmTlClose').onclick = close;
     modal.querySelector('#rmCancel').onclick = close;
@@ -228,7 +201,7 @@ export const Modal = {
         try {
           const text = await file.text();
           const data = JSON.parse(text);
-          parsedSessions = Array.isArray(data) ? data : (data.sessions || []);
+          parsedSessions = Normalize.importSessions(data);
           msg.textContent = `Found ${parsedSessions.length} sessions`;
           msg.className = 'modal-message success';
         } catch (e) {
@@ -274,7 +247,7 @@ export const Modal = {
       msg.textContent = `Restored ${toImport.length} sessions`;
       msg.className = 'modal-message success';
       document.dispatchEvent(new CustomEvent('seswi:sessions-restored'));
-      setTimeout(() => this._close(modal), 1000);
+      setTimeout(() => DOM.closeModal(modal), 1000);
     };
   },
 
@@ -533,7 +506,7 @@ export const Modal = {
     const modal = document.getElementById('cleanTabModal');
     const msg = modal.querySelector('#ctMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#ctTlClose').onclick = close;
     modal.querySelector('#ctCancel').onclick = close;
@@ -576,7 +549,7 @@ export const Modal = {
         await TabInfo.cleanCurrentTab(options);
         msg.textContent = 'Cleaned successfully!';
         msg.className = 'modal-message success';
-        setTimeout(() => this._close(modal), 800);
+        setTimeout(() => DOM.closeModal(modal), 800);
       } catch (e) {
         msg.textContent = 'Failed to clean';
         msg.className = 'modal-message error';
@@ -592,7 +565,7 @@ export const Modal = {
     const list = modal.querySelector('#gmList');
     const msg = modal.querySelector('#gmMessage');
 
-    const { data: groups } = await SessionStorage.getGrouped();
+    const { data: groups } = await SessionStorage.getGroupedByDomain();
 
     if (!groups || groups.length === 0) {
       list.innerHTML = '<div class="empty-data-msg">No saved sessions</div>';
@@ -664,7 +637,7 @@ export const Modal = {
     const modal = document.getElementById('groupManageModal');
     const msg = modal.querySelector('#gmMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#gmTlClose').onclick = close;
     modal.querySelector('#gmCancel').onclick = close;
@@ -686,7 +659,7 @@ export const Modal = {
     };
 
     const getSelectedSessions = async (domains) => {
-      const { data: groups } = await SessionStorage.getGrouped();
+      const { data: groups } = await SessionStorage.getGroupedByDomain();
       return groups.filter(g => domains.includes(g.domain)).flatMap(g => g.sessions);
     };
 
@@ -695,8 +668,7 @@ export const Modal = {
       if (!domains.length) { msg.textContent = 'Select at least one group'; msg.className = 'modal-message error'; return; }
 
       const sessions = await getSelectedSessions(domains);
-      const payload = { version: '1.0', exportDate: new Date().toISOString(), sessions };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -736,7 +708,7 @@ export const Modal = {
 
           if (res.success) {
             document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
-            setTimeout(() => this._close(modal), 800);
+            setTimeout(() => DOM.closeModal(modal), 800);
           }
         }
       });
@@ -746,7 +718,7 @@ export const Modal = {
   // ========== Utility ==========
   close(id) {
     const modal = document.getElementById(id);
-    if (modal) this._close(modal);
+    if (modal) DOM.closeModal(modal);
   },
 
   // ========== Delete Expired Modal ==========
@@ -845,7 +817,7 @@ export const Modal = {
     const modal = document.getElementById('deleteExpiredModal');
     const msg = modal.querySelector('#deMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#deTlClose').onclick = close;
     modal.querySelector('#deCancel').onclick = close;
@@ -874,7 +846,7 @@ export const Modal = {
           msg.textContent = `Deleted ${deleted} sessions`;
           msg.className = 'modal-message success';
           document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
-          setTimeout(() => this._close(modal), 800);
+          setTimeout(() => DOM.closeModal(modal), 800);
         }
       });
     };
@@ -939,7 +911,7 @@ export const Modal = {
     const nameInput = modal.querySelector('#esName');
     const msg = modal.querySelector('#esMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#esTlClose').onclick = close;
     modal.querySelector('#esCancel').onclick = close;
@@ -965,7 +937,7 @@ export const Modal = {
         msg.className = 'modal-message success';
         if (modal._onSave) modal._onSave(updated);
         document.dispatchEvent(new CustomEvent('seswi:session-updated'));
-        setTimeout(() => this._close(modal), 500);
+        setTimeout(() => DOM.closeModal(modal), 500);
       } else {
         msg.textContent = res.error || 'Failed to save';
         msg.className = 'modal-message error';
@@ -1040,7 +1012,7 @@ export const Modal = {
     const modal = document.getElementById('deleteConfirmModal');
     const msg = modal.querySelector('#dcMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#dcTlClose').onclick = close;
     modal.querySelector('#dcCancel').onclick = close;
@@ -1126,7 +1098,7 @@ export const Modal = {
     const modal = document.getElementById('replaceConfirmModal');
     const msg = modal.querySelector('#rcMessage');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#rcTlClose').onclick = close;
     modal.querySelector('#rcCancel').onclick = close;
@@ -1223,7 +1195,7 @@ export const Modal = {
     const msg = modal.querySelector('#oeMessage');
     const pwdInput = modal.querySelector('#oePassword');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#oeTlClose').onclick = close;
     modal.querySelector('#oeCancel').onclick = close;
@@ -1341,7 +1313,7 @@ export const Modal = {
     const msg = modal.querySelector('#boeMessage');
     const pwdInput = modal.querySelector('#boePassword');
 
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#boeTlClose').onclick = close;
     modal.querySelector('#boeCancel').onclick = close;
@@ -1401,7 +1373,7 @@ export const Modal = {
 
     const html = `
       <div id="quickActionModal" class="modal">
-        <div class="modal-content" style="width: 320px;">
+        <div class="modal-content" style="width: 340px;">
           <div class="modal-header">
             <div class="traffic-lights">
               <span class="tl-btn tl-close" id="qaTlClose"></span>
@@ -1411,13 +1383,28 @@ export const Modal = {
             <h3><i class="fa-solid fa-bolt mr-2 text-amber-500"></i>Quick Action</h3>
           </div>
           <div class="modal-body">
-            <p class="text-sm text-slate-600 mb-4 text-center">Export cookies from the current tab without saving a session.</p>
-            <div class="flex flex-col gap-2">
-              <button class="btn btn-secondary w-full justify-start" id="qaJSON">
-                <i class="fa-solid fa-file-code mr-2 text-amber-500"></i>Export JSON (raw)
+            <div class="qa-desc-row">
+              <i class="fa-solid fa-circle-info text-slate-400"></i>
+              <span>Export cookies from the current tab without saving a session.</span>
+            </div>
+            <div class="qa-export-grid">
+              <button class="qa-export-btn" id="qaJSON">
+                <span class="qa-export-icon" style="background:#fef3c7;color:#d97706;">
+                  <i class="fa-solid fa-file-code"></i>
+                </span>
+                <div class="qa-export-text">
+                  <div class="qa-export-title">Export JSON</div>
+                  <div class="qa-export-desc">Raw cookie array</div>
+                </div>
               </button>
-              <button class="btn btn-secondary w-full justify-start" id="qaNetscape">
-                <i class="fa-solid fa-file-lines mr-2 text-blue-500"></i>Export to Netscape
+              <button class="qa-export-btn" id="qaNetscape">
+                <span class="qa-export-icon" style="background:#dbeafe;color:#2563eb;">
+                  <i class="fa-solid fa-file-lines"></i>
+                </span>
+                <div class="qa-export-text">
+                  <div class="qa-export-title">Export Netscape</div>
+                  <div class="qa-export-desc">Browser-compatible format</div>
+                </div>
               </button>
             </div>
           </div>
@@ -1433,7 +1420,7 @@ export const Modal = {
 
   _wireQuickActionModal() {
     const modal = document.getElementById('quickActionModal');
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
 
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#qaTlClose').onclick = close;
@@ -1505,7 +1492,7 @@ export const Modal = {
 
   _wireSimpleConfirmModal() {
     const modal = document.getElementById('simpleConfirmModal');
-    const close = () => this._close(modal);
+    const close = () => DOM.closeModal(modal);
 
     modal.onclick = e => { if (e.target === modal) close(); };
     modal.querySelector('#scmTlClose').onclick = close;

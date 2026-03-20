@@ -47,6 +47,7 @@
           <input type="text" id="currentSearchInput" placeholder="Search sessions..." class="search-input">
         </div>
         <div id="currentSessionsContainer" class="sessions-container"></div>
+        <div id="currentPagination" class="current-pagination"></div>
       </div>
 
       <div class="tab-content" id="group-sessions">
@@ -74,18 +75,6 @@
 
       <div class="tab-content" id="manage">
         <div class="manage-cards">
-          <!-- Quick Action Card (Top) -->
-          <button class="manage-card" id="quickAction">
-            <div class="flex items-center">
-              <span class="card-icon text-amber-500 bg-amber-50"><i class="fa-solid fa-bolt"></i></span>
-              <div class="card-text">
-                <div class="card-title">Quick Action for current tab</div>
-                <div class="card-desc">Export cookies without saving session</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-
           <button class="manage-card" id="backupAll">
             <div class="flex items-center">
               <span class="card-icon"><i class="fa-solid fa-folder-open"></i></span>
@@ -119,17 +108,6 @@
             <i class="fa-solid fa-chevron-right text-slate-400"></i>
           </button>
 
-          <button class="manage-card" id="cleanCurrentTabData">
-            <div class="flex items-center">
-              <span class="card-icon"><i class="fa-solid fa-broom"></i></span>
-              <div class="card-text">
-                <div class="card-title">Clean Current Tab</div>
-                <div class="card-desc">Select data to clear</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-
           <button class="manage-card" id="deleteExpiredSessions">
             <div class="flex items-center">
               <span class="card-icon"><i class="fa-solid fa-trash-can"></i></span>
@@ -141,7 +119,29 @@
             <i class="fa-solid fa-chevron-right text-slate-400"></i>
           </button>
 
-          <!-- Repo Info (Moved) -->
+          <button class="manage-card" id="cleanCurrentTabData">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-broom"></i></span>
+              <div class="card-text">
+                <div class="card-title">Clean Current Tab</div>
+                <div class="card-desc">Select data to clear</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <button class="manage-card" id="quickAction">
+            <div class="flex items-center">
+              <span class="card-icon"><i class="fa-solid fa-bolt"></i></span>
+              <div class="card-text">
+                <div class="card-title">Quick Action for current tab</div>
+                <div class="card-desc">Export cookies without saving session</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </button>
+
+          <!-- Repo Info -->
           <div class="repo-info-card mt-2">
             <div class="repo-row">
               <i class="fa-brands fa-github text-lg"></i>
@@ -166,7 +166,7 @@
     <!-- Footer -->
     <footer class="app-footer">
       <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="footer-link">
-        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi <span id="appVersion">v3.0</span>
+        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi <span id="appVersion">v3.1</span>
       </a>
     </footer>
   </div>

@@ -3,7 +3,7 @@
  * Handles: OWI encryption/decryption
  */
 
-import { Response, Logger } from '../utils.js';
+import { Response, Logger, Normalize } from '../utils.js';
 
 // SJCL loaded globally from lib/sjcl.min.js
 const getSJCL = () => window.sjcl;
@@ -64,16 +64,9 @@ export const Crypto = {
       }
       
       const data = this.decrypt(parsed.encryptedData, password);
-      
-      // Normalize to { sessions: [...] }
-      if (parsed.type === 'single') {
-        return Response.success({ sessions: [data] });
-      }
-      if (parsed.type === 'multi' && Array.isArray(data.sessions)) {
-        return Response.success({ sessions: data.sessions });
-      }
-      
-      return Response.error('Unknown OWI format');
+      const sessions = Normalize.importSessions(data);
+      if (!sessions.length) return Response.error('No sessions found in OWI file');
+      return Response.success({ sessions });
     } catch (e) {
       Logger.error('importOWI failed:', e);
       return Response.error(e, 'Crypto.importOWI');

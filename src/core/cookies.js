@@ -13,14 +13,31 @@ function chunk(arr, size) {
   return out;
 }
 
+function getCookieUrl(cookie) {
+  const d = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
+  return `http${cookie.secure ? 's' : ''}://${d}${cookie.path}`;
+}
+
+/**
+ * Clean a saved cookie object for Chrome's cookies.set() API.
+ * Removes properties that Chrome doesn't accept and handles backward compat.
+ */
+function cleanForRestore(cookie) {
+  const clean = { ...cookie };
+  if (cookie.hostOnly) delete clean.domain;
+  if (cookie.session) delete clean.expirationDate;
+  delete clean.hostOnly;
+  delete clean.session;
+  return clean;
+}
+
 export const Cookies = {
   async getForDomain(domain) {
     try {
       const cookies = await chrome.cookies.getAll({});
       const filtered = cookies.filter(c => {
         const d = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
-        // Fix: exact match OR subdomain match (must have dot before domain)
-        return d === domain || d.endsWith('.' + domain);
+        return Domain.isMatch(domain, d);
       });
       return Response.success(filtered);
     } catch (e) {
@@ -43,13 +60,12 @@ export const Cookies = {
     try {
       const { data: cookies } = await this.getForDomain(domain);
       let count = 0;
-      
+
       for (const part of chunk(cookies, CHUNK_SIZE)) {
         await Promise.all(part.map(async (cookie) => {
           try {
-            const d = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
             await chrome.cookies.remove({
-              url: `http${cookie.secure ? 's' : ''}://${d}${cookie.path}`,
+              url: getCookieUrl(cookie),
               name: cookie.name,
               storeId: cookie.storeId
             });
@@ -57,7 +73,7 @@ export const Cookies = {
           } catch {}
         }));
       }
-      
+
       return Response.success(count);
     } catch (e) {
       return Response.error(e, 'Cookies.removeForDomain');
@@ -67,30 +83,24 @@ export const Cookies = {
   async restore(session) {
     try {
       if (!session.cookies?.length) return Response.error('No cookies to restore');
-      
+
       // Clear existing first
       await this.removeForDomain(session.domain);
-      
+
       let count = 0;
       for (const part of chunk(session.cookies, CHUNK_SIZE)) {
         await Promise.all(part.map(async (cookie) => {
           try {
-            const d = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
-            const clean = { ...cookie };
-            if (cookie.hostOnly) delete clean.domain;
-            if (cookie.session) delete clean.expirationDate;
-            delete clean.hostOnly;
-            delete clean.session;
-            
+            const clean = cleanForRestore(cookie);
             await chrome.cookies.set({
-              url: `http${cookie.secure ? 's' : ''}://${d}${cookie.path}`,
+              url: getCookieUrl(cookie),
               ...clean
             });
             count++;
           } catch {}
         }));
       }
-      
+
       return Response.success({ restored: count, total: session.cookies.length });
     } catch (e) {
       return Response.error(e, 'Cookies.restore');

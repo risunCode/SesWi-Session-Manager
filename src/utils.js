@@ -79,6 +79,29 @@ export const DOM = {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  closeModal(modal) {
+    if (!modal) return;
+    const content = modal.querySelector('.modal-content');
+    if (content) {
+      content.classList.add('closing');
+      content.addEventListener('animationend', () => {
+        modal.style.display = 'none';
+        content.classList.remove('closing');
+      }, { once: true });
+    } else {
+      modal.style.display = 'none';
+    }
+  },
+
+  debounceInput(el, callback, delay = 300) {
+    if (!el) return;
+    let timer;
+    el.oninput = (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => callback(e.target.value), delay);
+    };
   }
 };
 
@@ -90,11 +113,18 @@ export const Time = {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return new Date(timestamp).toLocaleDateString();
+    const d = new Date(timestamp);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(2);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const exact = `${dd}/${mm}/${yy} ${hh}:${min}`;
+
+    if (minutes < 1) return `${exact} · just now`;
+    if (minutes < 60) return `${exact} · ${minutes}m ago`;
+    if (hours < 24) return `${exact} · ${hours}h ago`;
+    return `${exact} · ${days}d ago`;
   },
 
   getDaysLeft(expirationTimestamp) {
@@ -180,5 +210,19 @@ export const Validate = {
     if (missing.length) return { valid: false, error: `Missing: ${missing.join(', ')}` };
     if (!Array.isArray(session.cookies)) return { valid: false, error: 'Cookies must be array' };
     return { valid: true };
+  }
+};
+
+// ========== Normalize ==========
+export const Normalize = {
+  /**
+   * Normalize imported session data to a flat array.
+   * Handles: raw array, {sessions:[...]}, single object, legacy wrapper formats.
+   */
+  importSessions(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.sessions)) return data.sessions;
+    if (data && typeof data === 'object' && data.name && data.domain) return [data];
+    return [];
   }
 };

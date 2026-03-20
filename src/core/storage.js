@@ -6,7 +6,24 @@
 import { Response, Domain, Validate, Logger } from '../utils.js';
 import { Cookies } from './cookies.js';
 
-const STORAGE_KEY = 'seswi-sessions-blyat';
+const META_KEY = '_seswi_meta';
+const OLD_KEY = 'seswi-sessions-blyat';
+
+let _storageKey = null;
+
+async function getStorageKey() {
+  if (_storageKey) return _storageKey;
+  try {
+    const result = await chrome.storage.local.get(META_KEY);
+    if (result[META_KEY]?.storageKey) {
+      _storageKey = result[META_KEY].storageKey;
+      return _storageKey;
+    }
+  } catch {}
+  // Fallback to old key if meta not found (pre-migration state)
+  _storageKey = OLD_KEY;
+  return _storageKey;
+}
 
 // ========== Tab Info ==========
 let _tabCache = null;
@@ -70,7 +87,7 @@ export const TabInfo = {
             const toDelete = results.filter(item => {
               try {
                 const hostname = new URL(item.url).hostname;
-                return hostname === baseDomain || hostname.endsWith('.' + baseDomain);
+                return Domain.isMatch(baseDomain, hostname);
               } catch { return false; }
             });
             
@@ -128,8 +145,9 @@ export const TabInfo = {
 export const SessionStorage = {
   async getAll() {
     try {
-      const result = await chrome.storage.local.get(STORAGE_KEY);
-      const sessions = (result[STORAGE_KEY] || []).filter(s => Validate.session(s).valid);
+      const key = await getStorageKey();
+      const result = await chrome.storage.local.get(key);
+      const sessions = (result[key] || []).filter(s => Validate.session(s).valid);
       return Response.success(sessions);
     } catch (e) {
       return Response.error(e, 'SessionStorage.getAll');
@@ -140,15 +158,16 @@ export const SessionStorage = {
     try {
       const validation = Validate.session(session);
       if (!validation.valid) return Response.error(validation.error);
-      
+
       const { data: sessions } = await this.getAll();
-      const duplicate = sessions.some(s => 
-        s.domain === session.domain && 
+      const duplicate = sessions.some(s =>
+        s.domain === session.domain &&
         s.name.toLowerCase() === session.name.toLowerCase()
       );
       if (duplicate) return Response.error('Duplicate session name');
-      
-      await chrome.storage.local.set({ [STORAGE_KEY]: [...sessions, session] });
+
+      const key = await getStorageKey();
+      await chrome.storage.local.set({ [key]: [...sessions, session] });
       return Response.success(session);
     } catch (e) {
       return Response.error(e, 'SessionStorage.save');
@@ -159,7 +178,8 @@ export const SessionStorage = {
     try {
       const { data: sessions } = await this.getAll();
       const newSessions = sessions.map(s => s.timestamp === updated.timestamp ? updated : s);
-      await chrome.storage.local.set({ [STORAGE_KEY]: newSessions });
+      const key = await getStorageKey();
+      await chrome.storage.local.set({ [key]: newSessions });
       return Response.success(updated);
     } catch (e) {
       return Response.error(e, 'SessionStorage.update');
@@ -169,7 +189,8 @@ export const SessionStorage = {
   async delete(timestamp) {
     try {
       const { data: sessions } = await this.getAll();
-      await chrome.storage.local.set({ [STORAGE_KEY]: sessions.filter(s => s.timestamp !== timestamp) });
+      const key = await getStorageKey();
+      await chrome.storage.local.set({ [key]: sessions.filter(s => s.timestamp !== timestamp) });
       return Response.success(null);
     } catch (e) {
       return Response.error(e, 'SessionStorage.delete');
@@ -185,29 +206,6 @@ export const SessionStorage = {
       return Response.success(filtered);
     } catch (e) {
       return Response.error(e, 'SessionStorage.getByDomain');
-    }
-  },
-
-  async getGrouped() {
-    try {
-      const { data: sessions } = await this.getAll();
-      const groups = {};
-      
-      sessions.forEach(s => {
-        if (!groups[s.domain]) groups[s.domain] = [];
-        groups[s.domain].push(s);
-      });
-      
-      const sorted = Object.keys(groups)
-        .sort((a, b) => Math.max(...groups[b].map(s => s.timestamp)) - Math.max(...groups[a].map(s => s.timestamp)))
-        .map(domain => ({
-          domain,
-          sessions: groups[domain].sort((a, b) => (a.index || 0) - (b.index || 0))
-        }));
-      
-      return Response.success(sorted);
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.getGrouped');
     }
   },
 
@@ -243,7 +241,8 @@ export const SessionStorage = {
     try {
       const { data: sessions } = await this.getAll();
       const filtered = sessions.filter(s => !domains.includes(s.domain));
-      await chrome.storage.local.set({ [STORAGE_KEY]: filtered });
+      const key = await getStorageKey();
+      await chrome.storage.local.set({ [key]: filtered });
       return Response.success({ deleted: sessions.length - filtered.length });
     } catch (e) {
       return Response.error(e, 'SessionStorage.deleteGrouped');
@@ -253,41 +252,28 @@ export const SessionStorage = {
 
 // ========== Browser Storage (localStorage/sessionStorage) ==========
 export const BrowserStorage = {
-  async getLocal(tabId) {
+  async get(tabId, type = 'local') {
     try {
       const results = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => {
+        func: (storageType) => {
+          const storage = storageType === 'session' ? sessionStorage : localStorage;
           const out = {};
-          for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k) out[k] = localStorage.getItem(k);
+          for (let i = 0; i < storage.length; i++) {
+            const k = storage.key(i);
+            if (k) out[k] = storage.getItem(k);
           }
           return out;
-        }
+        },
+        args: [type]
       });
       return Response.success(results?.[0]?.result || {});
     } catch (e) {
-      return Response.error(e, 'BrowserStorage.getLocal');
+      return Response.error(e, `BrowserStorage.get(${type})`);
     }
   },
 
-  async getSession(tabId) {
-    try {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: () => {
-          const out = {};
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const k = sessionStorage.key(i);
-            if (k) out[k] = sessionStorage.getItem(k);
-          }
-          return out;
-        }
-      });
-      return Response.success(results?.[0]?.result || {});
-    } catch (e) {
-      return Response.error(e, 'BrowserStorage.getSession');
-    }
-  }
+  // Convenience aliases
+  async getLocal(tabId) { return this.get(tabId, 'local'); },
+  async getSession(tabId) { return this.get(tabId, 'session'); }
 };

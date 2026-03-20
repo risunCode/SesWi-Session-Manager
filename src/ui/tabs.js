@@ -17,9 +17,12 @@ export const CurrentTab = {
   perPage: 5,
   justSavedTs: null,
   searchQuery: '',
+  _totalPages: 1,
+  _wheelAttached: false,
 
   async render() {
     const container = document.getElementById('currentSessionsContainer');
+    const paginationEl = document.getElementById('currentPagination');
     if (!container) return;
 
     try {
@@ -30,26 +33,27 @@ export const CurrentTab = {
       if (!sessions.success) throw new Error(sessions.error);
 
       let items = sessions.data || [];
-      
+
       // Apply search filter
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
-        items = items.filter(s => 
+        items = items.filter(s =>
           s.name.toLowerCase().includes(query) ||
           s.domain.toLowerCase().includes(query)
         );
       }
 
       if (items.length === 0) {
-        const emptyMsg = this.searchQuery.trim() 
+        const emptyMsg = this.searchQuery.trim()
           ? `No sessions matching "${DOM.escapeHtml(this.searchQuery)}"`
           : 'No sessions for this domain';
         container.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`;
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
       }
 
-      const totalPages = Pagination.getTotalPages(items, this.perPage);
-      if (this.page > totalPages) this.page = totalPages;
+      this._totalPages = Pagination.getTotalPages(items, this.perPage);
+      if (this.page > this._totalPages) this.page = this._totalPages;
       const pageItems = Pagination.getPage(items, this.page, this.perPage);
 
       container.innerHTML = pageItems.map((s, i) => {
@@ -58,9 +62,15 @@ export const CurrentTab = {
           index: idx,
           highlight: this.justSavedTs === String(s.timestamp)
         });
-      }).join('') + this._renderPagination(totalPages);
+      }).join('');
 
-      // Wire click handlers
+      // Render pagination separately into its own element
+      if (paginationEl) {
+        paginationEl.innerHTML = this._renderPagination(this._totalPages);
+        this._wirePagination(paginationEl);
+      }
+
+      // Wire session card click handlers
       container.querySelectorAll('.session-card').forEach(card => {
         card.onclick = () => {
           const ts = card.dataset.ts;
@@ -69,7 +79,8 @@ export const CurrentTab = {
         };
       });
 
-      this._wirePagination(container);
+      // Attach wheel scroll for page switching (once only)
+      this._attachWheelScroll();
     } catch (e) {
       container.innerHTML = `<div class="error-state"><p>Error: ${DOM.escapeHtml(e.message)}</p></div>`;
     }
@@ -86,13 +97,31 @@ export const CurrentTab = {
     `;
   },
 
-  _wirePagination(container) {
-    container.querySelectorAll('.page-btn').forEach(btn => {
+  _wirePagination(paginationEl) {
+    paginationEl.querySelectorAll('.page-btn').forEach(btn => {
       btn.onclick = () => {
         const p = parseInt(btn.dataset.page);
         if (p && !btn.disabled) { this.page = p; this.render(); }
       };
     });
+  },
+
+  _attachWheelScroll() {
+    if (this._wheelAttached) return;
+    const el = document.getElementById('current-session');
+    if (!el) return;
+    el.addEventListener('wheel', (e) => {
+      if (this._totalPages <= 1) return;
+      e.preventDefault();
+      if (e.deltaY < 0 && this.page > 1) {
+        this.page--;
+        this.render();
+      } else if (e.deltaY > 0 && this.page < this._totalPages) {
+        this.page++;
+        this.render();
+      }
+    }, { passive: false });
+    this._wheelAttached = true;
   },
 
   async handleAddSession(name, options = {}) {
@@ -336,7 +365,7 @@ export const ManageTab = {
     try {
       const res = await Cookies.getCurrentTab();
       if (!res.success) {
-        alert('Failed to get cookies: ' + res.error);
+        Modal.openConfirm({ title: 'Export Error', message: 'Failed to get cookies: ' + res.error, confirmText: 'OK', onConfirm: () => {} });
         return;
       }
 
@@ -344,7 +373,7 @@ export const ManageTab = {
       const domain = res.data?.domain || 'unknown';
 
       if (cookies.length === 0) {
-        alert('No cookies found for this tab.');
+        Modal.openConfirm({ title: 'No Data', message: 'No cookies found for this tab.', confirmText: 'OK', onConfirm: () => {} });
         return;
       }
 
@@ -363,7 +392,7 @@ export const ManageTab = {
       DOM.downloadFile(content, filename, contentType);
     } catch (e) {
       console.error('Export failed:', e);
-      alert('Export failed: ' + e.message);
+      Modal.openConfirm({ title: 'Export Failed', message: e.message, confirmText: 'OK', onConfirm: () => {} });
     }
   },
 

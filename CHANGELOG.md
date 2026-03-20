@@ -1,5 +1,32 @@
 # Changelog
 
+## v3.1.0 (2026-03-21)
+
+### Codebase Cleanup & Refactor
+- **Removed duplicate logic** — Unified modal close animation (`DOM.closeModal`), expiration calculation, and domain matching into shared utils
+- **Deleted dead code** — Removed unused `getExpirationStatus()`, duplicate `SessionStorage.getGrouped()`, unused `Renderer.pagination()`, and redundant `extractDomain()` wrapper
+- **Centralized import parsing** — New `Normalize.importSessions()` handles all formats (raw array, legacy wrapper, single object) in one place
+- **Merged BrowserStorage** — `getLocal()` and `getSession()` now share a single `get(tabId, type)` implementation
+- **Extracted cookie restore helper** — `cleanForRestore()` and `getCookieUrl()` centralize backward-compat scrubbing for Chrome's cookies API
+
+### Security & Storage
+- **Randomized storage key** — Session data key is now a random hex string generated on first install instead of a hardcoded value. Migration from old key is automatic with zero user interaction
+- **Consistent domain matching** — All domain comparisons now use the shared `Domain.isMatch()` util instead of scattered manual implementations
+
+### Export Format
+- **Raw JSON exports** — All JSON exports now output a plain session array instead of the proprietary `{version, exportDate, sessions}` wrapper. Import still accepts both formats for backward compatibility
+- **Label cleanup** — "Export JSON (raw)" → "Export JSON", "Copy Raw JSON" → "Copy JSON"
+
+### UI Fixes
+- **Saved Data modal** — Fixed tab buttons (Cookies/localStorage/sessionStorage) overlapping by adjusting modal width and tab sizing
+- **No more alert()** — Replaced remaining `alert()` calls in export flow with proper modal dialogs
+
+### Developer Experience
+- **Shared debounce helper** — `DOM.debounceInput()` replaces copy-pasted debounce patterns in search handlers
+- **Cleaner utils** — Added `DOM.closeModal()`, `DOM.debounceInput()`, and `Normalize` module to `utils.js`
+
+---
+
 ## v3.0.0 (2026-02-07)
 
 ### New Features

@@ -6,7 +6,7 @@ import { TabInfo, BrowserStorage, SessionStorage } from './core/storage.js';
 import { Cookies } from './core/cookies.js';
 import { tabIcons } from './core/icons.js';
 import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
-import { Domain } from './utils.js';
+import { Domain, DOM } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Load version from manifest
@@ -56,32 +56,16 @@ async function initTabs() {
 }
 
 function initSearchHandlers() {
-  // Current tab search
-  const currentSearch = document.getElementById('currentSearchInput');
-  if (currentSearch) {
-    let debounce;
-    currentSearch.oninput = (e) => {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => {
-        CurrentTab.searchQuery = e.target.value;
-        CurrentTab.page = 1;
-        CurrentTab.render();
-      }, 300);
-    };
-  }
-  
-  // Group tab search
-  const groupSearch = document.getElementById('groupSearchInput');
-  if (groupSearch) {
-    let debounce;
-    groupSearch.oninput = (e) => {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => {
-        GroupTab.searchQuery = e.target.value;
-        GroupTab.render();
-      }, 300);
-    };
-  }
+  DOM.debounceInput(document.getElementById('currentSearchInput'), (value) => {
+    CurrentTab.searchQuery = value;
+    CurrentTab.page = 1;
+    CurrentTab.render();
+  });
+
+  DOM.debounceInput(document.getElementById('groupSearchInput'), (value) => {
+    GroupTab.searchQuery = value;
+    GroupTab.render();
+  });
 }
 
 async function updateCurrentDomain() {

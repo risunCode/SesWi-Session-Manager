@@ -5,15 +5,6 @@
 
 import { Domain } from '../utils.js';
 
-// Helper to extract domain from URL
-function extractDomain(url) {
-  try {
-    return Domain.getBase(url);
-  } catch {
-    return null;
-  }
-}
-
 class TabIcons {
   constructor() {
     this.domainToIcon = {};
@@ -55,7 +46,7 @@ class TabIcons {
     try {
       chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (changeInfo.favIconUrl || changeInfo.url) {
-          const domain = tab?.url ? extractDomain(tab.url) : null;
+          const domain = tab?.url ? (() => { try { return Domain.getBase(tab.url); } catch { return null; } })() : null;
           if (domain && tab.favIconUrl) {
             this._set(domain, tab.favIconUrl);
           }
@@ -112,7 +103,8 @@ class TabIcons {
       const tabs = await chrome.tabs.query({});
       for (const tab of tabs) {
         if (!tab.url) continue;
-        const domain = extractDomain(tab.url);
+        let domain = null;
+        try { domain = Domain.getBase(tab.url); } catch {}
         const icon = tab.favIconUrl || '';
         if (domain && icon) {
           this._set(domain, icon);

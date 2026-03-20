@@ -7,9 +7,10 @@ Chrome extension for saving and restoring login sessions. Captures cookies, loca
 - **Save & Restore** — Save complete login sessions and restore them later
 - **Smart Expiration** — Tracks cookie expiration based on longest-lasting cookie *(experimental, may be inaccurate)*
 - **Domain Groups** — Auto-groups sessions by domain for easy management
-- **Backup/Export** — JSON (plain) or OWI (AES-256 encrypted) formats
+- **Backup/Export** — JSON (raw array) or OWI (AES-256 encrypted) formats
 - **Batch Operations** — Bulk backup, delete expired, or clean by domain
 - **Clean Tab** — Selectively clear cookies, storage, history, and cache
+- **Randomized Storage** — Session data stored under a unique random key per installation
 
 ## Showcase
 
