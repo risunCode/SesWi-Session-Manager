@@ -273,6 +273,32 @@ export const BrowserStorage = {
     }
   },
 
+  async restore(tabId, localData = {}, sessionData = {}) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (ls, ss) => {
+          if (ls && Object.keys(ls).length > 0) {
+            try { localStorage.clear(); } catch {}
+            for (const [k, v] of Object.entries(ls)) {
+              try { localStorage.setItem(k, v); } catch {}
+            }
+          }
+          if (ss && Object.keys(ss).length > 0) {
+            try { sessionStorage.clear(); } catch {}
+            for (const [k, v] of Object.entries(ss)) {
+              try { sessionStorage.setItem(k, v); } catch {}
+            }
+          }
+        },
+        args: [localData, sessionData]
+      });
+      return Response.success({ localStorage: Object.keys(localData).length, sessionStorage: Object.keys(sessionData).length });
+    } catch (e) {
+      return Response.error(e, 'BrowserStorage.restore');
+    }
+  },
+
   // Convenience aliases
   async getLocal(tabId) { return this.get(tabId, 'local'); },
   async getSession(tabId) { return this.get(tabId, 'session'); }

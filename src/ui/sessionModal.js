@@ -3,7 +3,7 @@
  * Handles: Restore, Edit, Replace, Delete, Backup
  */
 
-import { SessionStorage, TabInfo } from '../core/storage.js';
+import { SessionStorage, TabInfo, BrowserStorage } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
 import { Crypto } from '../core/crypto.js';
 import { DOM, Domain, Time } from '../utils.js';
@@ -433,11 +433,27 @@ async function wireActions() {
 
   modal.querySelector('#saRestore').onclick = async () => {
     if (!allowed) { setMsg(`Open ${session.domain} first`, 'error'); return; }
+
+    const hasCookies = session.cookies?.length > 0;
+    const hasLS = Object.keys(session.localStorage || {}).length > 0;
+    const hasSS = Object.keys(session.sessionStorage || {}).length > 0;
+
+    if (!hasCookies && !hasLS && !hasSS) {
+      setMsg('Nothing to restore', 'error');
+      return;
+    }
+
     setMsg('Restoring...', '');
-    const res = await Cookies.restore(session);
-    setMsg(res.success ? 'Restored!' : res.error, res.success ? 'success' : 'error');
-    if (res.success && tabInfo.data.tabId) {
-      await chrome.tabs.reload(tabInfo.data.tabId);
+    const tabId = tabInfo.data.tabId;
+
+    if (hasCookies) await Cookies.restore(session);
+    if (tabId && (hasLS || hasSS)) {
+      await BrowserStorage.restore(tabId, session.localStorage || {}, session.sessionStorage || {});
+    }
+
+    setMsg('Restored!', 'success');
+    if (tabId) {
+      await chrome.tabs.reload(tabId);
       setTimeout(() => DOM.closeModal(modal), 500);
     }
   };
