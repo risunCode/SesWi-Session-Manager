@@ -1,6 +1,4 @@
 /**
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
-
 /*
  * SesWi - Consolidated CSS (from old styles)
  */
@@ -49,7 +47,7 @@ body {
   width: 380px;
   min-height: 540px;
   max-height: 550px;
-  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   background: linear-gradient(135deg, #bfdbfe, #fef3c7);
   color: #1e293b;
