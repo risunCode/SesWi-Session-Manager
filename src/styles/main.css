@@ -2735,6 +2735,15 @@ body {
 /* ========== Group Manage Modal ========== */
 .gm-modal {
   width: 380px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.gm-modal .modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .gm-toolbar {
@@ -2764,8 +2773,6 @@ body {
 }
 
 .gm-list {
-  max-height: 280px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
