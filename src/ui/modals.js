@@ -932,16 +932,13 @@ export const Modal = {
         confirmText: 'Delete',
         confirmClass: 'btn-danger',
         onConfirm: async () => {
-          let deleted = 0;
-          for (const ts of selected) {
-            const res = await SessionStorage.delete(ts);
-            if (res.success) deleted++;
+          const res = await SessionStorage.deleteMany(selected);
+          msg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
+          msg.className = res.success ? 'modal-message success' : 'modal-message error';
+          if (res.success) {
+            document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
+            setTimeout(() => DOM.closeModal(modal), 800);
           }
-
-          msg.textContent = `Deleted ${deleted} sessions`;
-          msg.className = 'modal-message success';
-          document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
-          setTimeout(() => DOM.closeModal(modal), 800);
         }
       });
     };

@@ -119,8 +119,8 @@ export const TabInfo = {
         }
       }
       
-      // Clear storage via scripting
-      if (clearLS || clearSS) {
+      // Clear storage via scripting (skip for chrome:// pages)
+      if ((clearLS || clearSS) && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
         await chrome.scripting.executeScript({
           target: { tabId },
           func: (ls, ss) => {
@@ -226,8 +226,8 @@ export const SessionStorage = {
       // Sort domains by most recent session timestamp
       const sortedDomains = Object.keys(domainGroups)
         .sort((a, b) => {
-          const aMax = Math.max(...domainGroups[a].map(s => s.timestamp));
-          const bMax = Math.max(...domainGroups[b].map(s => s.timestamp));
+          const aMax = domainGroups[a].length ? Math.max(...domainGroups[a].map(s => s.timestamp)) : 0;
+          const bMax = domainGroups[b].length ? Math.max(...domainGroups[b].map(s => s.timestamp)) : 0;
           return bMax - aMax;
         })
         .map(domain => ({

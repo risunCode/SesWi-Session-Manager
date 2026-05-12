@@ -15,18 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (versionEl) versionEl.textContent = `v${manifest.version}`;
 
   // Initialize tabs
-  await initTabs();
+  initTabs();
   await updateCurrentDomain();
 
   // Setup search handlers
   initSearchHandlers();
 
-  // Initial render
-  await CurrentTab.render();
-  await GroupTab.render();
+  // Initial render + modal setup in parallel
+  await Promise.all([CurrentTab.render(), GroupTab.render()]);
   ManageTab.init();
-
-  // Setup Add Session modal
   initAddSessionModal();
 
   // Listen for session changes
@@ -38,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('seswi:sessions-deleted', refresh);
 });
 
-async function initTabs() {
+function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
   
@@ -150,9 +147,11 @@ function initAddSessionModal() {
   };
 
   document.getElementById('addFileVerify').onclick = async () => {
+    const btn = document.getElementById('addFileVerify');
     const { Crypto } = await import('./core/crypto.js');
     const password = document.getElementById('addFilePassword').value;
     if (!_fileOwiFile || !password) { msg.textContent = 'Select file and enter password'; msg.style.display = 'block'; return; }
+    btn.disabled = true;
     try {
       const res = await Crypto.importOWI(await _fileOwiFile.text(), password);
       if (res.success) {
@@ -163,6 +162,7 @@ function initAddSessionModal() {
         msg.textContent = res.error; msg.className = 'modal-message error'; msg.style.display = 'block';
       }
     } catch { msg.textContent = 'Decryption failed'; msg.className = 'modal-message error'; msg.style.display = 'block'; }
+    finally { btn.disabled = false; }
   };
 
   // Live parse preview for import textarea
@@ -187,54 +187,12 @@ function initAddSessionModal() {
 
   // ---- Open modal ----
   const openModal = async () => {
-    // Reset mode to capture
+    // Reset mode and form
     switchMode('capture');
-
-    const info = await TabInfo.getCurrent();
-    const cookies = await Cookies.getCurrentTab();
-    const domain = info.data?.domain || '-';
-    const tabId = info.data?.tabId;
-
-    const [localRes, sessionRes] = await Promise.all([
-      tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve({ data: {} }),
-      tabId ? BrowserStorage.getSession(tabId) : Promise.resolve({ data: {} })
-    ]);
-
-    const cookieCount = cookies.data?.cookies?.length || 0;
-    const lsCount = Object.keys(localRes.data || {}).length;
-    const ssCount = Object.keys(sessionRes.data || {}).length;
-
-    document.getElementById('modalDomain').textContent = domain;
-    document.getElementById('modalCookies').textContent = cookieCount;
-    document.getElementById('modalLocalStorage').textContent = lsCount;
-    document.getElementById('modalSessionStorage').textContent = ssCount;
-    document.getElementById('statCookies').title = `${cookieCount} cookies`;
-    document.getElementById('statLocalStorage').title = `${lsCount} localStorage items`;
-    document.getElementById('statSessionStorage').title = `${ssCount} sessionStorage items`;
-
-    const favicon = document.getElementById('modalFavicon');
-    const faviconFallback = favicon?.nextElementSibling;
-    if (favicon && domain !== '-') {
-      const iconUrl = tabIcons.getFaviconUrl(domain, info.data?.url);
-      favicon.onerror = () => { favicon.style.display = 'none'; if (faviconFallback) faviconFallback.style.display = 'flex'; };
-      favicon.onload = () => { favicon.style.display = 'block'; if (faviconFallback) faviconFallback.style.display = 'none'; };
-      favicon.src = iconUrl;
-    }
-
-    const warning = document.getElementById('domainWarning');
-    const warningText = document.getElementById('domainWarningText');
-    if (Domain.isSensitive(domain)) {
-      warning.classList.remove('hidden');
-      warningText.textContent = `${domain} uses complex auth. Saving/restoring may not work properly.`;
-    } else {
-      warning.classList.add('hidden');
-    }
-
     input.value = '';
     document.getElementById('importSessionName').value = '';
     document.getElementById('importCookieInput').value = '';
     importPreview.classList.add('hidden');
-    // Reset file pane
     _fileParsedSessions = []; _fileOwiFile = null;
     addFileInput.value = '';
     addFileList.innerHTML = '';
@@ -246,11 +204,70 @@ function initAddSessionModal() {
     document.getElementById('clearAfterSave').checked = false;
     document.getElementById('clearInfoText')?.classList.add('hidden');
     document.getElementById('statsInfoText')?.classList.add('hidden');
-
     msg.textContent = '';
     msg.style.display = 'none';
+
+    // Show modal immediately with shimmer
+    document.getElementById('modalDomain').textContent = '—';
+    document.getElementById('modalCookies').textContent = '—';
+    document.getElementById('modalLocalStorage').textContent = '—';
+    document.getElementById('modalSessionStorage').textContent = '—';
+    document.getElementById('domainWarning')?.classList.add('hidden');
+    const infoCard = document.querySelector('.modal-info-enhanced');
+    if (infoCard) infoCard.classList.add('shimmer');
     modal.style.display = 'block';
     input.focus();
+
+    // Load data in background (min 400ms shimmer so it's visible)
+    const [data] = await Promise.all([
+      (async () => {
+        try {
+          const info = await TabInfo.getCurrent();
+          const cookies = await Cookies.getCurrentTab();
+          const domain = info.data?.domain || '-';
+          const tabId = info.data?.tabId;
+          const [localRes, sessionRes] = await Promise.all([
+            tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve({ data: {} }),
+            tabId ? BrowserStorage.getSession(tabId) : Promise.resolve({ data: {} })
+          ]);
+          return { info, cookies, domain, tabId, localRes, sessionRes };
+        } catch { return null; }
+      })(),
+      new Promise(r => setTimeout(r, 400))
+    ]);
+
+    if (data) {
+      const { info, cookies, domain, localRes, sessionRes } = data;
+      const cookieCount = cookies.data?.cookies?.length || 0;
+      const lsCount = Object.keys(localRes.data || {}).length;
+      const ssCount = Object.keys(sessionRes.data || {}).length;
+
+      document.getElementById('modalDomain').textContent = domain;
+      document.getElementById('modalCookies').textContent = cookieCount;
+      document.getElementById('modalLocalStorage').textContent = lsCount;
+      document.getElementById('modalSessionStorage').textContent = ssCount;
+      document.getElementById('statCookies').title = `${cookieCount} cookies`;
+      document.getElementById('statLocalStorage').title = `${lsCount} localStorage items`;
+      document.getElementById('statSessionStorage').title = `${ssCount} sessionStorage items`;
+
+      const favicon = document.getElementById('modalFavicon');
+      const faviconFallback = favicon?.nextElementSibling;
+      if (favicon && domain !== '-') {
+        const iconUrl = tabIcons.getFaviconUrl(domain, info.data?.url);
+        favicon.onerror = () => { favicon.style.display = 'none'; if (faviconFallback) faviconFallback.style.display = 'flex'; };
+        favicon.onload = () => { favicon.style.display = 'block'; if (faviconFallback) faviconFallback.style.display = 'none'; };
+        favicon.src = iconUrl;
+      }
+
+      const warning = document.getElementById('domainWarning');
+      const warningText = document.getElementById('domainWarningText');
+      if (Domain.isSensitive(domain)) {
+        warning.classList.remove('hidden');
+        warningText.textContent = `${domain} uses complex auth. Saving/restoring may not work properly.`;
+      }
+    }
+
+    if (infoCard) infoCard.classList.remove('shimmer');
   };
 
   const closeModal = () => { modal.style.display = 'none'; };
@@ -334,12 +351,14 @@ function initAddSessionModal() {
     if (result.success) {
       msg.textContent = 'Saved!';
       msg.className = 'modal-message success';
+      msg.style.display = 'block';
       const clearCheckbox = document.getElementById('clearAfterSave');
       if (clearCheckbox?.checked) { closeModal(); await TabInfo.cleanCurrentTab(); return; }
       setTimeout(closeModal, 800);
     } else {
       msg.textContent = result.error || 'Failed to save';
       msg.className = 'modal-message error';
+      msg.style.display = 'block';
     }
   };
 

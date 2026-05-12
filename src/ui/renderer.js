@@ -12,9 +12,10 @@ export const Renderer = {
    * @param {Object} options - { showIndex: boolean, index: number, highlight: boolean }
    */
   sessionCard(session, options = {}) {
-    const { showIndex = true, index = 1, highlight = false } = options;
-
+    const { showIndex = true, index = 1, highlight = false, restored = false } = options;
     const cookieCount = session.cookies?.length || 0;
+    const extraClass = highlight ? ' just-saved' : '';
+    const activeBadge = restored ? '<span class="session-active-badge">active</span>' : '';
 
     // Expiration badge
     const exp = Time.getSessionExpiration(session.cookies);
@@ -28,7 +29,7 @@ export const Renderer = {
     }
 
     return `
-      <div class="session-card${highlight ? ' just-saved' : ''}" data-ts="${session.timestamp}">
+      <div class="session-card${extraClass}" data-ts="${session.timestamp}">
         <div class="session-header">
           ${showIndex ? `<span class="session-index">${index}</span>` : ''}
           <span class="session-name">${DOM.escapeHtml(session.name)}</span>
@@ -36,7 +37,7 @@ export const Renderer = {
         </div>
         <div class="session-meta">
           <span class="session-time">${Time.formatRelative(session.timestamp)}</span>
-          <span class="session-cookie-count"><i class="fa-solid fa-cookie-bite"></i>${cookieCount}</span>
+          <span class="session-cookie-count">${activeBadge}<i class="fa-solid fa-cookie-bite"></i>${cookieCount}</span>
         </div>
       </div>
     `;
