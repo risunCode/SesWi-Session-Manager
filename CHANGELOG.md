@@ -1,5 +1,25 @@
 # Changelog
 
+## v3.2.1 (2026-05-13)
+
+### New Features
+- **Browser Context Menu** — Right-click on any page:
+  - *Save Session* — Opens popup with Add Session modal for naming
+  - *Restore Last* — Instantly restores most recent session for current domain + reload
+  - *Clean Tab* — Clears cookies + storage for current domain + reload
+- **Ctrl+X Quick Clean** — Single press opens Clean Tab modal; double-tap within 2s = instant clean without modal
+- **Active Badge Per-Domain** — "active" badge now persists independently for each domain (not just last-used)
+
+### Bug Fixes
+- Fixed active badge only tracking single domain (now uses per-domain map in `chrome.storage.local`)
+- Fixed old string format in storage causing badge to never load (auto-migrates to map)
+- Fixed `setRestored` using `session.domain` instead of `tabInfo.data.domain` (key mismatch with render lookup)
+- Fixed active badge not showing in Groups tab (now reads from per-domain map)
+- Fixed context menu disappearing when service worker sleeps (recreates on every wake)
+- Fixed Ctrl+X double-tap not closing the Clean Tab modal before executing
+
+---
+
 ## v3.2.0 (2026-05-13)
 
 ### New Features
