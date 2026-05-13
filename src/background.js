@@ -75,45 +75,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!domain) return;
 
   if (info.menuItemId === 'seswi-save') {
-    // Save current tab session
-    const cookies = await chrome.cookies.getAll({});
-    const domainCookies = cookies.filter(c => {
-      const d = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
-      return d === domain || d.endsWith(`.${domain}`) || domain.endsWith(`.${d}`);
-    });
-
-    let localStorage = {}, sessionStorage = {};
-    try {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const ls = {}, ss = {};
-          for (let i = 0; i < window.localStorage.length; i++) { const k = window.localStorage.key(i); ls[k] = window.localStorage.getItem(k); }
-          for (let i = 0; i < window.sessionStorage.length; i++) { const k = window.sessionStorage.key(i); ss[k] = window.sessionStorage.getItem(k); }
-          return { ls, ss };
-        }
-      });
-      if (results?.[0]?.result) { localStorage = results[0].result.ls; sessionStorage = results[0].result.ss; }
-    } catch {}
-
-    const key = await getStorageKey();
-    const data = await chrome.storage.local.get(key);
-    const sessions = data[key] || [];
-    const domainSessions = sessions.filter(s => s.domain === domain);
-    const maxIndex = domainSessions.length ? Math.max(...domainSessions.map(s => s.index || 0)) : 0;
-
-    const session = {
-      name: `${domain} ${new Date().toLocaleTimeString()}`,
-      domain,
-      originalUrl: tab.url,
-      cookies: domainCookies,
-      localStorage,
-      sessionStorage,
-      timestamp: Date.now(),
-      index: maxIndex + 1
-    };
-
-    await chrome.storage.local.set({ [key]: [...sessions, session] });
+    // Open popup - triggers Add Session modal via action
+    await chrome.action.openPopup();
+    // Small delay then send message to open add modal
+    setTimeout(() => {
+      chrome.runtime.sendMessage({ action: 'openAddSession' }).catch(() => {});
+    }, 300);
 
   } else if (info.menuItemId === 'seswi-restore') {
     // Restore most recent session for this domain

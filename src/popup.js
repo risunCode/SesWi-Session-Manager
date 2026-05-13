@@ -33,6 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('seswi:session-replaced', refresh);
   document.addEventListener('seswi:sessions-restored', refresh);
   document.addEventListener('seswi:sessions-deleted', refresh);
+
+  // Listen for context menu trigger
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.action === 'openAddSession') document.getElementById('addSession')?.click();
+  });
 });
 
 function initTabs() {
