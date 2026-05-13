@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.2.0 (2026-05-12)
+## v3.2.0 (2026-05-13)
 
 ### New Features
 - **Import Cookies (Paste)** — New tab in Add Session modal to paste raw cookie JSON arrays directly (Cookie Editor format supported)
@@ -9,12 +9,21 @@
 - **Manage by Domain (Tree View)** — Group Manage modal redesigned as collapsible tree: domain as parent with session children, select-all per domain, individual session selection, scrollable (max 5 visible per group)
 - **Copy Value in Saved Data** — Each row in the Saved Data modal now has a copy button to copy the full value to clipboard
 - **Export Tab Data** — "Quick Action" renamed and expanded: now includes Copy JSON to clipboard, Export JSON File, and Export Netscape File
+- **Browser Context Menu** — Right-click on any page for quick actions:
+  - *Save Session* — Opens popup with Add Session modal
+  - *Restore Last* — Instantly restores most recent session for current domain
+  - *Clean Tab* — Clears cookies + storage for current domain and reloads
+- **Keyboard Shortcuts**:
+  - `Ctrl+N` — Open Add Session modal
+  - `Ctrl+X` — Open Clean Tab modal; double-tap within 2s = instant clean without modal
+- **Active Session Badge** — Small "active" badge next to cookie count for last-restored session, persists across popup close/reopen via `chrome.storage.local`
 
 ### UI Redesign
 - **Session Actions Header** — Redesigned as a card with favicon, domain (bold), visit icon-only button, and session name + metadata on second row
 - **Manage Tab** — Regrouped into two sections (Sessions / Current Tab) with section labels; items renamed for clarity; icon colors moved from fragile `nth-child` selectors to explicit CSS classes
 - **Delete button** — Changed from full-width red block to subtle outline style; turns red only on hover
 - **Export buttons** — Removed dashed border style
+- **Shimmer replaced with badge** — Removed restore/save shimmer animations, replaced with simple "active" badge indicator
 
 ### Bug Fixes
 - Fixed `wireActions()` async race condition — `allowed` domain check now happens at click time, not modal open time
@@ -29,8 +38,15 @@
 - Fixed `statusClass` for cookies expiring in 1–7 days showing `expired` instead of `warning`
 - Fixed Manage by Domain expand requiring precise click on chevron icon
 - Fixed `Export JSON` in Session Actions exporting full session object instead of cookies array
+- Fixed `cleanCurrentTab` crashing on `chrome://` pages (now skips scripting)
+- Fixed Delete Expired using sequential deletes (now uses batch `deleteMany`)
+- Fixed active badge not showing instantly after restore (now renders immediately)
+- Fixed context menu disappearing when service worker sleeps (now recreates on every wake)
 
 ### Cleanup & Refactor
+- **Removed ~860 lines of dead CSS** — old group-card, auth-status-card, modal-actions-grid, exp-info-card, saved-data-card, inspector-area, tag-selector, legacy buttons, unused Tailwind utilities
+- Consolidated Tailwind utilities from ~70 to ~25 actually used classes
+- Fixed duplicate `.flex-1` and `.btn-primary` CSS definitions
 - Removed `renderCookieExpiration()` dead code (was immediately overwritten)
 - Removed `_current.activeTab` (written but never read)
 - Removed unused `import { Crypto }` in `sessionModal.js`
@@ -40,14 +56,12 @@
 - Merged `_wireOWIExportModal` and `_wireBatchOWIModal` into shared `_wireOWIModal(modal, ids, getExportData)`
 - Replaced all inline `Blob → createObjectURL → a.click()` patterns with `DOM.downloadFile()`
 - Replaced `nth-child` color selectors with explicit `.card-icon--*` classes
-- Added `SessionStorage.deleteMany(timestamps)` for per-session deletion
+- Added `SessionStorage.deleteMany(timestamps)` for batch deletion
 - Extended `Normalize.importSessions()` to handle raw cookie arrays and `{cookies, localStorage, sessionStorage}` format
-- Removed `session.id` field (generated but never used)
-- Removed `closeSessionActions` export (never called externally)
-- `vite.config.js` paths now use `outDir` from options instead of hardcoded `'dist/'`
+- Removed unnecessary `async` from `initTabs()`
 
 ### Font
-- Switched from JetBrains Mono (local fallback only) to **Outfit** via Google Fonts `@import` in CSS
+- JetBrains Mono (local only, no external requests)
 
 ---
 
