@@ -10,7 +10,8 @@
     "scripting",
     "history",
     "browsingData",
-    "favicon"
+    "favicon",
+    "contextMenus"
   ],
   "host_permissions": ["<all_urls>"],
   "icons": {
