@@ -379,6 +379,7 @@ function wireActions() {
     if (tabId) {
       const { CurrentTab } = await import('./tabs.js');
       CurrentTab.setRestored(String(session.timestamp));
+      CurrentTab.render();
       await chrome.tabs.reload(tabId);
       setTimeout(() => DOM.closeModal(modal), 500);
     }
