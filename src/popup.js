@@ -387,6 +387,8 @@ function initAddSessionModal() {
       const now = Date.now();
       if (CurrentTab._lastCtrlX && now - CurrentTab._lastCtrlX < 2000) {
         CurrentTab._lastCtrlX = 0;
+        const ctModal = document.getElementById('cleanTabModal');
+        if (ctModal) ctModal.style.display = 'none';
         TabInfo.cleanCurrentTab();
       } else {
         CurrentTab._lastCtrlX = now;
