@@ -55,19 +55,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 
   // Create context menus
-  chrome.contextMenus.create({ id: 'seswi-save', title: 'SesWi: Save Session', contexts: ['page'] });
-  chrome.contextMenus.create({ id: 'seswi-restore', title: 'SesWi: Restore Last', contexts: ['page'] });
-  chrome.contextMenus.create({ id: 'seswi-clean', title: 'SesWi: Clean Tab', contexts: ['page'] });
+  setupContextMenus();
 });
 
-// Also create menus on startup (in case already installed)
-chrome.runtime.onStartup?.addListener(() => {
+// Runs every time service worker wakes — ensures menus always exist
+function setupContextMenus() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: 'seswi-save', title: 'SesWi: Save Session', contexts: ['page'] });
     chrome.contextMenus.create({ id: 'seswi-restore', title: 'SesWi: Restore Last', contexts: ['page'] });
     chrome.contextMenus.create({ id: 'seswi-clean', title: 'SesWi: Clean Tab', contexts: ['page'] });
   });
-});
+}
+setupContextMenus();
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.url || tab.url.startsWith('chrome://')) return;
