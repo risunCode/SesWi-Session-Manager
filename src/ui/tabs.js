@@ -29,18 +29,21 @@ export const CurrentTab = {
     this._restoredLoaded = true;
     try {
       const r = await chrome.storage.local.get(RESTORED_KEY);
-      if (r[RESTORED_KEY]) this.justRestoredTs = r[RESTORED_KEY];
-    } catch {}
+      this._restoredMap = r[RESTORED_KEY] || {};
+    } catch { this._restoredMap = {}; }
   },
 
-  setRestored(ts) {
+  setRestored(domain, ts) {
+    if (!this._restoredMap) this._restoredMap = {};
+    this._restoredMap[domain] = ts;
     this.justRestoredTs = ts;
-    chrome.storage.local.set({ [RESTORED_KEY]: ts }).catch(() => {});
+    chrome.storage.local.set({ [RESTORED_KEY]: this._restoredMap }).catch(() => {});
   },
 
-  clearRestored() {
+  clearRestored(domain) {
+    if (this._restoredMap) delete this._restoredMap[domain];
     this.justRestoredTs = null;
-    chrome.storage.local.remove(RESTORED_KEY).catch(() => {});
+    chrome.storage.local.set({ [RESTORED_KEY]: this._restoredMap || {} }).catch(() => {});
   },
 
   async render() {
@@ -52,6 +55,8 @@ export const CurrentTab = {
     try {
       const tabInfo = await TabInfo.getCurrent();
       if (!tabInfo.success) throw new Error('No tab info');
+
+      this.justRestoredTs = this._restoredMap?.[tabInfo.data.domain] || null;
 
       const sessions = await SessionStorage.getByDomain(tabInfo.data.domain);
       if (!sessions.success) throw new Error(sessions.error);

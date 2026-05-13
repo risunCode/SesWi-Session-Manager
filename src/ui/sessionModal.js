@@ -378,7 +378,7 @@ function wireActions() {
     setMsg('Restored!', 'success');
     if (tabId) {
       const { CurrentTab } = await import('./tabs.js');
-      CurrentTab.setRestored(String(session.timestamp));
+      CurrentTab.setRestored(session.domain, String(session.timestamp));
       CurrentTab.render();
       await chrome.tabs.reload(tabId);
       setTimeout(() => DOM.closeModal(modal), 500);
