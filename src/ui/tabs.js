@@ -234,6 +234,7 @@ export const GroupTab = {
   async render() {
     const container = document.getElementById('groupSessionsContainer');
     if (!container) return;
+    await CurrentTab._loadRestored();
 
     try {
       const result = await SessionStorage.getGroupedByDomain();
@@ -320,10 +321,12 @@ export const GroupTab = {
     const perPage = 4;
     const items = Pagination.getPage(sessions, page, perPage);
     const totalPages = Pagination.getTotalPages(sessions, perPage);
+    const restoredTs = CurrentTab._restoredMap?.[domain] || null;
 
     return items.map((s, i) => Renderer.sessionCard(s, {
       index: (page - 1) * perPage + i + 1,
-      showIndex: true
+      showIndex: true,
+      restored: restoredTs === String(s.timestamp)
     })).join('') + (totalPages > 1 ? `
       <div class="pagination">
         <button class="dpage-btn" data-domain="${domain}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹</button>
