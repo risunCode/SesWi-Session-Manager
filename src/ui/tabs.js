@@ -12,18 +12,42 @@ import { Modal } from './modals.js';
 import { Renderer } from './renderer.js';
 
 // ========== Current Tab ==========
+const RESTORED_KEY = '_seswi_restored';
+
 export const CurrentTab = {
   page: 1,
-  perPage: 5,
+  perPage: 6,
   justSavedTs: null,
+  justRestoredTs: null,
+  _restoredLoaded: false,
   searchQuery: '',
   _totalPages: 1,
   _wheelAttached: false,
+
+  async _loadRestored() {
+    if (this._restoredLoaded) return;
+    this._restoredLoaded = true;
+    try {
+      const r = await chrome.storage.local.get(RESTORED_KEY);
+      if (r[RESTORED_KEY]) this.justRestoredTs = r[RESTORED_KEY];
+    } catch {}
+  },
+
+  setRestored(ts) {
+    this.justRestoredTs = ts;
+    chrome.storage.local.set({ [RESTORED_KEY]: ts }).catch(() => {});
+  },
+
+  clearRestored() {
+    this.justRestoredTs = null;
+    chrome.storage.local.remove(RESTORED_KEY).catch(() => {});
+  },
 
   async render() {
     const container = document.getElementById('currentSessionsContainer');
     const paginationEl = document.getElementById('currentPagination');
     if (!container) return;
+    await this._loadRestored();
 
     try {
       const tabInfo = await TabInfo.getCurrent();
@@ -34,7 +58,6 @@ export const CurrentTab = {
 
       let items = sessions.data || [];
 
-      // Apply search filter
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
         items = items.filter(s =>
@@ -52,25 +75,37 @@ export const CurrentTab = {
         return;
       }
 
-      this._totalPages = Pagination.getTotalPages(items, this.perPage);
-      if (this.page > this._totalPages) this.page = this._totalPages;
-      const pageItems = Pagination.getPage(items, this.page, this.perPage);
+      // Auto: scroll if ≤ perPage, paginate if more
+      if (items.length <= this.perPage) {
+        container.innerHTML = items.map((s, i) =>
+          Renderer.sessionCard(s, {
+            index: i + 1,
+            highlight: this.justSavedTs === String(s.timestamp),
+            restored: this.justRestoredTs === String(s.timestamp)
+          })
+        ).join('');
+        if (paginationEl) paginationEl.innerHTML = '';
+      } else {
+        this._totalPages = Pagination.getTotalPages(items, this.perPage);
+        if (this.page > this._totalPages) this.page = this._totalPages;
+        const pageItems = Pagination.getPage(items, this.page, this.perPage);
 
-      container.innerHTML = pageItems.map((s, i) => {
-        const idx = (this.page - 1) * this.perPage + i + 1;
-        return Renderer.sessionCard(s, {
-          index: idx,
-          highlight: this.justSavedTs === String(s.timestamp)
-        });
-      }).join('');
+        container.innerHTML = pageItems.map((s, i) =>
+          Renderer.sessionCard(s, {
+            index: (this.page - 1) * this.perPage + i + 1,
+            highlight: this.justSavedTs === String(s.timestamp),
+            restored: this.justRestoredTs === String(s.timestamp)
+          })
+        ).join('');
 
-      // Render pagination separately into its own element
-      if (paginationEl) {
-        paginationEl.innerHTML = this._renderPagination(this._totalPages);
-        this._wirePagination(paginationEl);
+        if (paginationEl) {
+          paginationEl.innerHTML = this._renderPagination(this._totalPages);
+          this._wirePagination(paginationEl);
+        }
+
+        this._attachWheelScroll();
       }
 
-      // Wire session card click handlers
       container.querySelectorAll('.session-card').forEach(card => {
         card.onclick = () => {
           const ts = card.dataset.ts;
@@ -79,8 +114,6 @@ export const CurrentTab = {
         };
       });
 
-      // Attach wheel scroll for page switching (once only)
-      this._attachWheelScroll();
     } catch (e) {
       container.innerHTML = `<div class="error-state"><p>Error: ${DOM.escapeHtml(e.message)}</p></div>`;
     }
