@@ -382,7 +382,17 @@ function initAddSessionModal() {
 
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === 'n') { e.preventDefault(); openModal(); }
-    if (e.ctrlKey && e.key === 'x') { e.preventDefault(); import('./ui/modals.js').then(m => m.Modal.openCleanTab()); }
+    if (e.ctrlKey && e.key === 'x') {
+      e.preventDefault();
+      const now = Date.now();
+      if (CurrentTab._lastCtrlX && now - CurrentTab._lastCtrlX < 2000) {
+        CurrentTab._lastCtrlX = 0;
+        TabInfo.cleanCurrentTab();
+      } else {
+        CurrentTab._lastCtrlX = now;
+        import('./ui/modals.js').then(m => m.Modal.openCleanTab());
+      }
+    }
     if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
   });
 }
