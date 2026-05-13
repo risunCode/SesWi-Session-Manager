@@ -344,6 +344,39 @@ body {
   line-height: 1.4;
 }
 
+/* Delete Mode */
+.delete-mode .session-card {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.delete-mode .session-card:hover {
+  border-color: #ef4444;
+  background: #fee2e2;
+}
+
+.delete-mode .session-card::before {
+  opacity: 1;
+  background: #ef4444;
+}
+
+.session-card.confirm-delete {
+  border-color: #ef4444 !important;
+  background: #fee2e2 !important;
+  animation: shake 0.3s ease;
+}
+
+.session-card.confirm-delete .session-name {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
 /* ========== Group Overview Card ========== */
 .group-overview-card {
   display: flex;
