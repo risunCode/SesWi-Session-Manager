@@ -29,7 +29,14 @@ export const CurrentTab = {
     this._restoredLoaded = true;
     try {
       const r = await chrome.storage.local.get(RESTORED_KEY);
-      this._restoredMap = r[RESTORED_KEY] || {};
+      const val = r[RESTORED_KEY];
+      // Migrate old format (single string timestamp) → discard
+      if (!val || typeof val === 'string') {
+        this._restoredMap = {};
+        if (val) chrome.storage.local.remove(RESTORED_KEY).catch(() => {});
+      } else {
+        this._restoredMap = val;
+      }
     } catch { this._restoredMap = {}; }
   },
 
