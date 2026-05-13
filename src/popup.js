@@ -382,8 +382,7 @@ function initAddSessionModal() {
 
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === 'n') { e.preventDefault(); openModal(); }
-    if (e.ctrlKey && e.key === 'x') { e.preventDefault(); CurrentTab.deleteMode = !CurrentTab.deleteMode; CurrentTab.render(); }
+    if (e.ctrlKey && e.key === 'x') { e.preventDefault(); import('./ui/modals.js').then(m => m.Modal.openCleanTab()); }
     if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
-    if (e.key === 'Escape' && CurrentTab.deleteMode) { CurrentTab.deleteMode = false; CurrentTab.render(); }
   });
 }

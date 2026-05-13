@@ -20,7 +20,6 @@ export const CurrentTab = {
   justSavedTs: null,
   justRestoredTs: null,
   _restoredLoaded: false,
-  deleteMode: false,
   searchQuery: '',
   _totalPages: 1,
   _wheelAttached: false,
@@ -111,34 +110,9 @@ export const CurrentTab = {
         card.onclick = () => {
           const ts = card.dataset.ts;
           const session = items.find(s => String(s.timestamp) === ts);
-          if (!session) return;
-          if (this.deleteMode) {
-            if (card.classList.contains('confirm-delete')) {
-              SessionStorage.delete(session.timestamp).then(() => {
-                document.dispatchEvent(new CustomEvent('seswi:session-deleted'));
-              });
-            } else {
-              card.classList.add('confirm-delete');
-              card.querySelector('.session-name').dataset.orig = card.querySelector('.session-name').textContent;
-              card.querySelector('.session-name').textContent = 'Tap again to delete';
-              setTimeout(() => {
-                card.classList.remove('confirm-delete');
-                const nameEl = card.querySelector('.session-name');
-                if (nameEl.dataset.orig) nameEl.textContent = nameEl.dataset.orig;
-              }, 2000);
-            }
-          } else {
-            Modal.openSessionActions(session);
-          }
+          if (session) Modal.openSessionActions(session);
         };
       });
-
-      // Visual indicator for delete mode
-      if (this.deleteMode) {
-        container.classList.add('delete-mode');
-      } else {
-        container.classList.remove('delete-mode');
-      }
 
     } catch (e) {
       container.innerHTML = `<div class="error-state"><p>Error: ${DOM.escapeHtml(e.message)}</p></div>`;
