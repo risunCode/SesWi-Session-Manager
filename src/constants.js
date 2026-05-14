@@ -27,6 +27,8 @@ export const STORAGE_KEYS = {
   MP_VERIFY: '_seswi_mp_verify',
   MP_SALT: '_seswi_mp_salt',
   MP_REMEMBER: '_seswi_mp_remember',
+  MP_ATTEMPTS: '_seswi_mp_attempts',
+  MP_LOCKOUT: '_seswi_mp_lockout',
   ENCRYPTED_SESSIONS: '_seswi_encrypted',
 };
 

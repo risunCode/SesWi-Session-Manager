@@ -296,8 +296,13 @@ export const SessionStorage = {
     try {
       const { data: sessions } = await this.getAll();
       const filtered = sessions.filter(s => !domains.includes(s.domain));
-      const key = await getStorageKey();
-      await chrome.storage.local.set({ [key]: filtered });
+      
+      if (_mpEnabled) {
+        await syncEncryptedSessions(filtered);
+      } else {
+        const key = await getStorageKey();
+        await chrome.storage.local.set({ [key]: filtered });
+      }
       return Response.success({ deleted: sessions.length - filtered.length });
     } catch (e) {
       return Response.error(e, 'SessionStorage.deleteGrouped');
@@ -309,8 +314,13 @@ export const SessionStorage = {
       const tsSet = new Set(timestamps);
       const { data: sessions } = await this.getAll();
       const filtered = sessions.filter(s => !tsSet.has(s.timestamp));
-      const key = await getStorageKey();
-      await chrome.storage.local.set({ [key]: filtered });
+      
+      if (_mpEnabled) {
+        await syncEncryptedSessions(filtered);
+      } else {
+        const key = await getStorageKey();
+        await chrome.storage.local.set({ [key]: filtered });
+      }
       return Response.success({ deleted: sessions.length - filtered.length });
     } catch (e) {
       return Response.error(e, 'SessionStorage.deleteMany');

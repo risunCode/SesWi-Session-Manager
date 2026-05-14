@@ -24,6 +24,62 @@ const hashPassword = (password, salt) => {
   return sjcl.codec.hex.fromBits(bits);
 };
 
+// Constant-time string comparison (prevents timing attacks)
+const safeCompare = (a, b) => {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) {
+    // Still do comparison to maintain constant time behavior
+    b = a;
+  }
+  let result = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+};
+
+// Session token encryption (for remember unlock feature)
+// Encrypts password with a random key, stores encrypted password separately
+export const SessionToken = {
+  /** Create encrypted session (returns { token, encryptedPwd }) */
+  create(password) {
+    // Generate random key (same length as password, padded to 32 bytes min)
+    const pwdBytes = new TextEncoder().encode(password);
+    const keyLen = Math.max(32, pwdBytes.length);
+    const keyBytes = new Uint8Array(keyLen);
+    crypto.getRandomValues(keyBytes);
+    
+    // XOR encrypt the password
+    const encrypted = new Uint8Array(pwdBytes.length);
+    for (let i = 0; i < pwdBytes.length; i++) {
+      encrypted[i] = pwdBytes[i] ^ keyBytes[i % keyLen];
+    }
+    
+    return {
+      token: Array.from(keyBytes).map(b => b.toString(16).padStart(2, '0')).join(''),
+      encryptedPwd: Array.from(encrypted).map(b => b.toString(16).padStart(2, '0')).join(''),
+      pwdLen: pwdBytes.length
+    };
+  },
+  
+  /** Decrypt password from session token */
+  decrypt(token, encryptedPwd, pwdLen) {
+    try {
+      const keyBytes = new Uint8Array(token.match(/.{2}/g).map(h => parseInt(h, 16)));
+      const encBytes = new Uint8Array(encryptedPwd.match(/.{2}/g).map(h => parseInt(h, 16)));
+      
+      const decrypted = new Uint8Array(pwdLen);
+      for (let i = 0; i < pwdLen; i++) {
+        decrypted[i] = encBytes[i] ^ keyBytes[i % keyBytes.length];
+      }
+      
+      return new TextDecoder().decode(decrypted);
+    } catch {
+      return null;
+    }
+  }
+};
+
 export const Crypto = {
   encrypt(data, password) {
     const sjcl = getSJCL();
@@ -96,8 +152,13 @@ export const MasterPassword = {
   /** Setup new master password */
   async setup(password) {
     try {
-      if (!password || password.length < 6) {
-        return Response.error('Password must be at least 6 characters');
+      if (!password || password.length < 8) {
+        return Response.error('Password must be at least 8 characters');
+      }
+      
+      // Require at least one letter and one number for security
+      if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+        return Response.error('Password must contain letters and numbers');
       }
 
       const salt = generateSalt();
@@ -128,19 +189,45 @@ export const MasterPassword = {
     }
   },
 
-  /** Verify password */
+  /** Verify password with brute-force protection */
   async verify(password) {
     try {
+      // Check lockout status first
+      const lockoutData = await chrome.storage.local.get([STORAGE_KEYS.MP_LOCKOUT, STORAGE_KEYS.MP_ATTEMPTS]);
+      const lockoutUntil = lockoutData[STORAGE_KEYS.MP_LOCKOUT] || 0;
+      const attempts = lockoutData[STORAGE_KEYS.MP_ATTEMPTS] || 0;
+      
+      if (Date.now() < lockoutUntil) {
+        const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+        return Response.error(`Too many attempts. Try again in ${remaining}s`);
+      }
+      
       const data = await chrome.storage.local.get([STORAGE_KEYS.MP_SALT, STORAGE_KEYS.MP_VERIFY]);
       if (!data[STORAGE_KEYS.MP_SALT] || !data[STORAGE_KEYS.MP_VERIFY]) {
         return Response.error('Master password not set');
       }
 
       const hash = hashPassword(password, data[STORAGE_KEYS.MP_SALT]);
-      if (hash !== data[STORAGE_KEYS.MP_VERIFY]) {
+      
+      // Use constant-time comparison to prevent timing attacks
+      if (!safeCompare(hash, data[STORAGE_KEYS.MP_VERIFY])) {
+        // Increment failed attempts
+        const newAttempts = attempts + 1;
+        const updates = { [STORAGE_KEYS.MP_ATTEMPTS]: newAttempts };
+        
+        // Exponential backoff: lockout after 5 attempts
+        // 5 fails = 30s, 6 = 60s, 7 = 120s, 8 = 300s (5min max)
+        if (newAttempts >= 5) {
+          const lockoutSeconds = Math.min(300, 30 * Math.pow(2, newAttempts - 5));
+          updates[STORAGE_KEYS.MP_LOCKOUT] = Date.now() + (lockoutSeconds * 1000);
+        }
+        
+        await chrome.storage.local.set(updates);
         return Response.error('Incorrect password');
       }
 
+      // Success - reset attempts
+      await chrome.storage.local.remove([STORAGE_KEYS.MP_ATTEMPTS, STORAGE_KEYS.MP_LOCKOUT]);
       return Response.success(true);
     } catch (e) {
       return Response.error(e, 'MasterPassword.verify');
@@ -174,6 +261,14 @@ export const MasterPassword = {
   /** Change master password */
   async change(currentPassword, newPassword) {
     try {
+      // Validate new password
+      if (!newPassword || newPassword.length < 8) {
+        return Response.error('Password must be at least 8 characters');
+      }
+      if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+        return Response.error('Password must contain letters and numbers');
+      }
+      
       // Verify current password
       const verifyResult = await this.verify(currentPassword);
       if (!verifyResult.success) return verifyResult;
@@ -233,14 +328,25 @@ export const MasterPassword = {
   /** Check password strength */
   getStrength(password) {
     if (!password) return { level: '', text: '' };
-    let score = 0;
-    if (password.length >= 8) score++;
+    
+    // Check minimum requirements first
+    const hasMinLength = password.length >= 8;
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    
+    if (!hasMinLength) {
+      return { level: 'weak', text: `Weak (need ${8 - password.length} more chars)` };
+    }
+    if (!hasLetter || !hasNumber) {
+      return { level: 'weak', text: 'Weak (need letters + numbers)' };
+    }
+    
+    // Score additional strength factors
+    let score = 2; // Base score for meeting requirements
     if (password.length >= 12) score++;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
     if (/[^a-zA-Z0-9]/.test(password)) score++;
 
-    if (score <= 1) return { level: 'weak', text: 'Weak' };
     if (score === 2) return { level: 'fair', text: 'Fair' };
     if (score === 3) return { level: 'good', text: 'Good' };
     return { level: 'strong', text: 'Strong' };
