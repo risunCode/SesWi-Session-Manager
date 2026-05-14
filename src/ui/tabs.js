@@ -404,8 +404,7 @@ export const ManageTab = {
       if (el) el.onclick = handler;
     };
 
-    wire('backupAll', () => this.handleBackup());
-    wire('restoreSessions', () => this.handleRestore());
+    wire('backupRestore', () => Modal.openBackupRestore());
     wire('groupManage', () => this.handleGroupManage());
     wire('cleanCurrentTabData', () => this.handleClean());
     wire('deleteExpiredSessions', () => this.handleDeleteExpired());
@@ -448,14 +447,6 @@ export const ManageTab = {
       Logger.error('Export failed:', e);
       Modal.openConfirm({ title: 'Export Failed', message: e.message, confirmText: 'OK', onConfirm: () => {} });
     }
-  },
-
-  handleBackup() {
-    Modal.openBackupFormat();
-  },
-
-  handleRestore() {
-    Modal.openRestore();
   },
 
   handleGroupManage() {

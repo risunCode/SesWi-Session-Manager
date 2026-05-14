@@ -12,166 +12,178 @@ import { EVENTS, TIMING, LIMITS, emitEvent } from '../constants.js';
 export const Modal = {
   openSessionActions,
 
-  // ========== Backup Format Modal ==========
-  openBackupFormat() {
-    this._ensureBackupModal();
-    const modal = document.getElementById('backupFormatModal');
-    const msg = modal.querySelector('#bfMessage');
-    msg.textContent = '';
-    msg.className = 'modal-message';
-    modal.querySelector('#bfPassword').value = '';
-    modal.querySelector('#bfPwdWrap').classList.add('hidden');
-    modal.querySelector('#bfJSON').classList.remove('selected');
-    modal.querySelector('#bfOWI').classList.remove('selected');
-    // Reset format state
+  // ========== Backup & Restore Modal (Combined) ==========
+  openBackupRestore(tab = 'export') {
+    this._ensureBackupRestoreModal();
+    const modal = document.getElementById('brModal');
+    
+    // Reset state
     modal._format = 'json';
+    modal._parsedSessions = [];
+    modal._fileType = null;
+    modal._owiFile = null;
+    
+    // Reset export pane
+    modal.querySelector('#brExpPassword').value = '';
+    modal.querySelector('#brExpPwdWrap').classList.add('hidden');
+    modal.querySelector('#brExpJSON').classList.remove('selected');
+    modal.querySelector('#brExpOWI').classList.remove('selected');
+    modal.querySelector('#brExpMessage').textContent = '';
+    
+    // Reset import pane
+    modal.querySelector('#brImpDrop span').innerHTML = '<i class="fa-solid fa-folder-open mr-1"></i>Drop .json or .owi file(s)';
+    modal.querySelector('#brImpFile').value = '';
+    modal.querySelector('#brImpFileList').innerHTML = '';
+    modal.querySelector('#brImpPwdWrap').classList.add('hidden');
+    modal.querySelector('#brImpMessage').textContent = '';
+    
+    // Set active tab
+    const tabs = modal.querySelectorAll('.br-tab');
+    const panes = modal.querySelectorAll('.br-pane');
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    panes.forEach(p => p.classList.toggle('active', p.id === `brPane${tab.charAt(0).toUpperCase() + tab.slice(1)}`));
+    
     DOM.showModal(modal);
   },
 
-  _ensureBackupModal() {
-    if (document.getElementById('backupFormatModal')) return;
+  _ensureBackupRestoreModal() {
+    if (document.getElementById('brModal')) return;
 
     const html = `
-      <div id="backupFormatModal" class="modal">
+      <div id="brModal" class="modal">
         <div class="modal-content">
           <div class="modal-header">
             <div class="traffic-lights">
-              <span class="tl-btn tl-close" id="bfTlClose"></span>
+              <span class="tl-btn tl-close" id="brTlClose"></span>
               <span class="tl-btn tl-minimize"></span>
               <span class="tl-btn tl-maximize"></span>
             </div>
-            <h3><i class="fa-solid fa-folder-open mr-2 text-blue-500"></i>Backup Format</h3>
+            <h3><i class="fa-solid fa-arrow-right-arrow-left mr-2 text-blue-500"></i>Backup & Restore</h3>
           </div>
           <div class="modal-body">
-            <div class="modal-options">
-              <button class="option-card" id="bfJSON">
-                <i class="fa-solid fa-file-code text-2xl text-amber-500"></i>
-                <span class="option-title">JSON</span>
-                <span class="option-desc">Unencrypted</span>
-              </button>
-              <button class="option-card" id="bfOWI">
-                <i class="fa-solid fa-lock text-2xl text-violet-500"></i>
-                <span class="option-title">OWI</span>
-                <span class="option-desc">Encrypted</span>
-              </button>
+            <div class="br-tabs">
+              <button class="br-tab active" data-tab="export"><i class="fa-solid fa-download mr-1"></i>Export</button>
+              <button class="br-tab" data-tab="import"><i class="fa-solid fa-upload mr-1"></i>Import</button>
             </div>
-            <div id="bfPwdWrap" class="hidden">
-              <input type="password" id="bfPassword" placeholder="Enter password for encryption" />
+            
+            <!-- Export Pane -->
+            <div class="br-pane active" id="brPaneExport">
+              <div class="modal-options">
+                <button class="option-card" id="brExpJSON">
+                  <i class="fa-solid fa-file-code text-2xl text-amber-500"></i>
+                  <span class="option-title">JSON</span>
+                  <span class="option-desc">Unencrypted</span>
+                </button>
+                <button class="option-card" id="brExpOWI">
+                  <i class="fa-solid fa-lock text-2xl text-violet-500"></i>
+                  <span class="option-title">OWI</span>
+                  <span class="option-desc">Encrypted</span>
+                </button>
+              </div>
+              <div id="brExpPwdWrap" class="hidden">
+                <input type="password" id="brExpPassword" placeholder="Enter password for encryption" />
+              </div>
+              <div class="modal-message" id="brExpMessage"></div>
+              <div class="br-action">
+                <button class="btn btn-primary" id="brExpCreate"><i class="fa-solid fa-download mr-1"></i>Create Backup</button>
+              </div>
             </div>
-            <div class="modal-message" id="bfMessage"></div>
+            
+            <!-- Import Pane -->
+            <div class="br-pane" id="brPaneImport">
+              <div class="dropzone" id="brImpDrop">
+                <span><i class="fa-solid fa-folder-open mr-1"></i>Drop .json or .owi file(s)</span>
+              </div>
+              <input type="file" id="brImpFile" accept=".json,.owi" class="hidden" multiple />
+              <div id="brImpFileList" class="rm-file-list"></div>
+              <div id="brImpPwdWrap" class="hidden flex gap-2 mt-3">
+                <input type="password" id="brImpPassword" placeholder="Password for OWI" class="flex-1" />
+                <button id="brImpVerify" class="btn btn-primary px-4"><i class="fa-solid fa-check mr-1"></i>Verify</button>
+              </div>
+              <div class="modal-message" id="brImpMessage"></div>
+              <div class="br-action">
+                <button class="btn btn-primary" id="brImpRestore"><i class="fa-solid fa-upload mr-1"></i>Restore</button>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" id="bfCancel">Cancel</button>
-            <button class="btn btn-primary" id="bfCreate"><i class="fa-solid fa-download mr-1"></i>Create Backup</button>
+            <button class="btn btn-secondary" id="brCancel">Close</button>
           </div>
         </div>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', html);
-    this._wireBackupModal();
+    this._wireBackupRestoreModal();
   },
 
-  _wireBackupModal() {
-    const modal = document.getElementById('backupFormatModal');
-    const pwdWrap = modal.querySelector('#bfPwdWrap');
-    const pwdInput = modal.querySelector('#bfPassword');
-    const msg = modal.querySelector('#bfMessage');
+  _wireBackupRestoreModal() {
+    const modal = document.getElementById('brModal');
+    
+    DOM.wireModalClose(modal, { closeBtn: '#brTlClose', cancelBtn: '#brCancel' });
 
-    DOM.wireModalClose(modal, { closeBtn: '#bfTlClose', cancelBtn: '#bfCancel' });
+    // Tab switching
+    modal.querySelectorAll('.br-tab').forEach(tab => {
+      tab.onclick = () => {
+        modal.querySelectorAll('.br-tab').forEach(t => t.classList.toggle('active', t === tab));
+        modal.querySelectorAll('.br-pane').forEach(p => 
+          p.classList.toggle('active', p.id === `brPane${tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1)}`)
+        );
+      };
+    });
 
-    modal.querySelector('#bfJSON').onclick = () => {
+    // ===== Export functionality =====
+    const expPwdWrap = modal.querySelector('#brExpPwdWrap');
+    const expPwdInput = modal.querySelector('#brExpPassword');
+    const expMsg = modal.querySelector('#brExpMessage');
+
+    modal.querySelector('#brExpJSON').onclick = () => {
       modal._format = 'json';
-      pwdWrap.classList.add('hidden');
-      modal.querySelector('#bfJSON').classList.add('selected');
-      modal.querySelector('#bfOWI').classList.remove('selected');
+      expPwdWrap.classList.add('hidden');
+      modal.querySelector('#brExpJSON').classList.add('selected');
+      modal.querySelector('#brExpOWI').classList.remove('selected');
     };
 
-    modal.querySelector('#bfOWI').onclick = () => {
+    modal.querySelector('#brExpOWI').onclick = () => {
       modal._format = 'owi';
-      pwdWrap.classList.remove('hidden');
-      modal.querySelector('#bfOWI').classList.add('selected');
-      modal.querySelector('#bfJSON').classList.remove('selected');
+      expPwdWrap.classList.remove('hidden');
+      modal.querySelector('#brExpOWI').classList.add('selected');
+      modal.querySelector('#brExpJSON').classList.remove('selected');
     };
 
-    modal.querySelector('#bfCreate').onclick = async () => {
+    modal.querySelector('#brExpCreate').onclick = async () => {
       const format = modal._format || 'json';
       const { data: sessions } = await SessionStorage.getAll();
       
+      if (!sessions.length) {
+        expMsg.textContent = 'No sessions to export';
+        expMsg.className = 'modal-message error';
+        return;
+      }
+      
       if (format === 'json') {
         DOM.downloadFile(JSON.stringify(sessions, null, 2), 'sessions-backup.json', 'application/json');
-        DOM.closeModal(modal);
+        expMsg.textContent = `Exported ${sessions.length} sessions`;
+        expMsg.className = 'modal-message success';
       } else {
-        const password = pwdInput.value.trim();
-        if (!password) { msg.textContent = 'Password required'; msg.className = 'modal-message error'; return; }
+        const password = expPwdInput.value.trim();
+        if (!password) { expMsg.textContent = 'Password required'; expMsg.className = 'modal-message error'; return; }
         const res = await Crypto.exportOWI(sessions, password);
-        if (res.success) DOM.closeModal(modal);
-        else { msg.textContent = res.error; msg.className = 'modal-message error'; }
+        if (res.success) {
+          expMsg.textContent = `Exported ${sessions.length} sessions (encrypted)`;
+          expMsg.className = 'modal-message success';
+        } else {
+          expMsg.textContent = res.error;
+          expMsg.className = 'modal-message error';
+        }
       }
     };
-  },
 
-
-  // ========== Restore Modal ==========
-  openRestore() {
-    this._ensureRestoreModal();
-    const modal = document.getElementById('restoreModal');
-    modal.querySelector('#rmDrop').querySelector('span').innerHTML = '<i class="fa-solid fa-folder-open mr-1"></i>Drop .json or .owi file(s)';
-    modal.querySelector('#rmMessage').textContent = '';
-    modal.querySelector('#rmPwdWrap').classList.add('hidden');
-    modal.querySelector('#rmFile').value = '';
-    modal.querySelector('#rmFileList').innerHTML = '';
-    // Reset state on every open
-    modal._parsedSessions = [];
-    modal._fileType = null;
-    DOM.showModal(modal);
-  },
-
-  _ensureRestoreModal() {
-    if (document.getElementById('restoreModal')) return;
-
-    const html = `
-      <div id="restoreModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <div class="traffic-lights">
-              <span class="tl-btn tl-close" id="rmTlClose"></span>
-              <span class="tl-btn tl-minimize"></span>
-              <span class="tl-btn tl-maximize"></span>
-            </div>
-            <h3><i class="fa-solid fa-upload mr-2 text-emerald-500"></i>Restore Backup</h3>
-          </div>
-          <div class="modal-body">
-            <div class="dropzone" id="rmDrop">
-              <span><i class="fa-solid fa-folder-open mr-1"></i>Drop .json or .owi file(s)</span>
-            </div>
-            <input type="file" id="rmFile" accept=".json,.owi" class="hidden" multiple />
-            <div id="rmFileList" class="rm-file-list"></div>
-            <div id="rmPwdWrap" class="hidden flex gap-2 mt-3">
-              <input type="password" id="rmPassword" placeholder="Password for OWI" class="flex-1" />
-              <button id="rmVerify" class="btn btn-primary px-4"><i class="fa-solid fa-check mr-1"></i>Verify</button>
-            </div>
-            <div class="modal-message" id="rmMessage"></div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" id="rmCancel">Cancel</button>
-            <button class="btn btn-primary" id="rmRestore"><i class="fa-solid fa-upload mr-1"></i>Restore</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', html);
-    this._wireRestoreModal();
-  },
-
-  _wireRestoreModal() {
-    const modal = document.getElementById('restoreModal');
-    const drop = modal.querySelector('#rmDrop');
-    const fileInput = modal.querySelector('#rmFile');
-    const fileList = modal.querySelector('#rmFileList');
-    const pwdWrap = modal.querySelector('#rmPwdWrap');
-    const msg = modal.querySelector('#rmMessage');
-
-    DOM.wireModalClose(modal, { closeBtn: '#rmTlClose', cancelBtn: '#rmCancel' });
+    // ===== Import functionality =====
+    const drop = modal.querySelector('#brImpDrop');
+    const fileInput = modal.querySelector('#brImpFile');
+    const fileList = modal.querySelector('#brImpFileList');
+    const impPwdWrap = modal.querySelector('#brImpPwdWrap');
+    const impMsg = modal.querySelector('#brImpMessage');
 
     drop.onclick = () => fileInput.click();
     drop.ondragover = e => { e.preventDefault(); drop.classList.add('dragover'); };
@@ -192,31 +204,25 @@ export const Modal = {
       modal._parsedSessions = [];
       modal._fileType = null;
       fileList.innerHTML = '';
-      msg.textContent = '';
-      msg.className = 'modal-message';
+      impMsg.textContent = '';
+      impMsg.className = 'modal-message';
 
-      // Detect: if any OWI file, treat as single OWI mode
       const owiFiles = files.filter(f => f.name.toLowerCase().endsWith('.owi'));
       const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
 
       if (owiFiles.length > 0) {
-        // OWI: single file only
         const file = owiFiles[0];
         modal._fileType = 'owi';
         modal._owiFile = file;
-        pwdWrap.classList.remove('hidden');
+        impPwdWrap.classList.remove('hidden');
         drop.querySelector('span').innerHTML = `<i class="fa-solid fa-lock mr-1"></i>${DOM.escapeHtml(file.name)}`;
-        msg.textContent = 'Enter password to verify OWI file';
-        msg.className = 'modal-message';
+        impMsg.textContent = 'Enter password to verify OWI file';
       } else if (jsonFiles.length > 0) {
-        // JSON: batch support
         modal._fileType = 'json';
-        pwdWrap.classList.add('hidden');
+        impPwdWrap.classList.add('hidden');
         drop.querySelector('span').innerHTML = `<i class="fa-solid fa-file-code mr-1"></i>${jsonFiles.length} file(s) selected`;
 
         let totalSessions = 0;
-        const errors = [];
-
         for (const file of jsonFiles) {
           try {
             const text = await file.text();
@@ -228,7 +234,6 @@ export const Modal = {
               `<div class="rm-file-item success"><i class="fa-solid fa-check"></i>${DOM.escapeHtml(file.name)} <span>(${sessions.length})</span></div>`
             );
           } catch {
-            errors.push(file.name);
             fileList.insertAdjacentHTML('beforeend',
               `<div class="rm-file-item error"><i class="fa-solid fa-xmark"></i>${DOM.escapeHtml(file.name)} <span>Invalid</span></div>`
             );
@@ -236,40 +241,40 @@ export const Modal = {
         }
 
         if (totalSessions > 0) {
-          msg.textContent = `Found ${totalSessions} sessions from ${jsonFiles.length - errors.length} file(s)`;
-          msg.className = 'modal-message success';
+          impMsg.textContent = `Found ${totalSessions} sessions`;
+          impMsg.className = 'modal-message success';
         } else {
-          msg.textContent = 'No valid sessions found';
-          msg.className = 'modal-message error';
+          impMsg.textContent = 'No valid sessions found';
+          impMsg.className = 'modal-message error';
         }
       }
     };
 
-    modal.querySelector('#rmVerify').onclick = async () => {
-      const file = modal._owiFile || fileInput.files?.[0];
-      const password = modal.querySelector('#rmPassword').value;
-      if (!file || !password) { msg.textContent = 'Select file and enter password'; msg.className = 'modal-message error'; return; }
+    modal.querySelector('#brImpVerify').onclick = async () => {
+      const file = modal._owiFile;
+      const password = modal.querySelector('#brImpPassword').value;
+      if (!file || !password) { impMsg.textContent = 'Select file and enter password'; impMsg.className = 'modal-message error'; return; }
       
       try {
         const text = await file.text();
         const res = await Crypto.importOWI(text, password);
         if (res.success) {
           modal._parsedSessions = res.data.sessions;
-          msg.textContent = `Verified! ${modal._parsedSessions.length} sessions`;
-          msg.className = 'modal-message success';
+          impMsg.textContent = `Verified! ${modal._parsedSessions.length} sessions`;
+          impMsg.className = 'modal-message success';
         } else {
-          msg.textContent = res.error;
-          msg.className = 'modal-message error';
+          impMsg.textContent = res.error;
+          impMsg.className = 'modal-message error';
         }
-      } catch (e) {
-        msg.textContent = 'Decryption failed';
-        msg.className = 'modal-message error';
+      } catch {
+        impMsg.textContent = 'Decryption failed';
+        impMsg.className = 'modal-message error';
       }
     };
 
-    modal.querySelector('#rmRestore').onclick = async () => {
+    modal.querySelector('#brImpRestore').onclick = async () => {
       const parsedSessions = modal._parsedSessions || [];
-      if (!parsedSessions.length) { msg.textContent = 'No sessions to restore'; msg.className = 'modal-message error'; return; }
+      if (!parsedSessions.length) { impMsg.textContent = 'No sessions to restore'; impMsg.className = 'modal-message error'; return; }
       
       const { data: existing } = await SessionStorage.getAll();
       const existingTs = new Set(existing.map(s => s.timestamp));
@@ -279,10 +284,9 @@ export const Modal = {
         await SessionStorage.save(session).catch(() => {});
       }
       
-      msg.textContent = `Restored ${toImport.length} of ${parsedSessions.length} sessions`;
-      msg.className = 'modal-message success';
+      impMsg.textContent = `Restored ${toImport.length} of ${parsedSessions.length} sessions`;
+      impMsg.className = 'modal-message success';
       emitEvent(EVENTS.SESSIONS_RESTORED);
-      setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
     };
   },
 

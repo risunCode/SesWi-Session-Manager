@@ -1109,6 +1109,44 @@ input, button, textarea, select {
 .option-title { font-weight: 600; font-size: var(--fs-md); color: #111827; }
 .option-desc { font-size: var(--fs-sm); color: #64748b; }
 
+/* ========== Backup & Restore Tabs ========== */
+.br-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.br-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.br-tab:hover { color: #334155; }
+.br-tab.active {
+  background: white;
+  color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.br-pane { display: none; }
+.br-pane.active { display: block; }
+
+.br-action {
+  margin-top: 16px;
+  text-align: right;
+}
+
 /* ========== Dropzone (Restore) ========== */
 .dropzone {
   border: 2px dashed #cbd5e1;
