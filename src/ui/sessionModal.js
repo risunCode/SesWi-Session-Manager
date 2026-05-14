@@ -7,6 +7,7 @@ import { SessionStorage, TabInfo, BrowserStorage } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
 import { DOM, Domain, Time } from '../utils.js';
 import { tabIcons } from '../core/icons.js';
+import { TIMING } from '../constants.js';
 
 let _current = { session: null };
 
@@ -205,7 +206,7 @@ export function openSessionActions(session) {
   if (msg) { msg.textContent = ''; msg.style.display = 'none'; }
 
   wireActions();
-  modal.style.display = 'block';
+  DOM.showModal(modal);
 }
 
 // ========== Internal ==========
@@ -238,7 +239,7 @@ function openSavedDataModal(session) {
     const icon = btn.querySelector('i');
     icon.className = 'fa-solid fa-check';
     btn.classList.add('copied');
-    setTimeout(() => { icon.className = 'fa-solid fa-copy'; btn.classList.remove('copied'); }, 1200);
+    setTimeout(() => { icon.className = 'fa-solid fa-copy'; btn.classList.remove('copied'); }, TIMING.MESSAGE_DISPLAY);
   };
 
   switchTab('cookies');
@@ -246,7 +247,7 @@ function openSavedDataModal(session) {
   modal.querySelector('#sdTabLocalStorage').onclick = () => switchTab('localStorage');
   modal.querySelector('#sdTabSessionStorage').onclick = () => switchTab('sessionStorage');
 
-  modal.style.display = 'block';
+  DOM.showModal(modal);
 }
 
 function ensureModal() {
@@ -268,9 +269,20 @@ function ensureModal() {
           <div id="saExpContainer"></div>
           <div class="modal-message" id="saMessage"></div>
 
-          <button class="sa-btn sa-btn-primary sa-btn-full" id="saRestore">
-            <i class="fa-solid fa-rotate-left"></i><span>Restore Session</span>
-          </button>
+          <div class="sa-split-btn">
+            <button class="sa-btn sa-btn-primary sa-split-main" id="saRestore">
+              <i class="fa-solid fa-rotate-left"></i><span>Restore Session</span>
+            </button>
+            <button class="sa-btn sa-btn-primary sa-split-toggle" id="saRestoreToggle">
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="sa-split-dropdown" id="saRestoreDropdown">
+              <button id="saRestoreGo">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>Restore & Go to Original</span>
+              </button>
+            </div>
+          </div>
 
           <div class="sa-row">
             <button class="sa-btn sa-btn-secondary" id="saRename"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
@@ -355,20 +367,45 @@ function wireActions() {
     else window.open(url, '_blank');
   };
 
-  modal.querySelector('#saRestore').onclick = async () => {
+  // Shared restore logic
+  const doRestore = async (goToOriginal = false) => {
     const session = _current.session;
     if (!session) return;
-    const { allowed, tabInfo } = await checkAllowed();
-    if (!allowed) { setMsg(`Open ${session.domain} first`, 'error'); return; }
 
     const hasCookies = session.cookies?.length > 0;
     const hasLS = Object.keys(session.localStorage || {}).length > 0;
     const hasSS = Object.keys(session.sessionStorage || {}).length > 0;
-
     if (!hasCookies && !hasLS && !hasSS) { setMsg('Nothing to restore', 'error'); return; }
 
-    setMsg('Restoring...', '');
+    const tabInfo = await TabInfo.getCurrent();
+    if (!tabInfo.success) { setMsg('No active tab', 'error'); return; }
+
     const tabId = tabInfo.data.tabId;
+    const targetUrl = session.originalUrl || `https://${session.domain}`;
+
+    // For "Restore & Go": navigate first, then restore after page loads
+    if (goToOriginal) {
+      setMsg('Navigating...', '');
+      await chrome.tabs.update(tabId, { url: targetUrl });
+      // Wait for navigation to complete
+      await new Promise(resolve => {
+        const listener = (id, info) => {
+          if (id === tabId && info.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+        // Timeout fallback
+        setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, TIMING.NAV_TIMEOUT);
+      });
+    } else {
+      // Normal restore: check domain match
+      const allowed = Domain.isMatch(session.domain, tabInfo.data.domain);
+      if (!allowed) { setMsg(`Open ${session.domain} first`, 'error'); return; }
+    }
+
+    setMsg('Restoring...', '');
 
     if (hasCookies) await Cookies.restore(session);
     if (tabId && (hasLS || hasSS)) {
@@ -376,13 +413,32 @@ function wireActions() {
     }
 
     setMsg('Restored!', 'success');
-    if (tabId) {
-      const { CurrentTab } = await import('./tabs.js');
-      CurrentTab.setRestored(tabInfo.data.domain, String(session.timestamp));
-      CurrentTab.render();
-      await chrome.tabs.reload(tabId);
-      setTimeout(() => DOM.closeModal(modal), 500);
-    }
+    const { CurrentTab } = await import('./tabs.js');
+    CurrentTab.setRestored(session.domain, String(session.timestamp));
+    CurrentTab.render();
+    await chrome.tabs.reload(tabId);
+    setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_DELAY);
+  };
+
+  // Split button: toggle dropdown
+  const dropdown = modal.querySelector('#saRestoreDropdown');
+  modal.querySelector('#saRestoreToggle').onclick = (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('show');
+  };
+
+  // Close dropdown when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (!e.target.closest('.sa-split-btn')) dropdown.classList.remove('show');
+  });
+
+  // Restore (current tab)
+  modal.querySelector('#saRestore').onclick = () => doRestore(false);
+
+  // Restore & Go to Original
+  modal.querySelector('#saRestoreGo').onclick = () => {
+    dropdown.classList.remove('show');
+    doRestore(true);
   };
 
   modal.querySelector('#saRename').onclick = async () => {
@@ -390,7 +446,7 @@ function wireActions() {
     const { Modal } = await import('./modals.js');
     Modal.openEditSession(_current.session, () => {
       setMsg('Updated!', 'success');
-      setTimeout(() => DOM.closeModal(modal), 500);
+      setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_DELAY);
     });
   };
 
@@ -401,7 +457,7 @@ function wireActions() {
     if (!allowed) { setMsg(`Open ${session.domain} first`, 'error'); return; }
     const { Modal } = await import('./modals.js');
     Modal.openReplaceConfirm(session, () => {
-      setTimeout(() => DOM.closeModal(modal), 300);
+      DOM.closeModal(modal);
     });
   };
 
@@ -409,15 +465,14 @@ function wireActions() {
     if (!_current.session) return;
     const { Modal } = await import('./modals.js');
     Modal.openDeleteConfirm(_current.session, () => {
-      setTimeout(() => DOM.closeModal(modal), 300);
+      DOM.closeModal(modal);
     });
   };
 
   modal.querySelector('#saExportJSON').onclick = () => {
     const session = _current.session;
     if (!session) return;
-    const payload = { cookies: session.cookies, localStorage: session.localStorage, sessionStorage: session.sessionStorage };
-    DOM.downloadFile(JSON.stringify(payload, null, 2), `${session.domain}-${session.name}.json`, 'application/json');
+    DOM.downloadFile(JSON.stringify([session], null, 2), `${session.domain}-${session.name}.json`, 'application/json');
     setMsg('JSON exported!', 'success');
   };
 

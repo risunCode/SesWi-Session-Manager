@@ -37,10 +37,13 @@ export default defineConfig({
         copyFileSync('src/lib/sjcl.min.js', `${outDir}/lib/sjcl.min.js`);
         
         // Copy styles
-        mkdirSync(`${outDir}/styles/webfonts`, { recursive: true });
+        mkdirSync(`${outDir}/styles/font`, { recursive: true });
         copyFileSync('src/styles/main.css', `${outDir}/styles/main.css`);
         copyFileSync('src/styles/fontawesome.css', `${outDir}/styles/fontawesome.css`);
-        cpSync('src/styles/webfonts', `${outDir}/styles/webfonts`, { recursive: true });
+        cpSync('src/styles/font', `${outDir}/styles/font`, { recursive: true });
+        
+        // Copy webfonts (FontAwesome)
+        cpSync('src/webfonts', `${outDir}/webfonts`, { recursive: true });
       }
     },
     {

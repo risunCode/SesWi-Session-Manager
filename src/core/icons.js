@@ -4,18 +4,19 @@
  */
 
 import { Domain } from '../utils.js';
+import { STORAGE_KEYS, TIMING, LIMITS } from '../constants.js';
 
 class TabIcons {
   constructor() {
     this.domainToIcon = {};
     this.lastFetchedAt = 0;
-    this.cacheMs = 60000;
-    this.entryTtlMs = 24 * 60 * 60 * 1000;
-    this.maxEntries = 300;
+    this.cacheMs = TIMING.ICON_CACHE;
+    this.entryTtlMs = TIMING.ICON_ENTRY_TTL;
+    this.maxEntries = LIMITS.MAX_ICON_ENTRIES;
     this._fetchInFlight = null;
     this._listenersInitialized = false;
     this._saveTimer = null;
-    this._storageKey = 'tabIconsCacheV1';
+    this._storageKey = STORAGE_KEYS.ICONS_CACHE;
     this._loadCache();
     this._initListeners();
   }

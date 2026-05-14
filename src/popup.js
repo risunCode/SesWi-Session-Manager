@@ -7,6 +7,7 @@ import { Cookies } from './core/cookies.js';
 import { tabIcons } from './core/icons.js';
 import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
 import { Domain, DOM, Normalize } from './utils.js';
+import { EVENTS, TIMING, emitEvent } from './constants.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Load version from manifest
@@ -28,11 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Listen for session changes
   const refresh = () => { CurrentTab.render(); GroupTab.render(); };
-  document.addEventListener('seswi:session-updated', refresh);
-  document.addEventListener('seswi:session-deleted', refresh);
-  document.addEventListener('seswi:session-replaced', refresh);
-  document.addEventListener('seswi:sessions-restored', refresh);
-  document.addEventListener('seswi:sessions-deleted', refresh);
+  document.addEventListener(EVENTS.SESSION_UPDATED, refresh);
+  document.addEventListener(EVENTS.SESSION_DELETED, refresh);
+  document.addEventListener(EVENTS.SESSION_REPLACED, refresh);
+  document.addEventListener(EVENTS.SESSIONS_RESTORED, refresh);
+  document.addEventListener(EVENTS.SESSIONS_DELETED, refresh);
 
   // Listen for context menu trigger
   chrome.runtime.onMessage.addListener((msg) => {
@@ -51,8 +52,8 @@ function initTabs() {
       tabContents.forEach(c => c.classList.toggle('active', c.id === tabId));
       
       // Refresh content on tab switch
-      if (tabId === 'current-session') CurrentTab.render();
-      if (tabId === 'group-sessions') GroupTab.render();
+      if (tabId === 'currentSession') CurrentTab.render();
+      if (tabId === 'groupSessions') GroupTab.render();
     };
   });
 }
@@ -220,10 +221,10 @@ function initAddSessionModal() {
     document.getElementById('domainWarning')?.classList.add('hidden');
     const infoCard = document.querySelector('.modal-info-enhanced');
     if (infoCard) infoCard.classList.add('shimmer');
-    modal.style.display = 'block';
+    DOM.showModal(modal);
     input.focus();
 
-    // Load data in background (min 400ms shimmer so it's visible)
+    // Load data in background (min shimmer time so it's visible)
     const [data] = await Promise.all([
       (async () => {
         try {
@@ -238,7 +239,7 @@ function initAddSessionModal() {
           return { info, cookies, domain, tabId, localRes, sessionRes };
         } catch { return null; }
       })(),
-      new Promise(r => setTimeout(r, 400))
+      new Promise(r => setTimeout(r, TIMING.SHIMMER_MIN))
     ]);
 
     if (data) {
@@ -317,7 +318,7 @@ function initAddSessionModal() {
       if (saved > 0) {
         msg.textContent = `Saved ${saved} session(s)!`;
         msg.className = 'modal-message success';
-        document.dispatchEvent(new CustomEvent('seswi:session-updated'));
+        emitEvent(EVENTS.SESSION_UPDATED);
         setTimeout(closeModal, 800);
       } else {
         msg.textContent = 'Failed to save (duplicate name?)';
@@ -338,7 +339,7 @@ function initAddSessionModal() {
       for (const session of toImport) await SessionStorage.save(session).catch(() => {});
       msg.textContent = `Imported ${toImport.length} of ${_fileParsedSessions.length} sessions`;
       msg.className = 'modal-message success';
-      document.dispatchEvent(new CustomEvent('seswi:sessions-restored'));
+      emitEvent(EVENTS.SESSIONS_RESTORED);
       setTimeout(closeModal, 900);
       return;
     }
@@ -376,14 +377,16 @@ function initAddSessionModal() {
   input.onkeydown = e => { if (e.key === 'Enter') saveSession(); };
   document.getElementById('importSessionName').onkeydown = e => { if (e.key === 'Enter') saveSession(); };
 
-  document.getElementById('clearInfoBtn')?.addEventListener('click', (e) => {
+  const clearInfoBtn = document.getElementById('clearInfoBtn');
+  if (clearInfoBtn) clearInfoBtn.onclick = (e) => {
     e.preventDefault();
     document.getElementById('clearInfoText')?.classList.toggle('hidden');
-  });
-  document.getElementById('statsInfoBtn')?.addEventListener('click', (e) => {
+  };
+  const statsInfoBtn = document.getElementById('statsInfoBtn');
+  if (statsInfoBtn) statsInfoBtn.onclick = (e) => {
     e.preventDefault();
     document.getElementById('statsInfoText')?.classList.toggle('hidden');
-  });
+  };
 
   document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === 'n') { e.preventDefault(); openModal(); }
@@ -393,13 +396,13 @@ function initAddSessionModal() {
       if (CurrentTab._lastCtrlX && now - CurrentTab._lastCtrlX < 2000) {
         CurrentTab._lastCtrlX = 0;
         const ctModal = document.getElementById('cleanTabModal');
-        if (ctModal) ctModal.style.display = 'none';
+        if (ctModal) DOM.closeModal(ctModal);
         TabInfo.cleanCurrentTab();
       } else {
         CurrentTab._lastCtrlX = now;
         import('./ui/modals.js').then(m => m.Modal.openCleanTab());
       }
     }
-    if (e.key === 'Escape' && modal.style.display === 'block') closeModal();
+    if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
   });
 }

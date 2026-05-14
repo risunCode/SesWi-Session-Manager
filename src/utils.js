@@ -3,14 +3,29 @@
  * Consolidated helpers: DOM, Domain, Time, Response, Logger
  */
 
+import { STORAGE_KEYS } from './constants.js';
+
 // ========== Response Helpers ==========
+/** @typedef {{success: true, data: any, message?: string}} SuccessResponse */
+/** @typedef {{success: false, error: string, context?: string}} ErrorResponse */
+
+/** Standardized response helpers for consistent API responses */
 export const Response = {
+  /** @param {any} data @param {string} [message] @returns {SuccessResponse} */
   success: (data, message) => ({ success: true, data, ...(message && { message }) }),
+  /** @param {Error|string} error @param {string} [context] @returns {ErrorResponse} */
   error: (error, context) => ({ success: false, error: error?.message || String(error), ...(context && { context }) })
 };
 
 // ========== Domain Helpers ==========
+/** Domain utilities for URL parsing and matching */
 export const Domain = {
+  /**
+   * Extract base domain from URL or hostname
+   * @param {string} input - URL or hostname
+   * @returns {string} Base domain (e.g., "example.com")
+   * @throws {Error} If input is invalid
+   */
   getBase(input) {
     if (!input) throw new Error('Invalid URL');
     let hostname = input;
@@ -32,6 +47,12 @@ export const Domain = {
     return tail2;
   },
 
+  /**
+   * Check if session domain matches current domain
+   * @param {string} sessionDomain - Domain from saved session
+   * @param {string} currentDomain - Current tab domain
+   * @returns {boolean} True if domains match
+   */
   isMatch(sessionDomain, currentDomain) {
     if (!sessionDomain || !currentDomain) return false;
     const normalize = d => d.replace(/^\./, '').toLowerCase();
@@ -40,6 +61,11 @@ export const Domain = {
     return cd === sd || cd.endsWith(`.${sd}`);
   },
 
+  /**
+   * Check if domain uses complex auth (Google, Microsoft, etc.)
+   * @param {string} domain - Domain to check
+   * @returns {boolean} True if domain is sensitive
+   */
   isSensitive(domain) {
     if (!domain) return false;
     const d = domain.toLowerCase();
@@ -64,13 +90,25 @@ export const Domain = {
 };
 
 // ========== DOM Helpers ==========
+/** DOM manipulation utilities */
 export const DOM = {
+  /**
+   * Escape HTML entities in text
+   * @param {string} text - Raw text to escape
+   * @returns {string} HTML-safe string
+   */
   escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text == null ? '' : String(text);
     return div.innerHTML;
   },
 
+  /**
+   * Trigger file download
+   * @param {string} content - File content
+   * @param {string} filename - Download filename
+   * @param {string} contentType - MIME type
+   */
   downloadFile(content, filename, contentType) {
     const blob = new Blob([content], { type: contentType });
     const url = URL.createObjectURL(blob);
@@ -81,20 +119,59 @@ export const DOM = {
     URL.revokeObjectURL(url);
   },
 
+  /**
+   * Show a modal with visibility classes
+   * @param {HTMLElement} modal - Modal element
+   */
+  showModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('is-hidden');
+    modal.classList.add('is-visible');
+    modal.style.display = 'block';
+  },
+
+  /**
+   * Close modal with animation
+   * @param {HTMLElement} modal - Modal element
+   */
   closeModal(modal) {
     if (!modal) return;
     const content = modal.querySelector('.modal-content');
     if (content) {
       content.classList.add('closing');
       content.addEventListener('animationend', () => {
+        modal.classList.remove('is-visible');
+        modal.classList.add('is-hidden');
         modal.style.display = 'none';
         content.classList.remove('closing');
       }, { once: true });
     } else {
+      modal.classList.remove('is-visible');
+      modal.classList.add('is-hidden');
       modal.style.display = 'none';
     }
   },
 
+  /** @param {HTMLElement} el */
+  showElement(el) {
+    if (!el) return;
+    el.classList.remove('is-hidden');
+    el.style.display = 'block';
+  },
+
+  /** @param {HTMLElement} el */
+  hideElement(el) {
+    if (!el) return;
+    el.classList.add('is-hidden');
+    el.style.display = 'none';
+  },
+
+  /**
+   * Setup debounced input handler
+   * @param {HTMLInputElement} el - Input element
+   * @param {Function} callback - Called with input value
+   * @param {number} [delay=300] - Debounce delay in ms
+   */
   debounceInput(el, callback, delay = 300) {
     if (!el) return;
     let timer;
@@ -102,6 +179,29 @@ export const DOM = {
       clearTimeout(timer);
       timer = setTimeout(() => callback(e.target.value), delay);
     };
+  },
+
+  /**
+   * Wire common modal close handlers
+   * @param {HTMLElement} modal - The modal element
+   * @param {Object} opts - Options { closeBtn, cancelBtn, onClose }
+   */
+  wireModalClose(modal, opts = {}) {
+    if (!modal) return () => {};
+    const close = () => {
+      DOM.closeModal(modal);
+      opts.onClose?.();
+    };
+    modal.onclick = e => { if (e.target === modal) close(); };
+    if (opts.closeBtn) {
+      const btn = modal.querySelector(opts.closeBtn);
+      if (btn) btn.onclick = close;
+    }
+    if (opts.cancelBtn) {
+      const btn = modal.querySelector(opts.cancelBtn);
+      if (btn) btn.onclick = close;
+    }
+    return close;
   }
 };
 
@@ -182,7 +282,7 @@ export const Time = {
 export const Logger = {
   get enabled() {
     try {
-      return localStorage.getItem('__SES_DEBUG__') === '1' || window.__SES_DEBUG__ === true;
+      return localStorage.getItem(STORAGE_KEYS.DEBUG) === '1' || window.__SES_DEBUG__ === true;
     } catch { return false; }
   },
   log: (...args) => Logger.enabled && console.log('[SesWi]', ...args),

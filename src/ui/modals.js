@@ -7,6 +7,7 @@ import { SessionStorage } from '../core/storage.js';
 import { Crypto } from '../core/crypto.js';
 import { DOM, Time, Normalize, Domain } from '../utils.js';
 import { openSessionActions } from './sessionModal.js';
+import { EVENTS, TIMING, LIMITS, emitEvent } from '../constants.js';
 
 export const Modal = {
   openSessionActions,
@@ -24,7 +25,7 @@ export const Modal = {
     modal.querySelector('#bfOWI').classList.remove('selected');
     // Reset format state
     modal._format = 'json';
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureBackupModal() {
@@ -76,10 +77,7 @@ export const Modal = {
     const pwdInput = modal.querySelector('#bfPassword');
     const msg = modal.querySelector('#bfMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#bfTlClose').onclick = close;
-    modal.querySelector('#bfCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#bfTlClose', cancelBtn: '#bfCancel' });
 
     modal.querySelector('#bfJSON').onclick = () => {
       modal._format = 'json';
@@ -125,7 +123,7 @@ export const Modal = {
     // Reset state on every open
     modal._parsedSessions = [];
     modal._fileType = null;
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureRestoreModal() {
@@ -173,10 +171,7 @@ export const Modal = {
     const pwdWrap = modal.querySelector('#rmPwdWrap');
     const msg = modal.querySelector('#rmMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#rmTlClose').onclick = close;
-    modal.querySelector('#rmCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#rmTlClose', cancelBtn: '#rmCancel' });
 
     drop.onclick = () => fileInput.click();
     drop.ondragover = e => { e.preventDefault(); drop.classList.add('dragover'); };
@@ -286,8 +281,8 @@ export const Modal = {
       
       msg.textContent = `Restored ${toImport.length} of ${parsedSessions.length} sessions`;
       msg.className = 'modal-message success';
-      document.dispatchEvent(new CustomEvent('seswi:sessions-restored'));
-      setTimeout(() => DOM.closeModal(modal), 1000);
+      emitEvent(EVENTS.SESSIONS_RESTORED);
+      setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
     };
   },
 
@@ -360,7 +355,7 @@ export const Modal = {
       modal.querySelector('#ctSSPreview').innerHTML = this._renderCleanTabStorage('sessionStorage');
     }
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _renderCleanTabCookies() {
@@ -546,10 +541,7 @@ export const Modal = {
     const modal = document.getElementById('cleanTabModal');
     const msg = modal.querySelector('#ctMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#ctTlClose').onclick = close;
-    modal.querySelector('#ctCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#ctTlClose', cancelBtn: '#ctCancel' });
 
     // Wire expand icons
     modal.querySelectorAll('.ct-expand-icon').forEach(icon => {
@@ -612,7 +604,7 @@ export const Modal = {
 
     if (!groups || groups.length === 0) {
       list.innerHTML = '<div class="empty-data-msg">No saved sessions</div>';
-      modal.style.display = 'block';
+      DOM.showModal(modal);
       return;
     }
 
@@ -696,7 +688,7 @@ export const Modal = {
       };
     });
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureGroupManageModal() {
@@ -738,10 +730,7 @@ export const Modal = {
     const modal = document.getElementById('groupManageModal');
     const msg = modal.querySelector('#gmMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#gmTlClose').onclick = close;
-    modal.querySelector('#gmCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#gmTlClose', cancelBtn: '#gmCancel' });
 
     const getSelectedTimestamps = () =>
       Array.from(modal.querySelectorAll('.gm-session-check:checked')).map(cb => parseInt(cb.dataset.ts));
@@ -802,8 +791,8 @@ export const Modal = {
           msg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
           msg.className = res.success ? 'modal-message success' : 'modal-message error';
           if (res.success) {
-            document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
-            setTimeout(() => DOM.closeModal(modal), 800);
+            emitEvent(EVENTS.SESSIONS_DELETED);
+            setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
           }
         }
       });
@@ -872,7 +861,7 @@ export const Modal = {
     }
 
     msg.textContent = '';
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureDeleteExpiredModal() {
@@ -912,10 +901,7 @@ export const Modal = {
     const modal = document.getElementById('deleteExpiredModal');
     const msg = modal.querySelector('#deMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#deTlClose').onclick = close;
-    modal.querySelector('#deCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#deTlClose', cancelBtn: '#deCancel' });
 
     modal.querySelector('#deDelete').onclick = async () => {
       const selected = Array.from(modal.querySelectorAll('.de-check:checked')).map(cb => parseInt(cb.dataset.ts));
@@ -936,8 +922,8 @@ export const Modal = {
           msg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
           msg.className = res.success ? 'modal-message success' : 'modal-message error';
           if (res.success) {
-            document.dispatchEvent(new CustomEvent('seswi:sessions-deleted'));
-            setTimeout(() => DOM.closeModal(modal), 800);
+            emitEvent(EVENTS.SESSIONS_DELETED);
+            setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
           }
         }
       });
@@ -959,7 +945,7 @@ export const Modal = {
     modal._session = session;
     modal._onSave = onSave;
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
     nameInput.focus();
     nameInput.select();
   },
@@ -1003,10 +989,7 @@ export const Modal = {
     const nameInput = modal.querySelector('#esName');
     const msg = modal.querySelector('#esMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#esTlClose').onclick = close;
-    modal.querySelector('#esCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#esTlClose', cancelBtn: '#esCancel' });
 
     modal.querySelector('#esSave').onclick = async () => {
       const newName = nameInput.value.trim();
@@ -1028,8 +1011,8 @@ export const Modal = {
         msg.textContent = 'Saved!';
         msg.className = 'modal-message success';
         if (modal._onSave) modal._onSave(updated);
-        document.dispatchEvent(new CustomEvent('seswi:session-updated'));
-        setTimeout(() => DOM.closeModal(modal), 500);
+        emitEvent(EVENTS.SESSION_UPDATED);
+        setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_DELAY);
       } else {
         msg.textContent = res.error || 'Failed to save';
         msg.className = 'modal-message error';
@@ -1055,7 +1038,7 @@ export const Modal = {
     modal._onConfirm = onConfirm;
     modal._session = session;
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureDeleteConfirmModal() {
@@ -1104,10 +1087,7 @@ export const Modal = {
     const modal = document.getElementById('deleteConfirmModal');
     const msg = modal.querySelector('#dcMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#dcTlClose').onclick = close;
-    modal.querySelector('#dcCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#dcTlClose', cancelBtn: '#dcCancel' });
 
     modal.querySelector('#dcConfirm').onclick = async () => {
       msg.textContent = 'Deleting...';
@@ -1119,7 +1099,7 @@ export const Modal = {
         msg.textContent = 'Deleted!';
         msg.className = 'modal-message success';
         if (modal._onConfirm) modal._onConfirm();
-        document.dispatchEvent(new CustomEvent('seswi:session-deleted'));
+        emitEvent(EVENTS.SESSION_DELETED);
         setTimeout(close, 300);
       } else {
         msg.textContent = res.error || 'Failed to delete';
@@ -1140,7 +1120,7 @@ export const Modal = {
     modal._onConfirm = onConfirm;
     modal._session = session;
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureReplaceConfirmModal() {
@@ -1190,10 +1170,7 @@ export const Modal = {
     const modal = document.getElementById('replaceConfirmModal');
     const msg = modal.querySelector('#rcMessage');
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#rcTlClose').onclick = close;
-    modal.querySelector('#rcCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#rcTlClose', cancelBtn: '#rcCancel' });
 
     modal.querySelector('#rcConfirm').onclick = async () => {
       msg.textContent = 'Replacing...';
@@ -1216,8 +1193,8 @@ export const Modal = {
         msg.textContent = 'Replaced!';
         msg.className = 'modal-message success';
         if (modal._onConfirm) modal._onConfirm();
-        document.dispatchEvent(new CustomEvent('seswi:session-replaced'));
-        setTimeout(close, 500);
+        emitEvent(EVENTS.SESSION_REPLACED);
+        setTimeout(close, TIMING.MODAL_CLOSE_DELAY);
       } else {
         msg.textContent = res.error || 'Failed to replace';
         msg.className = 'modal-message error';
@@ -1238,7 +1215,7 @@ export const Modal = {
     modal._session = session;
     modal._onSuccess = onSuccess;
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
     modal.querySelector('#oePassword').focus();
   },
 
@@ -1313,7 +1290,7 @@ export const Modal = {
     modal._filename = filename;
     modal._onSuccess = onSuccess;
 
-    modal.style.display = 'block';
+    DOM.showModal(modal);
     modal.querySelector('#boePassword').focus();
   },
 
@@ -1376,10 +1353,7 @@ export const Modal = {
     const msg = modal.querySelector(`#${ids.msg}`);
     const pwdInput = modal.querySelector(`#${ids.pwd}`);
 
-    const close = () => DOM.closeModal(modal);
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector(`#${ids.close}`).onclick = close;
-    modal.querySelector(`#${ids.cancel}`).onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: `#${ids.close}`, cancelBtn: `#${ids.cancel}` });
 
     modal.querySelector(`#${ids.toggle}`).onclick = () => {
       const isPassword = pwdInput.type === 'password';
@@ -1414,7 +1388,7 @@ export const Modal = {
   openQuickAction() {
     this._ensureQuickActionModal();
     const modal = document.getElementById('quickActionModal');
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureQuickActionModal() {
@@ -1480,11 +1454,7 @@ export const Modal = {
   _wireQuickActionModal() {
     const modal = document.getElementById('quickActionModal');
     const msg = modal.querySelector('#qaMessage');
-    const close = () => DOM.closeModal(modal);
-
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#qaTlClose').onclick = close;
-    modal.querySelector('#qaCancel').onclick = close;
+    DOM.wireModalClose(modal, { closeBtn: '#qaTlClose', cancelBtn: '#qaCancel' });
 
     const handleExport = async (format) => {
       const { ManageTab } = await import('./tabs.js');
@@ -1530,7 +1500,7 @@ export const Modal = {
     btnConfirm.className = `btn ${confirmClass || 'btn-primary'}`;
 
     modal._onConfirm = onConfirm;
-    modal.style.display = 'block';
+    DOM.showModal(modal);
   },
 
   _ensureSimpleConfirmModal() {
@@ -1565,11 +1535,7 @@ export const Modal = {
 
   _wireSimpleConfirmModal() {
     const modal = document.getElementById('simpleConfirmModal');
-    const close = () => DOM.closeModal(modal);
-
-    modal.onclick = e => { if (e.target === modal) close(); };
-    modal.querySelector('#scmTlClose').onclick = close;
-    modal.querySelector('#scmCancel').onclick = close;
+    const close = DOM.wireModalClose(modal, { closeBtn: '#scmTlClose', cancelBtn: '#scmCancel' });
 
     modal.querySelector('#scmConfirm').onclick = () => {
       if (modal._onConfirm) modal._onConfirm();

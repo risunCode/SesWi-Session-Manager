@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>SesWi - Session Manager</title>
   <meta charset="UTF-8">
@@ -7,50 +7,50 @@
   <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container" role="application" aria-label="SesWi Session Manager">
     <!-- Header -->
-    <header class="app-header">
+    <header class="app-header" role="banner">
       <div class="flex items-center gap-2">
-        <i class="fa-solid fa-cookie-bite text-xl"></i>
+        <i class="fa-solid fa-cookie-bite text-xl" aria-hidden="true"></i>
         <h1 class="text-base font-bold">SesWi</h1>
       </div>
       <div class="flex items-center gap-2.5">
-        <span class="current-domain" id="currentDomain">-</span>
-        <button id="addSession" class="btn-add-session">
-          <i class="fa-solid fa-plus"></i>
+        <span class="current-domain" id="currentDomain" aria-label="Current domain">-</span>
+        <button id="addSession" class="btn-add-session" aria-label="Add new session">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
           <span>Add Session</span>
         </button>
       </div>
     </header>
 
     <!-- Tab Navigation -->
-    <nav class="tab-navigation">
-      <button class="tab-btn active" data-tab="current-session">
-        <i class="fa-solid fa-list-ul mr-1"></i> Current
+    <nav class="tab-navigation" role="tablist" aria-label="Main navigation">
+      <button class="tab-btn active" data-tab="currentSession" role="tab" aria-selected="true" aria-controls="currentSession">
+        <i class="fa-solid fa-list-ul mr-1" aria-hidden="true"></i> Current
       </button>
-      <button class="tab-btn" data-tab="group-sessions">
-        <i class="fa-solid fa-layer-group mr-1"></i> Groups
+      <button class="tab-btn" data-tab="groupSessions" role="tab" aria-selected="false" aria-controls="groupSessions">
+        <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i> Groups
       </button>
-      <button class="tab-btn" data-tab="manage">
-        <i class="fa-solid fa-gear mr-1"></i> Manage
+      <button class="tab-btn" data-tab="manage" role="tab" aria-selected="false" aria-controls="manage">
+        <i class="fa-solid fa-gear mr-1" aria-hidden="true"></i> Manage
       </button>
     </nav>
 
     <!-- Tab Content -->
-    <main class="main-content">
-      <div class="tab-content active" id="current-session">
-        <div class="search-bar">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="currentSearchInput" placeholder="Search sessions..." class="search-input">
+    <main class="main-content" role="main">
+      <div class="tab-content active" id="currentSession" role="tabpanel" aria-labelledby="currentSession">
+        <div class="search-bar" role="search">
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+          <input type="text" id="currentSearchInput" placeholder="Search sessions..." class="search-input" aria-label="Search current domain sessions">
         </div>
-        <div id="currentSessionsContainer" class="sessions-container"></div>
-        <div id="currentPagination" class="current-pagination"></div>
+        <div id="currentSessionsContainer" class="sessions-container" role="list" aria-label="Sessions list"></div>
+        <div id="currentPagination" class="current-pagination" role="navigation" aria-label="Pagination"></div>
       </div>
 
-      <div class="tab-content" id="group-sessions">
-        <div class="search-bar">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="groupSearchInput" placeholder="Search sessions..." class="search-input">
+      <div class="tab-content" id="groupSessions" role="tabpanel" aria-labelledby="groupSessions">
+        <div class="search-bar" role="search">
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+          <input type="text" id="groupSearchInput" placeholder="Search sessions..." class="search-input" aria-label="Search all sessions">
         </div>
         <div id="groupOverviewCard" class="group-overview-card">
           <span class="overview-label">Overview:</span>
@@ -70,79 +70,79 @@
         <div id="groupSessionsContainer" class="groups-container"></div>
       </div>
 
-      <div class="tab-content" id="manage">
-        <div class="manage-cards">
+      <div class="tab-content" id="manage" role="tabpanel" aria-labelledby="manage">
+        <div class="manage-cards" role="menu" aria-label="Management options">
 
           <!-- Section: Sessions -->
-          <div class="manage-section-label">Sessions</div>
+          <div class="manage-section-label" role="heading" aria-level="2">Sessions</div>
 
-          <button class="manage-card" id="backupAll">
+          <button class="manage-card" id="backupAll" role="menuitem" aria-label="Backup all sessions to JSON or OWI">
             <div class="flex items-center">
-              <span class="card-icon card-icon--blue"><i class="fa-solid fa-folder-open"></i></span>
+              <span class="card-icon card-icon--blue"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Backup All</div>
                 <div class="card-desc">Export all sessions to JSON or OWI</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
-          <button class="manage-card" id="restoreSessions">
+          <button class="manage-card" id="restoreSessions" role="menuitem" aria-label="Restore sessions from file">
             <div class="flex items-center">
-              <span class="card-icon card-icon--green"><i class="fa-solid fa-file-import"></i></span>
+              <span class="card-icon card-icon--green"><i class="fa-solid fa-file-import" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Restore from File</div>
                 <div class="card-desc">Import from JSON (batch) or OWI</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
-          <button class="manage-card" id="groupManage">
+          <button class="manage-card" id="groupManage" role="menuitem" aria-label="Manage sessions by domain">
             <div class="flex items-center">
-              <span class="card-icon card-icon--indigo"><i class="fa-solid fa-layer-group"></i></span>
+              <span class="card-icon card-icon--indigo"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Manage by Domain</div>
                 <div class="card-desc">Backup or delete sessions per domain</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
-          <button class="manage-card" id="deleteExpiredSessions">
+          <button class="manage-card" id="deleteExpiredSessions" role="menuitem" aria-label="Delete expired sessions">
             <div class="flex items-center">
-              <span class="card-icon card-icon--red"><i class="fa-solid fa-trash-can"></i></span>
+              <span class="card-icon card-icon--red"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Delete Expired</div>
                 <div class="card-desc">Remove sessions with expired cookies</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
           <!-- Section: Current Tab -->
-          <div class="manage-section-label">Current Tab</div>
+          <div class="manage-section-label" role="heading" aria-level="2">Current Tab</div>
 
-          <button class="manage-card" id="cleanCurrentTabData">
+          <button class="manage-card" id="cleanCurrentTabData" role="menuitem" aria-label="Clean current tab data">
             <div class="flex items-center">
-              <span class="card-icon card-icon--amber"><i class="fa-solid fa-broom"></i></span>
+              <span class="card-icon card-icon--amber"><i class="fa-solid fa-broom" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Clean Tab</div>
                 <div class="card-desc">Clear cookies, storage, history & cache</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
-          <button class="manage-card" id="quickAction">
+          <button class="manage-card" id="quickAction" role="menuitem" aria-label="Export current tab data">
             <div class="flex items-center">
-              <span class="card-icon card-icon--pink"><i class="fa-solid fa-bolt"></i></span>
+              <span class="card-icon card-icon--pink"><i class="fa-solid fa-bolt" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Export Tab Data</div>
                 <div class="card-desc">Export session data without saving</div>
               </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
         </div>
@@ -150,33 +150,33 @@
     </main>
 
     <!-- Footer -->
-    <footer class="app-footer">
-      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="footer-link">
-        <i class="fa-solid fa-cookie-bite mr-1"></i> SesWi <span id="appVersion">v3.1</span>
+    <footer class="app-footer" role="contentinfo">
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="footer-link" aria-label="View SesWi on GitHub">
+        <i class="fa-solid fa-cookie-bite mr-1" aria-hidden="true"></i> SesWi <span id="appVersion">v3.1</span>
       </a>
     </footer>
   </div>
 
   <!-- Add Session Modal -->
-  <div id="addSessionModal" class="modal">
+  <div id="addSessionModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
     <div class="modal-content">
       <div class="modal-header">
         <div class="traffic-lights">
-          <span class="tl-btn tl-close" id="addModalClose"></span>
-          <span class="tl-btn tl-minimize"></span>
-          <span class="tl-btn tl-maximize"></span>
+          <span class="tl-btn tl-close" id="addModalClose" role="button" aria-label="Close modal"></span>
+          <span class="tl-btn tl-minimize" aria-hidden="true"></span>
+          <span class="tl-btn tl-maximize" aria-hidden="true"></span>
         </div>
-        <h3><i class="fa-solid fa-plus-circle mr-2 text-blue-500"></i>Add New Session</h3>
+        <h3 id="addModalTitle"><i class="fa-solid fa-plus-circle mr-2 text-blue-500" aria-hidden="true"></i>Add New Session</h3>
       </div>
-      <div class="add-mode-tabs">
-        <button class="add-mode-tab active" id="addModeCapture"><i class="fa-solid fa-camera mr-1"></i>Capture Tab</button>
-        <button class="add-mode-tab" id="addModeImport"><i class="fa-solid fa-paste mr-1"></i>Import Cookies</button>
-        <button class="add-mode-tab" id="addModeFile"><i class="fa-solid fa-file-import mr-1"></i>Import File</button>
+      <div class="add-mode-tabs" role="tablist" aria-label="Add session mode">
+        <button class="add-mode-tab active" id="addModeCapture" role="tab" aria-selected="true"><i class="fa-solid fa-camera mr-1" aria-hidden="true"></i>Capture Tab</button>
+        <button class="add-mode-tab" id="addModeImport" role="tab" aria-selected="false"><i class="fa-solid fa-paste mr-1" aria-hidden="true"></i>Import Cookies</button>
+        <button class="add-mode-tab" id="addModeFile" role="tab" aria-selected="false"><i class="fa-solid fa-file-import mr-1" aria-hidden="true"></i>Import File</button>
       </div>
       <div class="modal-body">
         <!-- Capture mode -->
-        <div id="addPaneCapture">
-          <input type="text" id="sessionNameInput" placeholder="Session name..." maxlength="50">
+        <div id="addPaneCapture" role="tabpanel">
+          <input type="text" id="sessionNameInput" placeholder="Session name..." maxlength="50" aria-label="Session name">
           <div class="modal-info-enhanced">
             <div class="modal-domain-row">
               <span class="modal-favicon-wrap" id="modalFaviconWrap">

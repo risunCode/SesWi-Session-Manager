@@ -4,8 +4,7 @@
  */
 
 import { Response, Domain } from '../utils.js';
-
-const CHUNK_SIZE = 100;
+import { LIMITS } from '../constants.js';
 
 function chunk(arr, size) {
   const out = [];
@@ -61,7 +60,7 @@ export const Cookies = {
       const { data: cookies } = await this.getForDomain(domain);
       let count = 0;
 
-      for (const part of chunk(cookies, CHUNK_SIZE)) {
+      for (const part of chunk(cookies, LIMITS.COOKIE_CHUNK_SIZE)) {
         await Promise.all(part.map(async (cookie) => {
           try {
             await chrome.cookies.remove({
@@ -88,7 +87,7 @@ export const Cookies = {
       await this.removeForDomain(session.domain);
 
       let count = 0;
-      for (const part of chunk(session.cookies, CHUNK_SIZE)) {
+      for (const part of chunk(session.cookies, LIMITS.COOKIE_CHUNK_SIZE)) {
         await Promise.all(part.map(async (cookie) => {
           try {
             const clean = cleanForRestore(cookie);

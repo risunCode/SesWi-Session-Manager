@@ -5,23 +5,21 @@
 
 import { Response, Domain, Validate, Logger } from '../utils.js';
 import { Cookies } from './cookies.js';
-
-const META_KEY = '_seswi_meta';
-const OLD_KEY = 'seswi-sessions-blyat';
+import { STORAGE_KEYS, TIMING, LIMITS } from '../constants.js';
 
 let _storageKey = null;
 
 async function getStorageKey() {
   if (_storageKey) return _storageKey;
   try {
-    const result = await chrome.storage.local.get(META_KEY);
-    if (result[META_KEY]?.storageKey) {
-      _storageKey = result[META_KEY].storageKey;
+    const result = await chrome.storage.local.get(STORAGE_KEYS.META);
+    if (result[STORAGE_KEYS.META]?.storageKey) {
+      _storageKey = result[STORAGE_KEYS.META].storageKey;
       return _storageKey;
     }
   } catch {}
   // Fallback to old key if meta not found (pre-migration state)
-  _storageKey = OLD_KEY;
+  _storageKey = STORAGE_KEYS.OLD_SESSIONS;
   return _storageKey;
 }
 
@@ -31,8 +29,8 @@ let _tabCacheTime = 0;
 
 export const TabInfo = {
   async getCurrent() {
-    // Cache for 400ms to reduce queries
-    if (_tabCache && Date.now() - _tabCacheTime < 400) return _tabCache;
+    // Cache to reduce queries
+    if (_tabCache && Date.now() - _tabCacheTime < TIMING.TAB_CACHE) return _tabCache;
     
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -80,7 +78,7 @@ export const TabInfo = {
           if (chrome.history?.search && chrome.history?.deleteUrl) {
             const results = await chrome.history.search({ 
               text: baseDomain, 
-              maxResults: 1000, 
+              maxResults: LIMITS.HISTORY_MAX_RESULTS, 
               startTime: 0 
             });
             
@@ -92,8 +90,8 @@ export const TabInfo = {
             });
             
             // Delete in chunks to avoid overwhelming
-            for (let i = 0; i < toDelete.length; i += 50) {
-              const chunk = toDelete.slice(i, i + 50);
+            for (let i = 0; i < toDelete.length; i += LIMITS.HISTORY_CHUNK_SIZE) {
+              const chunk = toDelete.slice(i, i + LIMITS.HISTORY_CHUNK_SIZE);
               await Promise.all(chunk.map(item => 
                 chrome.history.deleteUrl({ url: item.url }).catch(() => {})
               ));

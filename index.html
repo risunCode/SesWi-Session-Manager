@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SesWi - Session Manager | Chrome Extension</title>
+  <meta name="description" content="Save, manage, and restore browser sessions with ease. A powerful Chrome extension for session management.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="./web/style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            // Solarized Light palette
+            sol: {
+              base03: '#002b36',
+              base02: '#073642',
+              base01: '#586e75',
+              base00: '#657b83',
+              base0: '#839496',
+              base1: '#93a1a1',
+              base2: '#eee8d5',
+              base3: '#fdf6e3',
+              yellow: '#b58900',
+              orange: '#cb4b16',
+              red: '#dc322f',
+              magenta: '#d33682',
+              violet: '#6c71c4',
+              blue: '#268bd2',
+              cyan: '#2aa198',
+              green: '#859900',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-sol-base3 text-sol-base00 antialiased">
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-sol-base3/90 backdrop-blur-md border-b border-sol-base2">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 text-xl font-bold text-sol-base01">
+        <i class="fa-solid fa-cookie-bite text-sol-yellow"></i>
+        <span>SesWi</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="#features" class="text-sm text-sol-base00 hover:text-sol-base01 transition">Features</a>
+        <a href="#how-it-works" class="text-sm text-sol-base00 hover:text-sol-base01 transition">How it Works</a>
+        <a href="#download" class="text-sm text-sol-base00 hover:text-sol-base01 transition">Download</a>
+      </nav>
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="flex items-center gap-2 text-sm text-sol-base00 hover:text-sol-base01 transition">
+        <i class="fa-brands fa-github text-lg"></i>
+        <span class="hidden sm:inline">GitHub</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="pt-32 pb-20 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col lg:flex-row items-center gap-12">
+        <!-- Hero Text -->
+        <div class="flex-1 text-center lg:text-left">
+          <span class="inline-block px-3 py-1 text-xs font-medium text-sol-blue bg-sol-base2 rounded-full mb-4">
+            Chrome Extension
+          </span>
+          <h1 class="text-4xl md:text-5xl font-bold text-sol-base01 leading-tight mb-6">
+            Save & Restore<br>Browser Sessions
+          </h1>
+          <p class="text-lg text-sol-base00 mb-8 max-w-md mx-auto lg:mx-0">
+            Manage multiple accounts, save login states, and switch between sessions instantly. Your cookies, localStorage, and sessionStorage — all in one place.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <a href="#download" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-sol-blue text-sol-base3 font-medium rounded-lg hover:opacity-90 transition">
+              <i class="fa-solid fa-download"></i>
+              Download Extension
+            </a>
+            <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-sol-base2 text-sol-base01 font-medium rounded-lg hover:bg-sol-base2/80 transition">
+              <i class="fa-brands fa-github"></i>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero Preview (macOS Window) -->
+        <div class="flex-1 w-full max-w-md">
+          <div class="macos-window">
+            <div class="macos-titlebar">
+              <div class="traffic-lights">
+                <span class="tl tl-close"></span>
+                <span class="tl tl-minimize"></span>
+                <span class="tl tl-maximize"></span>
+              </div>
+              <span class="titlebar-title">SesWi - Session Manager</span>
+            </div>
+            <div class="macos-content">
+              <div class="preview-header">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-cookie-bite text-amber-500"></i>
+                  <span class="font-semibold text-sm">SesWi</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">github.com</span>
+                  <button class="preview-btn">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+              <div class="preview-tabs">
+                <button class="preview-tab active">Current</button>
+                <button class="preview-tab">Groups</button>
+                <button class="preview-tab">Manage</button>
+              </div>
+              <div class="preview-sessions">
+                <div class="preview-session">
+                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
+                  <div class="session-info">
+                    <span class="session-name">Work Account</span>
+                    <span class="session-meta">12 cookies · 2h ago</span>
+                  </div>
+                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+                </div>
+                <div class="preview-session">
+                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
+                  <div class="session-info">
+                    <span class="session-name">Personal</span>
+                    <span class="session-meta">8 cookies · 1d ago</span>
+                  </div>
+                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+                </div>
+                <div class="preview-session">
+                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
+                  <div class="session-info">
+                    <span class="session-name">Testing</span>
+                    <span class="session-meta">5 cookies · 3d ago</span>
+                  </div>
+                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-6 bg-sol-base2">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold text-sol-base01 mb-4">Powerful Features</h2>
+        <p class="text-sol-base00 max-w-2xl mx-auto">Everything you need to manage browser sessions efficiently.</p>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-blue">
+            <i class="fa-solid fa-camera"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Capture Sessions</h3>
+          <p class="text-sm text-sol-base00">Save cookies, localStorage, and sessionStorage with one click. Keep your login states safe.</p>
+        </div>
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-green">
+            <i class="fa-solid fa-rotate"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Instant Restore</h3>
+          <p class="text-sm text-sol-base00">Switch between accounts instantly. Restore any saved session with a single click.</p>
+        </div>
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-yellow">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Organized by Domain</h3>
+          <p class="text-sm text-sol-base00">Sessions are automatically grouped by website. Easy to find and manage.</p>
+        </div>
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-violet">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Encrypted Backup</h3>
+          <p class="text-sm text-sol-base00">Export sessions as encrypted OWI files. Your data stays secure with password protection.</p>
+        </div>
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-red">
+            <i class="fa-solid fa-broom"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Clean Tab Data</h3>
+          <p class="text-sm text-sol-base00">Clear cookies, cache, and storage for the current tab. Start fresh when needed.</p>
+        </div>
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon bg-sol-base3 text-sol-cyan">
+            <i class="fa-solid fa-file-import"></i>
+          </div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Import & Export</h3>
+          <p class="text-sm text-sol-base00">Import from JSON or Cookie Editor format. Export for backup or sharing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works Section -->
+  <section id="how-it-works" class="py-20 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold text-sol-base01 mb-4">How it Works</h2>
+        <p class="text-sol-base00 max-w-2xl mx-auto">Simple three-step workflow to manage your sessions.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="step-number">1</div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Save Session</h3>
+          <p class="text-sm text-sol-base00">Click "Add Session" to capture your current login state including all cookies and storage data.</p>
+        </div>
+        <div class="text-center">
+          <div class="step-number">2</div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Manage Sessions</h3>
+          <p class="text-sm text-sol-base00">View all saved sessions organized by domain. Edit names, backup, or delete as needed.</p>
+        </div>
+        <div class="text-center">
+          <div class="step-number">3</div>
+          <h3 class="font-semibold text-sol-base01 mb-2">Restore Anytime</h3>
+          <p class="text-sm text-sol-base00">Click on any session to restore it instantly. Switch accounts without re-logging in.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section id="download" class="py-20 px-6 bg-sol-base2">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-sol-base01 mb-4">Get SesWi</h2>
+      <p class="text-sol-base00 mb-8">Free and open source. Install from GitHub or load as unpacked extension.</p>
+      
+      <div class="macos-window max-w-md mx-auto mb-8">
+        <div class="macos-titlebar">
+          <div class="traffic-lights">
+            <span class="tl tl-close"></span>
+            <span class="tl tl-minimize"></span>
+            <span class="tl tl-maximize"></span>
+          </div>
+          <span class="titlebar-title">Installation</span>
+        </div>
+        <div class="macos-content text-left">
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">1</span>
+              <p class="text-sol-base00">Download or clone the repository from GitHub</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">2</span>
+              <p class="text-sol-base00">Run <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">npm install</code> and <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">npm run build</code></p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">3</span>
+              <p class="text-sol-base00">Open <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">chrome://extensions</code> and enable Developer mode</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">4</span>
+              <p class="text-sol-base00">Click "Load unpacked" and select the <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">dist</code> folder</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-sol-base02 text-sol-base2 font-medium rounded-lg hover:opacity-90 transition">
+        <i class="fa-brands fa-github text-xl"></i>
+        Download from GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-8 px-6 border-t border-sol-base2">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2 text-sol-base00">
+        <i class="fa-solid fa-cookie-bite text-sol-yellow"></i>
+        <span class="font-medium">SesWi</span>
+        <span class="text-sol-base1">·</span>
+        <span class="text-sm">Session Manager</span>
+      </div>
+      <div class="flex items-center gap-6 text-sm text-sol-base1">
+        <a href="https://github.com/risunCode" target="_blank" class="hover:text-sol-base01 transition">
+          <i class="fa-brands fa-github mr-1"></i>
+          risunCode
+        </a>
+        <span class="text-sol-base1">|</span>
+        <span>MIT License</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./web/script.js"></script>
+</body>
+</html>

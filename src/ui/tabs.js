@@ -7,12 +7,12 @@ import { SessionStorage, TabInfo, BrowserStorage } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
 import { Export } from '../core/export.js';
 import { tabIcons } from '../core/icons.js';
-import { DOM, Time, Pagination, Domain, Response } from '../utils.js';
+import { DOM, Time, Pagination, Domain, Response, Logger } from '../utils.js';
 import { Modal } from './modals.js';
 import { Renderer } from './renderer.js';
+import { STORAGE_KEYS, PAGINATION } from '../constants.js';
 
 // ========== Current Tab ==========
-const RESTORED_KEY = '_seswi_restored';
 
 export const CurrentTab = {
   page: 1,
@@ -28,11 +28,11 @@ export const CurrentTab = {
     if (this._restoredLoaded) return;
     this._restoredLoaded = true;
     try {
-      const r = await chrome.storage.local.get(RESTORED_KEY);
-      const val = r[RESTORED_KEY];
+      const r = await chrome.storage.local.get(STORAGE_KEYS.RESTORED);
+      const val = r[STORAGE_KEYS.RESTORED];
       if (!val || typeof val === 'string') {
         this._restoredMap = {};
-        if (val) chrome.storage.local.remove(RESTORED_KEY).catch(() => {});
+        if (val) chrome.storage.local.remove(STORAGE_KEYS.RESTORED).catch(() => {});
       } else {
         this._restoredMap = val;
       }
@@ -43,13 +43,13 @@ export const CurrentTab = {
     if (!this._restoredMap) this._restoredMap = {};
     this._restoredMap[domain] = ts;
     this.justRestoredTs = ts;
-    chrome.storage.local.set({ [RESTORED_KEY]: this._restoredMap }).catch(() => {});
+    chrome.storage.local.set({ [STORAGE_KEYS.RESTORED]: this._restoredMap }).catch(() => {});
   },
 
   clearRestored(domain) {
     if (this._restoredMap) delete this._restoredMap[domain];
     this.justRestoredTs = null;
-    chrome.storage.local.set({ [RESTORED_KEY]: this._restoredMap || {} }).catch(() => {});
+    chrome.storage.local.set({ [STORAGE_KEYS.RESTORED]: this._restoredMap || {} }).catch(() => {});
   },
 
   async render() {
@@ -152,7 +152,7 @@ export const CurrentTab = {
 
   _attachWheelScroll() {
     if (this._wheelAttached) return;
-    const el = document.getElementById('current-session');
+    const el = document.getElementById('currentSession');
     if (!el) return;
     el.addEventListener('wheel', (e) => {
       if (this._totalPages <= 1) return;
@@ -397,14 +397,17 @@ export const GroupTab = {
 // ========== Manage Tab ==========
 export const ManageTab = {
   init() {
-    document.getElementById('backupAll')?.addEventListener('click', () => this.handleBackup());
-    document.getElementById('restoreSessions')?.addEventListener('click', () => this.handleRestore());
-    document.getElementById('groupManage')?.addEventListener('click', () => this.handleGroupManage());
-    document.getElementById('cleanCurrentTabData')?.addEventListener('click', () => this.handleClean());
-    document.getElementById('deleteExpiredSessions')?.addEventListener('click', () => this.handleDeleteExpired());
+    const wire = (id, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.onclick = handler;
+    };
 
-    // Quick Action (New Modal Flow)
-    document.getElementById('quickAction')?.addEventListener('click', () => Modal.openQuickAction());
+    wire('backupAll', () => this.handleBackup());
+    wire('restoreSessions', () => this.handleRestore());
+    wire('groupManage', () => this.handleGroupManage());
+    wire('cleanCurrentTabData', () => this.handleClean());
+    wire('deleteExpiredSessions', () => this.handleDeleteExpired());
+    wire('quickAction', () => Modal.openQuickAction());
   },
 
   async handleExportCurrent(format) {
@@ -440,7 +443,7 @@ export const ManageTab = {
         DOM.downloadFile(Export.toNetscape(cookies), `${domain}_cookies_netscape.txt`, 'text/plain');
       }
     } catch (e) {
-      console.error('Export failed:', e);
+      Logger.error('Export failed:', e);
       Modal.openConfirm({ title: 'Export Failed', message: e.message, confirmText: 'OK', onConfirm: () => {} });
     }
   },

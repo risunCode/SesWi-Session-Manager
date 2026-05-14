@@ -1,7 +1,17 @@
-﻿/**
-/*
- * SesWi - Consolidated CSS (from old styles)
+/**
+ * SesWi - Session Manager Styles
+ * Consolidated CSS with design system
  */
+
+/* ========== Font Face ========== */
+/* All weights use ExtraBold - no variation */
+@font-face {
+  font-family: 'Cause';
+  src: url('./font/Cause-ExtraBold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ========== CSS Variables (Design System) ========== */
 :root {
@@ -15,6 +25,12 @@
   --clr-warning: #f59e0b;
   --clr-amber: #f59e0b;
   --clr-violet: #8b5cf6;
+  --clr-indigo: #6366f1;
+
+  /* Icon Colors (for inline style replacement) */
+  --clr-cookie: #d97706;
+  --clr-database: #059669;
+  --clr-storage: #2563eb;
 
   /* Surface & Background */
   --clr-surface: #ffffff;
@@ -55,10 +71,16 @@ body {
   width: 380px;
   min-height: 540px;
   max-height: 550px;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'Cause', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-base);
   background: linear-gradient(135deg, #bfdbfe, #fef3c7);
   color: #1e293b;
+}
+
+/* Force all form elements to inherit font */
+input, button, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .hidden { display: none !important; }
@@ -223,6 +245,9 @@ body {
 /* Pagination sticky di bawah current tab */
 .current-pagination {
   flex-shrink: 0;
+}
+
+.current-pagination:not(:empty) {
   padding: 4px 0 2px;
   border-top: 1px solid #f1f5f9;
   background: white;
@@ -1402,6 +1427,82 @@ body {
   border-color: #fca5a5;
 }
 
+/* ========== Split Button (Restore) ========== */
+.sa-split-btn {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.sa-split-main {
+  flex: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.sa-split-toggle {
+  flex: none;
+  width: 36px;
+  padding: 9px 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 1px solid rgba(255,255,255,0.25);
+}
+
+.sa-split-toggle i {
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+
+.sa-split-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 10;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+}
+
+.sa-split-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.sa-split-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.sa-split-dropdown button:hover {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.sa-split-dropdown button i {
+  font-size: var(--fs-sm);
+  color: #10b981;
+}
+
 /* ========== Domain Warning ========== */
 .blocked-compact {
   padding: 8px 12px;
@@ -1678,7 +1779,7 @@ body {
 }
 
 .data-row-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'Cause', system-ui, sans-serif;
   font-size: var(--fs-xs);
   color: #374151;
   background: #f8fafc;
@@ -1870,7 +1971,7 @@ body {
 
 .ct-data-value {
   color: #64748b;
-  font-family: monospace;
+  font-family: 'Cause', system-ui, sans-serif;
   font-size: var(--fs-xs);
   word-break: break-all;
   background: #f8fafc;
@@ -1897,7 +1998,7 @@ body {
   font-size: var(--fs-xs);
   color: #64748b;
   word-break: break-all;
-  font-family: monospace;
+  font-family: 'Cause', system-ui, sans-serif;
   background: #f8fafc;
   padding: 2px 4px;
   border-radius: 2px;
@@ -2167,7 +2268,7 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: var(--fs-xs);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'Cause', system-ui, sans-serif;
   color: #334155;
   background: #f8fafc;
   resize: vertical;
@@ -2740,3 +2841,19 @@ body {
   color: #64748b;
   margin-top: 6px;
 }
+
+/* ========== Utility Classes ========== */
+
+/* Icon color utilities */
+.icon--cookie   { color: var(--clr-cookie); }
+.icon--database { color: var(--clr-database); }
+.icon--storage  { color: var(--clr-storage); }
+.icon--primary  { color: var(--clr-primary); }
+.icon--success  { color: var(--clr-success); }
+.icon--warning  { color: var(--clr-warning); }
+.icon--danger   { color: var(--clr-danger); }
+.icon--muted    { color: var(--clr-text-muted); }
+
+/* Visibility utilities */
+.is-hidden { display: none !important; }
+.is-visible { display: block !important; }
