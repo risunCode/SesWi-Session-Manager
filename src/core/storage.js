@@ -9,6 +9,36 @@ import { STORAGE_KEYS, TIMING, LIMITS } from '../constants.js';
 
 let _storageKey = null;
 
+// Master Password state for encrypted session handling
+let _mpEnabled = false;
+let _mpPassword = null;
+let _decryptedCache = null;
+
+/** Set MP state after unlock (called from popup.js) */
+export function setMPState(enabled, password, sessions = null) {
+  _mpEnabled = enabled;
+  _mpPassword = password;
+  _decryptedCache = sessions;
+}
+
+/** Check if MP is active */
+export function isMPActive() {
+  return _mpEnabled && _mpPassword !== null;
+}
+
+/** Re-encrypt sessions after changes */
+async function syncEncryptedSessions(sessions) {
+  if (!_mpEnabled || !_mpPassword) return;
+  try {
+    const { Crypto } = await import('./crypto.js');
+    const encrypted = Crypto.encrypt(sessions, _mpPassword);
+    await chrome.storage.local.set({ [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted });
+    _decryptedCache = sessions;
+  } catch (e) {
+    Logger.error('Failed to sync encrypted sessions:', e);
+  }
+}
+
 async function getStorageKey() {
   if (_storageKey) return _storageKey;
   try {
@@ -147,6 +177,11 @@ export const TabInfo = {
 export const SessionStorage = {
   async getAll() {
     try {
+      // If MP is enabled, return from decrypted cache
+      if (_mpEnabled && _decryptedCache !== null) {
+        return Response.success(_decryptedCache.filter(s => Validate.session(s).valid));
+      }
+
       const key = await getStorageKey();
       const result = await chrome.storage.local.get(key);
       const sessions = (result[key] || []).filter(s => Validate.session(s).valid);
@@ -168,8 +203,15 @@ export const SessionStorage = {
       );
       if (duplicate) return Response.error('Duplicate session name');
 
-      const key = await getStorageKey();
-      await chrome.storage.local.set({ [key]: [...sessions, session] });
+      const newSessions = [...sessions, session];
+
+      // If MP is enabled, sync to encrypted storage
+      if (_mpEnabled) {
+        await syncEncryptedSessions(newSessions);
+      } else {
+        const key = await getStorageKey();
+        await chrome.storage.local.set({ [key]: newSessions });
+      }
       return Response.success(session);
     } catch (e) {
       return Response.error(e, 'SessionStorage.save');
@@ -180,8 +222,13 @@ export const SessionStorage = {
     try {
       const { data: sessions } = await this.getAll();
       const newSessions = sessions.map(s => s.timestamp === updated.timestamp ? updated : s);
-      const key = await getStorageKey();
-      await chrome.storage.local.set({ [key]: newSessions });
+
+      if (_mpEnabled) {
+        await syncEncryptedSessions(newSessions);
+      } else {
+        const key = await getStorageKey();
+        await chrome.storage.local.set({ [key]: newSessions });
+      }
       return Response.success(updated);
     } catch (e) {
       return Response.error(e, 'SessionStorage.update');
@@ -191,8 +238,14 @@ export const SessionStorage = {
   async delete(timestamp) {
     try {
       const { data: sessions } = await this.getAll();
-      const key = await getStorageKey();
-      await chrome.storage.local.set({ [key]: sessions.filter(s => s.timestamp !== timestamp) });
+      const newSessions = sessions.filter(s => s.timestamp !== timestamp);
+
+      if (_mpEnabled) {
+        await syncEncryptedSessions(newSessions);
+      } else {
+        const key = await getStorageKey();
+        await chrome.storage.local.set({ [key]: newSessions });
+      }
       return Response.success(null);
     } catch (e) {
       return Response.error(e, 'SessionStorage.delete');
@@ -317,4 +370,28 @@ export const BrowserStorage = {
   // Convenience aliases
   async getLocal(tabId) { return this.get(tabId, 'local'); },
   async getSession(tabId) { return this.get(tabId, 'session'); }
+};
+
+// ========== Storage Helpers (for MasterPassword) ==========
+export const Storage = {
+  /** Get all sessions (plain, not encrypted) */
+  async getAllSessions() {
+    const key = await getStorageKey();
+    const result = await chrome.storage.local.get(key);
+    return result[key] || [];
+  },
+
+  /** Save a single session (used when restoring from MP) */
+  async saveSession(session) {
+    const key = await getStorageKey();
+    const result = await chrome.storage.local.get(key);
+    const sessions = result[key] || [];
+    await chrome.storage.local.set({ [key]: [...sessions, session] });
+  },
+
+  /** Clear all sessions (used when enabling MP) */
+  async clearAllSessions() {
+    const key = await getStorageKey();
+    await chrome.storage.local.set({ [key]: [] });
+  }
 };

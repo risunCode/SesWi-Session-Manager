@@ -470,6 +470,16 @@ input, button, textarea, select {
 .card-icon--red    { background: #fee2e2; color: #dc2626; }
 .card-icon--amber  { background: #fef3c7; color: #d97706; }
 .card-icon--pink   { background: #fce7f3; color: #be185d; }
+.card-icon--violet { background: #ede9fe; color: #7c3aed; }
+
+.mp-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #7c3aed;
+  color: white;
+}
 
 .manage-section-label {
   font-size: var(--fs-xs);
@@ -2857,3 +2867,140 @@ input, button, textarea, select {
 /* Visibility utilities */
 .is-hidden { display: none !important; }
 .is-visible { display: block !important; }
+
+/* ========== Lock Screen ========== */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.lock-content {
+  text-align: center;
+  padding: 32px;
+  max-width: 280px;
+}
+
+.lock-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #a5b4fc;
+}
+
+.lock-content h2 {
+  color: white;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.lock-content p {
+  color: #a5b4fc;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.lock-content input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 14px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.lock-content input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.lock-content input:focus {
+  outline: none;
+  border-color: #818cf8;
+  background: rgba(255,255,255,0.15);
+}
+
+.lock-content .btn {
+  width: 100%;
+  padding: 12px;
+  background: #6366f1;
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.lock-content .btn:hover {
+  background: #4f46e5;
+}
+
+.lock-error {
+  color: #fca5a5;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+/* ========== Master Password Modal ========== */
+.mp-notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #ede9fe;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #5b21b6;
+  line-height: 1.5;
+}
+
+.mp-notice i {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.mp-status-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.mp-strength {
+  font-size: 12px;
+  margin-top: -8px;
+  margin-bottom: 8px;
+  min-height: 16px;
+}
+
+.mp-strength.weak { color: #dc2626; }
+.mp-strength.fair { color: #d97706; }
+.mp-strength.good { color: #059669; }
+.mp-strength.strong { color: #7c3aed; }
+
+.text-violet-500 { color: #8b5cf6; }
+
+.btn-danger {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+.btn-danger:hover {
+  background: #dc2626 !important;
+}

@@ -23,6 +23,10 @@ export const STORAGE_KEYS = {
   RESTORED: '_seswi_restored',
   ICONS_CACHE: 'tabIconsCacheV1',
   DEBUG: '__SES_DEBUG__',
+  MP_ENABLED: '_seswi_mp_enabled',
+  MP_VERIFY: '_seswi_mp_verify',
+  MP_SALT: '_seswi_mp_salt',
+  ENCRYPTED_SESSIONS: '_seswi_encrypted',
 };
 
 // ========== Custom Events ==========

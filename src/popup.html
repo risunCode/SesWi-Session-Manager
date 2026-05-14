@@ -146,6 +146,23 @@
             <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
+          <!-- Section: Security -->
+          <div class="manage-section-label" role="heading" aria-level="2">Security</div>
+
+          <button class="manage-card" id="masterPassword" role="menuitem" aria-label="Master password settings">
+            <div class="flex items-center">
+              <span class="card-icon card-icon--violet"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+              <div class="card-text">
+                <div class="card-title">Master Password</div>
+                <div class="card-desc" id="mpStatus">Encrypt sessions at rest (advanced)</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mp-badge hidden" id="mpBadge">ON</span>
+              <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
+            </div>
+          </button>
+
         </div>
       </div>
     </main>
@@ -253,6 +270,75 @@
         <button class="btn btn-secondary" id="addModalCancel">Cancel</button>
         <button class="btn btn-primary" id="addModalSave"><i class="fa-solid fa-save mr-1"></i>Save Session</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Master Password Modal -->
+  <div id="mpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mpModalTitle">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <div class="traffic-lights">
+          <span class="tl-btn tl-close" id="mpModalClose" role="button" aria-label="Close modal"></span>
+          <span class="tl-btn tl-minimize" aria-hidden="true"></span>
+          <span class="tl-btn tl-maximize" aria-hidden="true"></span>
+        </div>
+        <h3 id="mpModalTitle"><i class="fa-solid fa-shield-halved mr-2 text-violet-500" aria-hidden="true"></i>Master Password</h3>
+      </div>
+      <div class="modal-body">
+        <div class="mp-notice">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Advanced security: encrypts all sessions at rest. You'll need to enter this password each time you open SesWi.</span>
+        </div>
+
+        <!-- Setup view (when MP not set) -->
+        <div id="mpSetupView">
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" id="mpNewPassword" placeholder="Enter master password" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="mpConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
+          </div>
+          <div class="mp-strength" id="mpStrength"></div>
+        </div>
+
+        <!-- Manage view (when MP is set) -->
+        <div id="mpManageView" class="hidden">
+          <div class="mp-status-card">
+            <i class="fa-solid fa-lock text-violet-500"></i>
+            <span>Master Password is <strong>enabled</strong></span>
+          </div>
+          <div class="form-group">
+            <label>Current Password (to change or remove)</label>
+            <input type="password" id="mpCurrentPassword" placeholder="Enter current password" autocomplete="current-password" />
+          </div>
+          <div class="form-group">
+            <label>New Password (leave empty to remove)</label>
+            <input type="password" id="mpChangePassword" placeholder="New password (optional)" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <div class="modal-message" id="mpMessage"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="mpModalCancel">Cancel</button>
+        <button class="btn btn-primary" id="mpSetupBtn"><i class="fa-solid fa-lock mr-1"></i>Enable</button>
+        <button class="btn btn-primary hidden" id="mpSaveBtn"><i class="fa-solid fa-save mr-1"></i>Save</button>
+        <button class="btn btn-danger hidden" id="mpRemoveBtn"><i class="fa-solid fa-unlock mr-1"></i>Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock Screen (shown when MP is enabled) -->
+  <div id="lockScreen" class="lock-screen hidden">
+    <div class="lock-content">
+      <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+      <h2>SesWi is Locked</h2>
+      <p>Enter your master password to unlock</p>
+      <input type="password" id="lockPassword" placeholder="Master password" autocomplete="current-password" />
+      <button class="btn btn-primary" id="unlockBtn"><i class="fa-solid fa-unlock mr-1"></i>Unlock</button>
+      <div class="lock-error hidden" id="lockError">Incorrect password</div>
     </div>
   </div>
 

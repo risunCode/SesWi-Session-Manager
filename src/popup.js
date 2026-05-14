@@ -2,12 +2,20 @@
  * SesWi Popup Entry Point
  */
 
-import { TabInfo, BrowserStorage, SessionStorage } from './core/storage.js';
+import { TabInfo, BrowserStorage, SessionStorage, setMPState } from './core/storage.js';
 import { Cookies } from './core/cookies.js';
 import { tabIcons } from './core/icons.js';
 import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
 import { Domain, DOM, Normalize } from './utils.js';
 import { EVENTS, TIMING, emitEvent } from './constants.js';
+
+// Master Password state (in-memory only, cleared on popup close)
+let _mpUnlocked = false;
+let _mpPassword = null;
+
+/** Get current MP password (for re-encryption on session changes) */
+export const getMPPassword = () => _mpPassword;
+export const isMPUnlocked = () => _mpUnlocked;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Load version from manifest
@@ -15,6 +23,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const versionEl = document.getElementById('appVersion');
   if (versionEl) versionEl.textContent = `v${manifest.version}`;
 
+  // Check Master Password status first
+  const { MasterPassword } = await import('./core/crypto.js');
+  const mpEnabled = await MasterPassword.isEnabled();
+  
+  if (mpEnabled) {
+    // Show lock screen
+    document.getElementById('lockScreen')?.classList.remove('hidden');
+    initLockScreen();
+    initMasterPasswordUI(true);
+    return; // Don't initialize UI until unlocked
+  }
+
+  // Normal initialization (no MP or already unlocked)
+  await initializeApp();
+  initMasterPasswordUI(false);
+});
+
+async function initializeApp() {
   // Initialize tabs
   initTabs();
   await updateCurrentDomain();
@@ -39,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.action === 'openAddSession') document.getElementById('addSession')?.click();
   });
-});
+}
 
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -404,5 +430,226 @@ function initAddSessionModal() {
       }
     }
     if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
+  });
+}
+
+// ========== Lock Screen ==========
+function initLockScreen() {
+  const lockScreen = document.getElementById('lockScreen');
+  const lockPassword = document.getElementById('lockPassword');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const lockError = document.getElementById('lockError');
+
+  const doUnlock = async () => {
+    const password = lockPassword.value;
+    if (!password) return;
+
+    unlockBtn.disabled = true;
+    unlockBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Unlocking...';
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const result = await MasterPassword.verify(password);
+
+    if (result.success) {
+      _mpUnlocked = true;
+      _mpPassword = password;
+      
+      // Decrypt sessions and set MP state in storage module
+      const sessionsResult = await MasterPassword.decryptSessions(password);
+      const sessions = sessionsResult.success ? sessionsResult.data : [];
+      setMPState(true, password, sessions);
+      
+      lockScreen.classList.add('hidden');
+      await initializeApp();
+      initMasterPasswordUI(true);
+    } else {
+      lockError.classList.remove('hidden');
+      lockPassword.value = '';
+      lockPassword.focus();
+      setTimeout(() => lockError.classList.add('hidden'), 3000);
+    }
+
+    unlockBtn.disabled = false;
+    unlockBtn.innerHTML = '<i class="fa-solid fa-unlock mr-1"></i>Unlock';
+  };
+
+  unlockBtn.onclick = doUnlock;
+  lockPassword.onkeydown = (e) => { if (e.key === 'Enter') doUnlock(); };
+  lockPassword.focus();
+}
+
+// ========== Master Password Modal ==========
+function initMasterPasswordUI(mpEnabled) {
+  const mpCard = document.getElementById('masterPassword');
+  const mpBadge = document.getElementById('mpBadge');
+  const mpStatus = document.getElementById('mpStatus');
+  const modal = document.getElementById('mpModal');
+
+  // Update badge/status
+  if (mpEnabled) {
+    mpBadge?.classList.remove('hidden');
+    if (mpStatus) mpStatus.textContent = 'Enabled - sessions encrypted';
+  }
+
+  // Open modal
+  mpCard.onclick = async () => {
+    const { MasterPassword } = await import('./core/crypto.js');
+    const enabled = await MasterPassword.isEnabled();
+
+    const setupView = document.getElementById('mpSetupView');
+    const manageView = document.getElementById('mpManageView');
+    const setupBtn = document.getElementById('mpSetupBtn');
+    const saveBtn = document.getElementById('mpSaveBtn');
+    const removeBtn = document.getElementById('mpRemoveBtn');
+
+    if (enabled) {
+      setupView.classList.add('hidden');
+      manageView.classList.remove('hidden');
+      setupBtn.classList.add('hidden');
+      saveBtn.classList.remove('hidden');
+      removeBtn.classList.remove('hidden');
+    } else {
+      setupView.classList.remove('hidden');
+      manageView.classList.add('hidden');
+      setupBtn.classList.remove('hidden');
+      saveBtn.classList.add('hidden');
+      removeBtn.classList.add('hidden');
+    }
+
+    // Clear inputs
+    document.getElementById('mpNewPassword').value = '';
+    document.getElementById('mpConfirmPassword').value = '';
+    document.getElementById('mpCurrentPassword').value = '';
+    document.getElementById('mpChangePassword').value = '';
+    document.getElementById('mpMessage').style.display = 'none';
+    document.getElementById('mpStrength').textContent = '';
+
+    DOM.showModal(modal);
+  };
+
+  // Password strength indicator
+  const mpNewPassword = document.getElementById('mpNewPassword');
+  const mpStrength = document.getElementById('mpStrength');
+  mpNewPassword.oninput = async () => {
+    const { MasterPassword } = await import('./core/crypto.js');
+    const strength = MasterPassword.getStrength(mpNewPassword.value);
+    mpStrength.textContent = strength.text ? `Strength: ${strength.text}` : '';
+    mpStrength.className = `mp-strength ${strength.level}`;
+  };
+
+  // Setup button (enable MP)
+  document.getElementById('mpSetupBtn').onclick = async () => {
+    const password = document.getElementById('mpNewPassword').value;
+    const confirm = document.getElementById('mpConfirmPassword').value;
+    const msg = document.getElementById('mpMessage');
+
+    if (password !== confirm) {
+      msg.textContent = 'Passwords do not match';
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const result = await MasterPassword.setup(password);
+
+    if (result.success) {
+      _mpUnlocked = true;
+      _mpPassword = password;
+      
+      // Decrypt sessions and set MP state
+      const sessionsResult = await MasterPassword.decryptSessions(password);
+      const sessions = sessionsResult.success ? sessionsResult.data : [];
+      setMPState(true, password, sessions);
+      
+      msg.textContent = 'Master password enabled!';
+      msg.className = 'modal-message success';
+      msg.style.display = 'block';
+      mpBadge?.classList.remove('hidden');
+      if (mpStatus) mpStatus.textContent = 'Enabled - sessions encrypted';
+      setTimeout(() => DOM.closeModal(modal), 1500);
+    } else {
+      msg.textContent = result.error;
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+    }
+  };
+
+  // Save button (change password)
+  document.getElementById('mpSaveBtn').onclick = async () => {
+    const current = document.getElementById('mpCurrentPassword').value;
+    const newPwd = document.getElementById('mpChangePassword').value;
+    const msg = document.getElementById('mpMessage');
+
+    if (!current) {
+      msg.textContent = 'Enter current password';
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    if (!newPwd) {
+      msg.textContent = 'Enter new password to change';
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const result = await MasterPassword.change(current, newPwd);
+
+    if (result.success) {
+      _mpPassword = newPwd;
+      msg.textContent = 'Password changed!';
+      msg.className = 'modal-message success';
+      msg.style.display = 'block';
+      setTimeout(() => DOM.closeModal(modal), 1500);
+    } else {
+      msg.textContent = result.error;
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+    }
+  };
+
+  // Remove button
+  document.getElementById('mpRemoveBtn').onclick = async () => {
+    const current = document.getElementById('mpCurrentPassword').value;
+    const msg = document.getElementById('mpMessage');
+
+    if (!current) {
+      msg.textContent = 'Enter current password to remove';
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const result = await MasterPassword.remove(current);
+
+    if (result.success) {
+      _mpUnlocked = false;
+      _mpPassword = null;
+      setMPState(false, null, null);
+      
+      msg.textContent = 'Master password removed!';
+      msg.className = 'modal-message success';
+      msg.style.display = 'block';
+      mpBadge?.classList.add('hidden');
+      if (mpStatus) mpStatus.textContent = 'Encrypt sessions at rest (advanced)';
+      // Refresh UI
+      CurrentTab.render();
+      GroupTab.render();
+      setTimeout(() => DOM.closeModal(modal), 1500);
+    } else {
+      msg.textContent = result.error;
+      msg.className = 'modal-message error';
+      msg.style.display = 'block';
+    }
+  };
+
+  // Modal close handlers
+  DOM.wireModalClose(modal, {
+    closeBtn: document.getElementById('mpModalClose'),
+    cancelBtn: document.getElementById('mpModalCancel')
   });
 }
