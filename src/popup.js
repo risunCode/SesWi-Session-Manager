@@ -26,28 +26,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   const versionEl = document.getElementById('appVersion');
   if (versionEl) versionEl.textContent = `v${manifest.version}`;
 
-  // Check Master Password status first
-  const { MasterPassword } = await import('./core/crypto.js');
-  const mpEnabled = await MasterPassword.isEnabled();
+  // Batch fetch: MP status + remember setting (faster than sequential)
+  const [localData, sessionData] = await Promise.all([
+    chrome.storage.local.get(['_seswi_mp_enabled', '_seswi_mp_remember']),
+    chrome.storage.session.get(['mpUnlockTime', 'mpPassword'])
+  ]);
+  
+  const mpEnabled = !!localData['_seswi_mp_enabled'];
   
   if (mpEnabled) {
-    // Check if we have a valid unlock session (within 3 minutes)
-    const session = await chrome.storage.session.get(['mpUnlockTime', 'mpPassword']);
-    const unlockTime = session.mpUnlockTime || 0;
-    const sessionPwd = session.mpPassword;
+    const rememberEnabled = !!localData['_seswi_mp_remember'];
     
-    if (sessionPwd && Date.now() - unlockTime < UNLOCK_DURATION) {
-      // Still within unlock window - auto unlock
-      _mpUnlocked = true;
-      _mpPassword = sessionPwd;
+    if (rememberEnabled && sessionData.mpPassword) {
+      const unlockTime = sessionData.mpUnlockTime || 0;
       
-      const sessionsResult = await MasterPassword.decryptSessions(sessionPwd);
-      const sessions = sessionsResult.success ? sessionsResult.data : [];
-      setMPState(true, sessionPwd, sessions);
-      
-      await initializeApp();
-      initMasterPasswordUI(true);
-      return;
+      if (Date.now() - unlockTime < UNLOCK_DURATION) {
+        // Still within unlock window - auto unlock
+        _mpUnlocked = true;
+        _mpPassword = sessionData.mpPassword;
+        
+        const { MasterPassword } = await import('./core/crypto.js');
+        const sessionsResult = await MasterPassword.decryptSessions(sessionData.mpPassword);
+        const sessions = sessionsResult.success ? sessionsResult.data : [];
+        setMPState(true, sessionData.mpPassword, sessions);
+        
+        await initializeApp();
+        initMasterPasswordUI(true);
+        return;
+      }
     }
     
     // Show lock screen
@@ -57,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Normal initialization (no MP or already unlocked)
+  // Normal initialization (no MP)
   await initializeApp();
   initMasterPasswordUI(false);
 });
@@ -484,11 +490,11 @@ function initLockScreen() {
       _mpUnlocked = true;
       _mpPassword = password;
       
-      // Save unlock session (valid for 3 minutes)
-      await chrome.storage.session.set({
-        mpUnlockTime: Date.now(),
-        mpPassword: password
-      });
+      // Save unlock session if "remember" is enabled
+      const { _seswi_mp_remember: rememberEnabled } = await chrome.storage.local.get('_seswi_mp_remember');
+      if (rememberEnabled) {
+        await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: password });
+      }
       
       // Decrypt sessions and set MP state in storage module
       const sessionsResult = await MasterPassword.decryptSessions(password);
@@ -541,6 +547,18 @@ function initMasterPasswordUI(mpEnabled) {
     };
   });
 
+  // Wire remember toggle
+  const rememberToggle = document.getElementById('mpRememberUnlock');
+  if (rememberToggle) {
+    rememberToggle.onchange = async () => {
+      await chrome.storage.local.set({ '_seswi_mp_remember': rememberToggle.checked });
+      // Clear session if disabled
+      if (!rememberToggle.checked) {
+        await chrome.storage.session.remove(['mpUnlockTime', 'mpPassword']);
+      }
+    };
+  }
+
   // Open modal
   mpCard.onclick = async () => {
     const { MasterPassword } = await import('./core/crypto.js');
@@ -555,6 +573,10 @@ function initMasterPasswordUI(mpEnabled) {
       setupBtn.classList.add('hidden');
       saveBtn.classList.remove('hidden');
       removeBtn.classList.remove('hidden');
+      
+      // Load remember setting
+      const { _seswi_mp_remember: rememberEnabled } = await chrome.storage.local.get('_seswi_mp_remember');
+      if (rememberToggle) rememberToggle.checked = !!rememberEnabled;
     } else {
       setupView.classList.remove('hidden');
       manageView.classList.add('hidden');
@@ -619,10 +641,7 @@ function initMasterPasswordUI(mpEnabled) {
       _mpUnlocked = true;
       _mpPassword = password;
       
-      // Save unlock session
-      await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: password });
-      
-      // Decrypt sessions and set MP state
+      // Decrypt sessions and set MP state (no session save on first setup)
       const sessionsResult = await MasterPassword.decryptSessions(password);
       const sessions = sessionsResult.success ? sessionsResult.data : [];
       setMPState(true, password, sessions);
@@ -665,7 +684,11 @@ function initMasterPasswordUI(mpEnabled) {
 
     if (result.success) {
       _mpPassword = newPwd;
-      await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: newPwd });
+      // Update session if remember is enabled
+      const { _seswi_mp_remember: rememberEnabled } = await chrome.storage.local.get('_seswi_mp_remember');
+      if (rememberEnabled) {
+        await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: newPwd });
+      }
       msg.textContent = 'Password changed!';
       msg.className = 'modal-message success';
       msg.style.display = 'block';
