@@ -3,7 +3,7 @@
  * Consolidated helpers: DOM, Domain, Time, Response, Logger
  */
 
-import { STORAGE_KEYS } from './constants.js';
+import { STORAGE_KEYS, LIMITS } from './constants.js';
 
 // ========== Response Helpers ==========
 /** @typedef {{success: true, data: any, message?: string}} SuccessResponse */
@@ -39,7 +39,24 @@ export const Domain = {
     const parts = hostname.split('.').filter(Boolean);
     if (parts.length <= 2) return hostname;
     
-    const publicSuffixes = new Set(['co.uk', 'ac.uk', 'gov.uk', 'com.au', 'net.au', 'co.id']);
+    // Common multi-part TLDs (public suffixes)
+    const publicSuffixes = new Set([
+      // UK
+      'co.uk', 'ac.uk', 'gov.uk', 'org.uk', 'me.uk', 'net.uk',
+      // Australia
+      'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au',
+      // Indonesia
+      'co.id', 'ac.id', 'go.id', 'or.id', 'web.id',
+      // Japan
+      'co.jp', 'ac.jp', 'go.jp', 'or.jp', 'ne.jp',
+      // Brazil
+      'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
+      // India
+      'co.in', 'ac.in', 'gov.in', 'org.in', 'net.in',
+      // Others
+      'co.nz', 'co.za', 'co.kr', 'com.mx', 'com.cn', 'com.tw', 'com.hk',
+      'com.sg', 'com.my', 'com.ph', 'com.vn', 'com.ar', 'com.co',
+    ]);
     const tail2 = `${parts[parts.length - 2]}.${parts[parts.length - 1]}`;
     if (publicSuffixes.has(tail2) && parts.length >= 3) {
       return `${parts[parts.length - 3]}.${tail2}`;
@@ -327,6 +344,9 @@ export const Validate = {
     const missing = required.filter(f => !session?.[f]);
     if (missing.length) return { valid: false, error: `Missing: ${missing.join(', ')}` };
     if (!Array.isArray(session.cookies)) return { valid: false, error: 'Cookies must be array' };
+    if (session.name.length > LIMITS.SESSION_NAME_MAX) {
+      return { valid: false, error: `Name too long (max ${LIMITS.SESSION_NAME_MAX} chars)` };
+    }
     return { valid: true };
   },
 
@@ -340,6 +360,9 @@ export const Validate = {
     if (typeof cookie.name !== 'string' || !cookie.name.trim()) return { valid: false, error: 'Cookie name required' };
     if (typeof cookie.value !== 'string') return { valid: false, error: 'Cookie value must be string' };
     
+    // Valid sameSite values per Chrome cookie API
+    const validSameSite = ['no_restriction', 'lax', 'strict', 'unspecified'];
+    
     // Sanitize and return only allowed fields
     const sanitized = {
       name: String(cookie.name).slice(0, 4096),
@@ -348,7 +371,8 @@ export const Validate = {
       path: typeof cookie.path === 'string' ? cookie.path.slice(0, 1024) : '/',
       secure: Boolean(cookie.secure),
       httpOnly: Boolean(cookie.httpOnly),
-      sameSite: ['no_restriction', 'lax', 'strict'].includes(cookie.sameSite) ? cookie.sameSite : 'lax',
+      // Preserve original sameSite or use 'unspecified' (browser default) if not set
+      sameSite: validSameSite.includes(cookie.sameSite) ? cookie.sameSite : 'unspecified',
       session: Boolean(cookie.session)
     };
     if (typeof cookie.expirationDate === 'number') sanitized.expirationDate = cookie.expirationDate;
@@ -371,6 +395,15 @@ export const Validate = {
     }
     return result;
   }
+};
+
+// ========== Unique Timestamp (for imports) ==========
+let _lastTs = 0;
+const getUniqueTimestamp = () => {
+  let ts = Date.now();
+  if (ts <= _lastTs) ts = _lastTs + 1;
+  _lastTs = ts;
+  return ts;
 };
 
 // ========== Normalize ==========
@@ -543,7 +576,7 @@ export const Normalize = {
       cookies: safeCookies,
       localStorage: hint.localStorage || {},
       sessionStorage: hint.sessionStorage || {},
-      timestamp: hint.timestamp || Date.now(),
+      timestamp: hint.timestamp || getUniqueTimestamp(),
       index: hint.index || 1
     };
   }

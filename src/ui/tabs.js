@@ -3,7 +3,7 @@
  * Handles: Current, Group, Manage tab rendering
  */
 
-import { SessionStorage, TabInfo, BrowserStorage } from '../core/storage.js';
+import { SessionStorage, TabInfo, BrowserStorage, uniqueTimestamp } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
 import { Export } from '../core/export.js';
 import { tabIcons } from '../core/icons.js';
@@ -204,7 +204,7 @@ export const CurrentTab = {
       const domainSessions = allSessions.filter(s => s.domain === domain);
       const maxIndex = domainSessions.length ? Math.max(...domainSessions.map(s => s.index || 0)) : 0;
 
-      const now = Date.now();
+      const ts = uniqueTimestamp();
       const session = {
         name: name.trim(),
         domain: domain,
@@ -212,13 +212,13 @@ export const CurrentTab = {
         cookies: cookies,
         localStorage: localData,
         sessionStorage: sessionData,
-        timestamp: now,
+        timestamp: ts,
         index: maxIndex + 1
       };
 
       const result = await SessionStorage.save(session);
       if (result.success) {
-        this.justSavedTs = String(now);
+        this.justSavedTs = String(ts);
         this.page = 1;
         await this.render();
         setTimeout(() => { this.justSavedTs = null; this.render(); }, 3000);

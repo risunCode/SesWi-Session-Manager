@@ -9,6 +9,29 @@ import { STORAGE_KEYS, TIMING, LIMITS } from '../constants.js';
 
 let _storageKey = null;
 
+// Simple operation lock to prevent race conditions
+let _operationLock = Promise.resolve();
+const withLock = async (fn) => {
+  const prev = _operationLock;
+  let resolve;
+  _operationLock = new Promise(r => resolve = r);
+  await prev;
+  try {
+    return await fn();
+  } finally {
+    resolve();
+  }
+};
+
+// Unique timestamp generator (prevents collision within same ms)
+let _lastTimestamp = 0;
+export const uniqueTimestamp = () => {
+  let ts = Date.now();
+  if (ts <= _lastTimestamp) ts = _lastTimestamp + 1;
+  _lastTimestamp = ts;
+  return ts;
+};
+
 // Master Password state for encrypted session handling
 let _mpEnabled = false;
 let _mpPassword = null;
@@ -192,64 +215,70 @@ export const SessionStorage = {
   },
 
   async save(session) {
-    try {
-      const validation = Validate.session(session);
-      if (!validation.valid) return Response.error(validation.error);
+    return withLock(async () => {
+      try {
+        const validation = Validate.session(session);
+        if (!validation.valid) return Response.error(validation.error);
 
-      const { data: sessions } = await this.getAll();
-      const duplicate = sessions.some(s =>
-        s.domain === session.domain &&
-        s.name.toLowerCase() === session.name.toLowerCase()
-      );
-      if (duplicate) return Response.error('Duplicate session name');
+        const { data: sessions } = await this.getAll();
+        const duplicate = sessions.some(s =>
+          s.domain === session.domain &&
+          s.name.toLowerCase() === session.name.toLowerCase()
+        );
+        if (duplicate) return Response.error('Duplicate session name');
 
-      const newSessions = [...sessions, session];
+        const newSessions = [...sessions, session];
 
-      // If MP is enabled, sync to encrypted storage
-      if (_mpEnabled) {
-        await syncEncryptedSessions(newSessions);
-      } else {
-        const key = await getStorageKey();
-        await chrome.storage.local.set({ [key]: newSessions });
+        // If MP is enabled, sync to encrypted storage
+        if (_mpEnabled) {
+          await syncEncryptedSessions(newSessions);
+        } else {
+          const key = await getStorageKey();
+          await chrome.storage.local.set({ [key]: newSessions });
+        }
+        return Response.success(session);
+      } catch (e) {
+        return Response.error(e, 'SessionStorage.save');
       }
-      return Response.success(session);
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.save');
-    }
+    });
   },
 
   async update(updated) {
-    try {
-      const { data: sessions } = await this.getAll();
-      const newSessions = sessions.map(s => s.timestamp === updated.timestamp ? updated : s);
+    return withLock(async () => {
+      try {
+        const { data: sessions } = await this.getAll();
+        const newSessions = sessions.map(s => s.timestamp === updated.timestamp ? updated : s);
 
-      if (_mpEnabled) {
-        await syncEncryptedSessions(newSessions);
-      } else {
-        const key = await getStorageKey();
-        await chrome.storage.local.set({ [key]: newSessions });
+        if (_mpEnabled) {
+          await syncEncryptedSessions(newSessions);
+        } else {
+          const key = await getStorageKey();
+          await chrome.storage.local.set({ [key]: newSessions });
+        }
+        return Response.success(updated);
+      } catch (e) {
+        return Response.error(e, 'SessionStorage.update');
       }
-      return Response.success(updated);
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.update');
-    }
+    });
   },
 
   async delete(timestamp) {
-    try {
-      const { data: sessions } = await this.getAll();
-      const newSessions = sessions.filter(s => s.timestamp !== timestamp);
+    return withLock(async () => {
+      try {
+        const { data: sessions } = await this.getAll();
+        const newSessions = sessions.filter(s => s.timestamp !== timestamp);
 
-      if (_mpEnabled) {
-        await syncEncryptedSessions(newSessions);
-      } else {
-        const key = await getStorageKey();
-        await chrome.storage.local.set({ [key]: newSessions });
+        if (_mpEnabled) {
+          await syncEncryptedSessions(newSessions);
+        } else {
+          const key = await getStorageKey();
+          await chrome.storage.local.set({ [key]: newSessions });
+        }
+        return Response.success(null);
+      } catch (e) {
+        return Response.error(e, 'SessionStorage.delete');
       }
-      return Response.success(null);
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.delete');
-    }
+    });
   },
 
   async getByDomain(domain) {
@@ -293,38 +322,42 @@ export const SessionStorage = {
   },
 
   async deleteGrouped(domains) {
-    try {
-      const { data: sessions } = await this.getAll();
-      const filtered = sessions.filter(s => !domains.includes(s.domain));
-      
-      if (_mpEnabled) {
-        await syncEncryptedSessions(filtered);
-      } else {
-        const key = await getStorageKey();
-        await chrome.storage.local.set({ [key]: filtered });
+    return withLock(async () => {
+      try {
+        const { data: sessions } = await this.getAll();
+        const filtered = sessions.filter(s => !domains.includes(s.domain));
+        
+        if (_mpEnabled) {
+          await syncEncryptedSessions(filtered);
+        } else {
+          const key = await getStorageKey();
+          await chrome.storage.local.set({ [key]: filtered });
+        }
+        return Response.success({ deleted: sessions.length - filtered.length });
+      } catch (e) {
+        return Response.error(e, 'SessionStorage.deleteGrouped');
       }
-      return Response.success({ deleted: sessions.length - filtered.length });
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.deleteGrouped');
-    }
+    });
   },
 
   async deleteMany(timestamps) {
-    try {
-      const tsSet = new Set(timestamps);
-      const { data: sessions } = await this.getAll();
-      const filtered = sessions.filter(s => !tsSet.has(s.timestamp));
-      
-      if (_mpEnabled) {
-        await syncEncryptedSessions(filtered);
-      } else {
-        const key = await getStorageKey();
-        await chrome.storage.local.set({ [key]: filtered });
+    return withLock(async () => {
+      try {
+        const tsSet = new Set(timestamps);
+        const { data: sessions } = await this.getAll();
+        const filtered = sessions.filter(s => !tsSet.has(s.timestamp));
+        
+        if (_mpEnabled) {
+          await syncEncryptedSessions(filtered);
+        } else {
+          const key = await getStorageKey();
+          await chrome.storage.local.set({ [key]: filtered });
+        }
+        return Response.success({ deleted: sessions.length - filtered.length });
+      } catch (e) {
+        return Response.error(e, 'SessionStorage.deleteMany');
       }
-      return Response.success({ deleted: sessions.length - filtered.length });
-    } catch (e) {
-      return Response.error(e, 'SessionStorage.deleteMany');
-    }
+    });
   }
 };
 

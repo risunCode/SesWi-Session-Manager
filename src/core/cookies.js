@@ -3,7 +3,7 @@
  * Handles: Cookie CRUD operations
  */
 
-import { Response, Domain } from '../utils.js';
+import { Response, Domain, Logger } from '../utils.js';
 import { LIMITS } from '../constants.js';
 
 function chunk(arr, size) {
@@ -69,7 +69,9 @@ export const Cookies = {
               storeId: cookie.storeId
             });
             count++;
-          } catch {}
+          } catch (e) {
+            Logger.warn(`Failed to remove cookie ${cookie.name}:`, e.message);
+          }
         }));
       }
 
@@ -96,7 +98,9 @@ export const Cookies = {
               ...clean
             });
             count++;
-          } catch {}
+          } catch (e) {
+            Logger.warn(`Failed to restore cookie ${cookie.name}:`, e.message);
+          }
         }));
       }
 

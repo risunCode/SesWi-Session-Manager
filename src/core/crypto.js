@@ -4,10 +4,26 @@
  */
 
 import { Response, Logger, Normalize, DOM } from '../utils.js';
-import { STORAGE_KEYS } from '../constants.js';
+import { STORAGE_KEYS, LIMITS } from '../constants.js';
 
 // SJCL loaded globally from lib/sjcl.min.js
-const getSJCL = () => window.sjcl;
+const getSJCL = () => {
+  const sjcl = window.sjcl;
+  if (!sjcl) {
+    Logger.error('SJCL library not loaded');
+  }
+  return sjcl;
+};
+
+// Validate password meets requirements
+const validatePassword = (password) => {
+  if (!password) return 'Password required';
+  if (password.length < LIMITS.PASSWORD_MIN) return `Password must be at least ${LIMITS.PASSWORD_MIN} characters`;
+  if (password.length > LIMITS.PASSWORD_MAX) return `Password must be at most ${LIMITS.PASSWORD_MAX} characters`;
+  if (!/[a-zA-Z]/.test(password)) return 'Password must contain at least one letter';
+  if (!/\d/.test(password)) return 'Password must contain at least one number';
+  return null; // Valid
+};
 
 // Generate random salt
 const generateSalt = () => {
@@ -21,6 +37,15 @@ const hashPassword = (password, salt) => {
   const sjcl = getSJCL();
   if (!sjcl) throw new Error('SJCL not loaded');
   const bits = sjcl.misc.pbkdf2(password, salt, 100000, 256);
+  return sjcl.codec.hex.fromBits(bits);
+};
+
+// Hash recovery answer with higher iterations (compensate for lower entropy)
+const hashRecoveryAnswer = (answer, salt) => {
+  const sjcl = getSJCL();
+  if (!sjcl) throw new Error('SJCL not loaded');
+  // 200k iterations for recovery answers (2x normal) to compensate for lower entropy
+  const bits = sjcl.misc.pbkdf2(answer, salt, 200000, 256);
   return sjcl.codec.hex.fromBits(bits);
 };
 
@@ -161,14 +186,8 @@ export const MasterPassword = {
   /** Setup new master password */
   async setup(password) {
     try {
-      if (!password || password.length < 8) {
-        return Response.error('Password must be at least 8 characters');
-      }
-      
-      // Require at least one letter and one number for security
-      if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
-        return Response.error('Password must contain letters and numbers');
-      }
+      const pwdError = validatePassword(password);
+      if (pwdError) return Response.error(pwdError);
 
       const salt = generateSalt();
       const hash = hashPassword(password, salt);
@@ -270,14 +289,9 @@ export const MasterPassword = {
   /** Change master password */
   async change(currentPassword, newPassword) {
     try {
-      // Validate new password
-      if (!newPassword || newPassword.length < 8) {
-        return Response.error('Password must be at least 8 characters');
-      }
-      if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-        return Response.error('Password must contain letters and numbers');
-      }
-      
+      const pwdError = validatePassword(newPassword);
+      if (pwdError) return Response.error(pwdError);
+
       // Verify current password
       const verifyResult = await this.verify(currentPassword);
       if (!verifyResult.success) return verifyResult;
@@ -342,10 +356,15 @@ export const MasterPassword = {
     try {
       if (!question || !answer) return Response.error('Question and answer required');
       
-      const salt = generateSalt();
-      // Normalize answer: lowercase, trim
+      // Validate minimum answer length
       const normalizedAnswer = answer.toLowerCase().trim();
-      const hash = hashPassword(normalizedAnswer, salt);
+      if (normalizedAnswer.length < LIMITS.RECOVERY_ANSWER_MIN) {
+        return Response.error(`Answer must be at least ${LIMITS.RECOVERY_ANSWER_MIN} characters`);
+      }
+      
+      const salt = generateSalt();
+      // Use higher iteration hash for recovery answers (lower entropy)
+      const hash = hashRecoveryAnswer(normalizedAnswer, salt);
 
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_RECOVERY_Q]: question,
@@ -393,7 +412,7 @@ export const MasterPassword = {
       }
 
       const normalizedAnswer = answer.toLowerCase().trim();
-      const answerHash = hashPassword(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
+      const answerHash = hashRecoveryAnswer(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
       
       if (!safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A])) {
         // Increment failed attempts
@@ -423,12 +442,8 @@ export const MasterPassword = {
   async resetByRecovery(answer, newPassword) {
     try {
       // Validate new password first (before answer verification to avoid wasting attempts)
-      if (!newPassword || newPassword.length < 8) {
-        return Response.error('Password must be at least 8 characters');
-      }
-      if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-        return Response.error('Password must contain letters and numbers');
-      }
+      const pwdError = validatePassword(newPassword);
+      if (pwdError) return Response.error(pwdError);
 
       // Verify recovery answer WITH brute-force protection
       const verifyResult = await this.verifyRecoveryAnswer(answer);
@@ -462,12 +477,16 @@ export const MasterPassword = {
     if (!password) return { level: '', text: '' };
     
     // Check minimum requirements first
-    const hasMinLength = password.length >= 8;
+    const hasMinLength = password.length >= LIMITS.PASSWORD_MIN;
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumber = /\d/.test(password);
+    const tooLong = password.length > LIMITS.PASSWORD_MAX;
     
+    if (tooLong) {
+      return { level: 'weak', text: `Too long (max ${LIMITS.PASSWORD_MAX})` };
+    }
     if (!hasMinLength) {
-      return { level: 'weak', text: `Weak (need ${8 - password.length} more chars)` };
+      return { level: 'weak', text: `Weak (need ${LIMITS.PASSWORD_MIN - password.length} more chars)` };
     }
     if (!hasLetter || !hasNumber) {
       return { level: 'weak', text: 'Weak (need letters + numbers)' };
