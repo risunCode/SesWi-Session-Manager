@@ -40,25 +40,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if we have valid encrypted session token
     if (rememberEnabled && sessionData.mpToken && sessionData.mpEncPwd) {
       const unlockTime = sessionData.mpUnlockTime || 0;
+      const isExpired = Date.now() - unlockTime >= UNLOCK_DURATION;
       
-      if (Date.now() - unlockTime < UNLOCK_DURATION) {
+      if (!isExpired) {
         // Decrypt password from session token
         const { MasterPassword, SessionToken } = await import('./core/crypto.js');
         const password = SessionToken.decrypt(sessionData.mpToken, sessionData.mpEncPwd, sessionData.mpPwdLen);
         
         if (password) {
-          _mpUnlocked = true;
-          _mpPassword = password;
-          
-          const sessionsResult = await MasterPassword.decryptSessions(password);
-          const sessions = sessionsResult.success ? sessionsResult.data : [];
-          setMPState(true, password, sessions);
-          
-          await initializeApp();
-          initMasterPasswordUI(true);
-          return;
+          // Verify password is still valid (in case user changed it in another session)
+          const verifyResult = await MasterPassword.verify(password);
+          if (verifyResult.success) {
+            _mpUnlocked = true;
+            _mpPassword = password;
+            
+            const sessionsResult = await MasterPassword.decryptSessions(password);
+            const sessions = sessionsResult.success ? sessionsResult.data : [];
+            setMPState(true, password, sessions);
+            
+            await initializeApp();
+            initMasterPasswordUI(true);
+            return;
+          }
         }
       }
+      
+      // Token expired or invalid - clear it
+      chrome.storage.session.remove(['mpUnlockTime', 'mpToken', 'mpEncPwd', 'mpPwdLen']);
     }
     
     // Show lock screen

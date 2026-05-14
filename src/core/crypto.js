@@ -25,16 +25,25 @@ const hashPassword = (password, salt) => {
 };
 
 // Constant-time string comparison (prevents timing attacks)
+// Always iterates 64 chars (256-bit hash = 64 hex chars) regardless of input
 const safeCompare = (a, b) => {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) {
-    // Still do comparison to maintain constant time behavior
-    b = a;
+  
+  // Expected hash length (256-bit = 64 hex chars)
+  const HASH_LEN = 64;
+  
+  // Pad both strings to fixed length to prevent length leaks
+  const padA = a.padEnd(HASH_LEN, '\0');
+  const padB = b.padEnd(HASH_LEN, '\0');
+  
+  // Start with length mismatch check (constant-time)
+  let result = (a.length === b.length && a.length === HASH_LEN) ? 0 : 1;
+  
+  // Always iterate exactly HASH_LEN times
+  for (let i = 0; i < HASH_LEN; i++) {
+    result |= padA.charCodeAt(i) ^ padB.charCodeAt(i);
   }
-  let result = a.length === b.length ? 0 : 1;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
+  
   return result === 0;
 };
 
@@ -375,12 +384,12 @@ export const MasterPassword = {
 
       if (Date.now() < lockoutUntil) {
         const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
-        return { success: false, error: `Too many attempts. Try again in ${remaining}s` };
+        return Response.error(`Too many attempts. Try again in ${remaining}s`);
       }
 
       const data = await chrome.storage.local.get([STORAGE_KEYS.MP_RECOVERY_A, STORAGE_KEYS.MP_RECOVERY_SALT]);
       if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) {
-        return { success: false, error: 'No recovery set' };
+        return Response.error('No recovery set');
       }
 
       const normalizedAnswer = answer.toLowerCase().trim();
@@ -399,21 +408,21 @@ export const MasterPassword = {
         }
 
         await chrome.storage.local.set(updates);
-        return { success: false, error: 'Incorrect answer' };
+        return Response.error('Incorrect answer');
       }
 
       // Success - reset attempts
       await chrome.storage.local.remove([STORAGE_KEYS.MP_RECOVERY_ATTEMPTS, STORAGE_KEYS.MP_RECOVERY_LOCKOUT]);
-      return { success: true };
-    } catch {
-      return { success: false, error: 'Verification failed' };
+      return Response.success(true);
+    } catch (e) {
+      return Response.error(e, 'MasterPassword.verifyRecoveryAnswer');
     }
   },
 
-  /** Reset password using recovery answer */
+  /** Reset password using recovery answer (uses verifyRecoveryAnswer for brute-force protection) */
   async resetByRecovery(answer, newPassword) {
     try {
-      // Validate new password
+      // Validate new password first (before answer verification to avoid wasting attempts)
       if (!newPassword || newPassword.length < 8) {
         return Response.error('Password must be at least 8 characters');
       }
@@ -421,22 +430,10 @@ export const MasterPassword = {
         return Response.error('Password must contain letters and numbers');
       }
 
-      // Verify recovery answer
-      const data = await chrome.storage.local.get([
-        STORAGE_KEYS.MP_RECOVERY_A, 
-        STORAGE_KEYS.MP_RECOVERY_SALT,
-        STORAGE_KEYS.ENCRYPTED_SESSIONS
-      ]);
-
-      if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) {
-        return Response.error('No recovery question set');
-      }
-
-      const normalizedAnswer = answer.toLowerCase().trim();
-      const answerHash = hashPassword(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
-
-      if (!safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A])) {
-        return Response.error('Incorrect answer');
+      // Verify recovery answer WITH brute-force protection
+      const verifyResult = await this.verifyRecoveryAnswer(answer);
+      if (!verifyResult.success) {
+        return verifyResult; // Pass through lockout/error messages
       }
 
       // Can't recover sessions without the original password, so we'll reset everything
@@ -451,7 +448,7 @@ export const MasterPassword = {
         [STORAGE_KEYS.ENCRYPTED_SESSIONS]: Crypto.encrypt([], newPassword)
       });
 
-      // Reset lockout
+      // Reset password lockout (not recovery lockout - that was already reset by verifyRecoveryAnswer)
       await chrome.storage.local.remove([STORAGE_KEYS.MP_ATTEMPTS, STORAGE_KEYS.MP_LOCKOUT]);
 
       return Response.success(null, 'Password reset successfully. Note: All encrypted sessions were cleared.');
