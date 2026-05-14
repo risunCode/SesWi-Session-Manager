@@ -1152,9 +1152,25 @@ input, button, textarea, select {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
-.sm-modal { min-width: 420px; }
+.sm-modal {
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+}
+
+.sm-modal .modal-body {
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+}
+
+.sm-modal .gm-list,
+.sm-modal .de-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
 
 /* ========== Dropzone (Restore) ========== */
 .dropzone {
@@ -2998,6 +3014,27 @@ input, button, textarea, select {
   margin-top: 12px;
 }
 
+.lock-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+}
+
+.lock-remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8b5cf6;
+  cursor: pointer;
+}
+
+.lock-remember:hover {
+  color: white;
+}
+
 /* ========== Master Password Modal ========== */
 .mp-notice {
   display: flex;
@@ -3027,33 +3064,6 @@ input, button, textarea, select {
   margin-bottom: 16px;
   font-size: 13px;
   color: #166534;
-}
-
-.mp-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.mp-toggle-row:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.mp-toggle-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #8b5cf6;
-  cursor: pointer;
 }
 
 .mp-strength {

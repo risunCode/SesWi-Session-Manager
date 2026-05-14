@@ -467,12 +467,17 @@ function initAddSessionModal() {
 }
 
 // ========== Lock Screen ==========
-function initLockScreen() {
+async function initLockScreen() {
   const lockScreen = document.getElementById('lockScreen');
   const lockPassword = document.getElementById('lockPassword');
   const unlockBtn = document.getElementById('unlockBtn');
   const lockError = document.getElementById('lockError');
   const lockPwdToggle = document.getElementById('lockPwdToggle');
+  const lockRemember = document.getElementById('lockRemember');
+
+  // Load saved remember preference
+  const { _seswi_mp_remember: savedRemember } = await chrome.storage.local.get('_seswi_mp_remember');
+  if (lockRemember) lockRemember.checked = !!savedRemember;
 
   // Password toggle
   lockPwdToggle.onclick = () => {
@@ -495,9 +500,11 @@ function initLockScreen() {
       _mpUnlocked = true;
       _mpPassword = password;
       
-      // Save encrypted session token if "remember" is enabled
-      const { _seswi_mp_remember: rememberEnabled } = await chrome.storage.local.get('_seswi_mp_remember');
-      if (rememberEnabled) {
+      // Save remember preference and session token if checked
+      const rememberChecked = lockRemember?.checked;
+      await chrome.storage.local.set({ '_seswi_mp_remember': rememberChecked });
+      
+      if (rememberChecked) {
         const { token, encryptedPwd, pwdLen } = SessionToken.create(password);
         await chrome.storage.session.set({ 
           mpUnlockTime: Date.now(), 
@@ -505,6 +512,9 @@ function initLockScreen() {
           mpEncPwd: encryptedPwd, 
           mpPwdLen: pwdLen 
         });
+      } else {
+        // Clear any existing session tokens
+        await chrome.storage.session.remove(['mpUnlockTime', 'mpToken', 'mpEncPwd', 'mpPwdLen']);
       }
       
       // Decrypt sessions and set MP state in storage module
@@ -558,18 +568,6 @@ function initMasterPasswordUI(mpEnabled) {
     };
   });
 
-  // Wire remember toggle
-  const rememberToggle = document.getElementById('mpRememberUnlock');
-  if (rememberToggle) {
-    rememberToggle.onchange = async () => {
-      await chrome.storage.local.set({ '_seswi_mp_remember': rememberToggle.checked });
-      // Clear session tokens if disabled
-      if (!rememberToggle.checked) {
-        await chrome.storage.session.remove(['mpUnlockTime', 'mpToken', 'mpEncPwd', 'mpPwdLen']);
-      }
-    };
-  }
-
   // Open modal
   mpCard.onclick = async () => {
     const { MasterPassword } = await import('./core/crypto.js');
@@ -584,10 +582,6 @@ function initMasterPasswordUI(mpEnabled) {
       setupBtn.classList.add('hidden');
       saveBtn.classList.remove('hidden');
       removeBtn.classList.remove('hidden');
-      
-      // Load remember setting
-      const { _seswi_mp_remember: rememberEnabled } = await chrome.storage.local.get('_seswi_mp_remember');
-      if (rememberToggle) rememberToggle.checked = !!rememberEnabled;
     } else {
       setupView.classList.remove('hidden');
       manageView.classList.add('hidden');

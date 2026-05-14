@@ -293,10 +293,6 @@
             <i class="fa-solid fa-lock text-violet-500"></i>
             <span>Master Password is <strong>enabled</strong></span>
           </div>
-          <label class="mp-toggle-row">
-            <input type="checkbox" id="mpRememberUnlock" />
-            <span>Remember unlock for 3 minutes</span>
-          </label>
           <div class="form-group">
             <label>Current Password (to change or remove)</label>
             <div class="input-pwd-wrap">
@@ -334,6 +330,10 @@
         <input type="password" id="lockPassword" placeholder="Master password" autocomplete="current-password" />
         <button type="button" class="pwd-toggle-lock" id="lockPwdToggle"><i class="fa-solid fa-eye"></i></button>
       </div>
+      <label class="lock-remember">
+        <input type="checkbox" id="lockRemember" />
+        <span>Remember for 3 minutes</span>
+      </label>
       <button class="btn btn-primary" id="unlockBtn"><i class="fa-solid fa-unlock mr-1"></i>Unlock</button>
       <div class="lock-error hidden" id="lockError">Incorrect password</div>
     </div>
