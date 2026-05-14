@@ -1109,8 +1109,8 @@ input, button, textarea, select {
 .option-title { font-weight: 600; font-size: var(--fs-md); color: #111827; }
 .option-desc { font-size: var(--fs-sm); color: #64748b; }
 
-/* ========== Backup & Restore Tabs ========== */
-.br-tabs {
+/* ========== Modal Tabs (Backup/Restore & Session Manager) ========== */
+.br-tabs, .sm-tabs {
   display: flex;
   gap: 4px;
   padding: 4px;
@@ -1119,7 +1119,7 @@ input, button, textarea, select {
   margin-bottom: 16px;
 }
 
-.br-tab {
+.br-tab, .sm-tab {
   flex: 1;
   padding: 8px 12px;
   border: none;
@@ -1132,20 +1132,29 @@ input, button, textarea, select {
   transition: all 0.2s;
 }
 
-.br-tab:hover { color: #334155; }
-.br-tab.active {
+.br-tab:hover, .sm-tab:hover { color: #334155; }
+.br-tab.active, .sm-tab.active {
   background: white;
   color: #1e293b;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.br-pane { display: none; }
-.br-pane.active { display: block; }
+.br-pane, .sm-pane { display: none; }
+.br-pane.active, .sm-pane.active { display: block; }
 
 .br-action {
   margin-top: 16px;
   text-align: right;
 }
+
+.sm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.sm-modal { min-width: 420px; }
 
 /* ========== Dropzone (Restore) ========== */
 .dropzone {

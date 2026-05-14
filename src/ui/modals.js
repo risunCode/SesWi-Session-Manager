@@ -594,27 +594,41 @@ export const Modal = {
   },
 
 
-  // ========== Group Manage Modal ==========
-  async openGroupManage() {
-    this._ensureGroupManageModal();
-    const modal = document.getElementById('groupManageModal');
-    const list = modal.querySelector('#gmList');
-    const msg = modal.querySelector('#gmMessage');
+  // ========== Session Manager Modal (Combined: By Domain + Expired) ==========
+  async openSessionManager(tab = 'domain') {
+    this._ensureSessionManagerModal();
+    const modal = document.getElementById('smModal');
+    
+    // Set active tab
+    modal.querySelectorAll('.sm-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    modal.querySelectorAll('.sm-pane').forEach(p => p.classList.toggle('active', p.id === `smPane${tab.charAt(0).toUpperCase() + tab.slice(1)}`));
+    
+    // Load content based on active tab
+    if (tab === 'domain') {
+      await this._loadDomainPane(modal);
+    } else {
+      await this._loadExpiredPane(modal);
+    }
+    
+    DOM.showModal(modal);
+  },
 
+  async _loadDomainPane(modal) {
+    const list = modal.querySelector('#smDomainList');
+    const msg = modal.querySelector('#smDomainMessage');
+    
     msg.textContent = '';
     msg.className = 'modal-message';
-
+    
     const { data: groups } = await SessionStorage.getGroupedByDomain();
-
+    
     if (!groups || groups.length === 0) {
       list.innerHTML = '<div class="empty-data-msg">No saved sessions</div>';
-      DOM.showModal(modal);
       return;
     }
-
-    // Store groups on modal for wire access
+    
     modal._groups = groups;
-
+    
     list.innerHTML = groups.map(g => {
       const totalCookies = g.sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
       const escapedDomain = DOM.escapeHtml(g.domain);
@@ -627,7 +641,7 @@ export const Modal = {
           </div>
         </div>
       `).join('');
-
+      
       return `
         <div class="gm-group" data-domain="${escapedDomain}">
           <div class="gm-group-header">
@@ -643,8 +657,8 @@ export const Modal = {
         </div>
       `;
     }).join('');
-
-    // Wire expand/collapse — klik header (kecuali checkbox) = toggle
+    
+    // Wire expand/collapse
     list.querySelectorAll('.gm-group-header').forEach(header => {
       const group = header.closest('.gm-group');
       header.onclick = (e) => {
@@ -652,8 +666,8 @@ export const Modal = {
         group.classList.toggle('expanded');
       };
     });
-
-    // Wire domain checkbox → select/deselect all children
+    
+    // Wire domain checkbox
     list.querySelectorAll('.gm-domain-check').forEach(domainCb => {
       domainCb.onchange = () => {
         const domain = domainCb.dataset.domain;
@@ -662,27 +676,25 @@ export const Modal = {
           cb.checked = domainCb.checked;
           cb.closest('.gm-session').classList.toggle('selected', domainCb.checked);
         });
-        // Auto-expand when selecting
         if (domainCb.checked) group.classList.add('expanded');
-        modal._updateCount();
+        modal._updateDomainCount();
       };
     });
-
+    
     // Wire session checkbox
     list.querySelectorAll('.gm-session-check').forEach(cb => {
       cb.onchange = () => {
         cb.closest('.gm-session').classList.toggle('selected', cb.checked);
-        // Sync domain checkbox state
         const domain = cb.dataset.domain;
         const group = list.querySelector(`.gm-group[data-domain="${domain}"]`);
         const allChecks = group.querySelectorAll('.gm-session-check');
         const domainCb = group.querySelector('.gm-domain-check');
         domainCb.checked = Array.from(allChecks).every(c => c.checked);
         domainCb.indeterminate = !domainCb.checked && Array.from(allChecks).some(c => c.checked);
-        modal._updateCount();
+        modal._updateDomainCount();
       };
     });
-
+    
     // Wire session row click
     list.querySelectorAll('.gm-session').forEach(row => {
       row.onclick = (e) => {
@@ -692,152 +704,28 @@ export const Modal = {
         cb.dispatchEvent(new Event('change'));
       };
     });
-
-    DOM.showModal(modal);
   },
 
-  _ensureGroupManageModal() {
-    if (document.getElementById('groupManageModal')) return;
-
-    const html = `
-      <div id="groupManageModal" class="modal">
-        <div class="modal-content gm-modal">
-          <div class="modal-header">
-            <div class="traffic-lights">
-              <span class="tl-btn tl-close" id="gmTlClose"></span>
-              <span class="tl-btn tl-minimize"></span>
-              <span class="tl-btn tl-maximize"></span>
-            </div>
-            <h3><i class="fa-solid fa-layer-group mr-2 text-slate-600"></i>Manage by Domain</h3>
-          </div>
-          <div class="modal-body">
-            <div class="gm-toolbar">
-              <button class="gm-select-all" id="gmSelectAll">Select All</button>
-              <span class="gm-selected-count" id="gmSelectedCount">0 selected</span>
-            </div>
-            <div id="gmList" class="gm-list"></div>
-            <div class="modal-message" id="gmMessage"></div>
-          </div>
-          <div class="modal-footer gm-footer">
-            <button class="btn btn-secondary" id="gmCancel">Cancel</button>
-            <button class="btn btn-secondary" id="gmBackupJSON"><i class="fa-solid fa-file-code mr-1"></i>JSON</button>
-            <button class="btn btn-secondary" id="gmBackupOWI"><i class="fa-solid fa-lock mr-1"></i>OWI</button>
-            <button class="btn btn-danger" id="gmDelete"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', html);
-    this._wireGroupManageModal();
-  },
-
-  _wireGroupManageModal() {
-    const modal = document.getElementById('groupManageModal');
-    const msg = modal.querySelector('#gmMessage');
-
-    DOM.wireModalClose(modal, { closeBtn: '#gmTlClose', cancelBtn: '#gmCancel' });
-
-    const getSelectedTimestamps = () =>
-      Array.from(modal.querySelectorAll('.gm-session-check:checked')).map(cb => parseInt(cb.dataset.ts));
-
-    modal._updateCount = () => {
-      const count = getSelectedTimestamps().length;
-      modal.querySelector('#gmSelectedCount').textContent = `${count} selected`;
-    };
-
-    modal.querySelector('#gmSelectAll').onclick = () => {
-      const allChecks = modal.querySelectorAll('.gm-session-check');
-      const allChecked = Array.from(allChecks).every(c => c.checked);
-      allChecks.forEach(cb => {
-        cb.checked = !allChecked;
-        cb.closest('.gm-session').classList.toggle('selected', !allChecked);
-      });
-      modal.querySelectorAll('.gm-domain-check').forEach(cb => {
-        cb.checked = !allChecked;
-        cb.indeterminate = false;
-      });
-      if (!allChecked) modal.querySelectorAll('.gm-group').forEach(g => g.classList.add('expanded'));
-      modal._updateCount();
-    };
-
-    const getSelectedSessions = () => {
-      const timestamps = new Set(getSelectedTimestamps());
-      return (modal._groups || []).flatMap(g => g.sessions).filter(s => timestamps.has(s.timestamp));
-    };
-
-    modal.querySelector('#gmBackupJSON').onclick = () => {
-      const sessions = getSelectedSessions();
-      if (!sessions.length) { msg.textContent = 'Select at least one session'; msg.className = 'modal-message error'; return; }
-      DOM.downloadFile(JSON.stringify(sessions, null, 2), `backup-${sessions.length}sessions.json`, 'application/json');
-      msg.textContent = `Exported ${sessions.length} sessions`;
-      msg.className = 'modal-message success';
-    };
-
-    modal.querySelector('#gmBackupOWI').onclick = () => {
-      const sessions = getSelectedSessions();
-      if (!sessions.length) { msg.textContent = 'Select at least one session'; msg.className = 'modal-message error'; return; }
-      this.openBatchOWIExport(sessions, `backup-${sessions.length}sessions`, () => {
-        msg.textContent = `Exported ${sessions.length} sessions`;
-        msg.className = 'modal-message success';
-      });
-    };
-
-    modal.querySelector('#gmDelete').onclick = () => {
-      const timestamps = getSelectedTimestamps();
-      if (!timestamps.length) { msg.textContent = 'Select at least one session'; msg.className = 'modal-message error'; return; }
-
-      this.openConfirm({
-        title: 'Delete Sessions',
-        message: `Delete ${timestamps.length} selected session(s)?`,
-        confirmText: 'Delete',
-        confirmClass: 'btn-danger',
-        onConfirm: async () => {
-          const res = await SessionStorage.deleteMany(timestamps);
-          msg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
-          msg.className = res.success ? 'modal-message success' : 'modal-message error';
-          if (res.success) {
-            emitEvent(EVENTS.SESSIONS_DELETED);
-            setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
-          }
-        }
-      });
-    };
-  },
-
-  // ========== Utility ==========
-  close(id) {
-    const modal = document.getElementById(id);
-    if (modal) DOM.closeModal(modal);
-  },
-
-  // ========== Delete Expired Modal ==========
-  async openDeleteExpired() {
-    this._ensureDeleteExpiredModal();
-    const modal = document.getElementById('deleteExpiredModal');
-    const list = modal.querySelector('#deList');
-    const msg = modal.querySelector('#deMessage');
-    const countEl = modal.querySelector('#deCount');
-
-    // Find all expired sessions (using longest expiration logic)
+  async _loadExpiredPane(modal) {
+    const list = modal.querySelector('#smExpiredList');
+    const countEl = modal.querySelector('#smExpiredCount');
+    
     const { data: sessions } = await SessionStorage.getAll();
     const now = Date.now() / 1000;
-
+    
     const expiredList = sessions.filter(session => {
       const cookies = session.cookies || [];
-
-      // Filter cookies with expiration dates
       const expiringCookies = cookies.filter(c => !c.session && c.expirationDate);
       if (!expiringCookies.length) return false;
-
-      // Check if the longest expiration has passed
       const latest = Math.max(...expiringCookies.map(c => c.expirationDate));
       return latest <= now;
     });
-
+    
     countEl.textContent = expiredList.length;
-
+    modal._expiredList = expiredList;
+    
     if (!expiredList.length) {
-      list.innerHTML = '<div class="empty-data-msg"><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i>No expired sessions found!</div>';
+      list.innerHTML = '<div class="empty-data-msg"><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i>No expired sessions!</div>';
     } else {
       list.innerHTML = expiredList.map(s => {
         const exp = Time.getSessionExpiration(s.cookies);
@@ -853,7 +741,7 @@ export const Modal = {
           </div>
         `;
       }).join('');
-
+      
       list.querySelectorAll('.de-item').forEach(item => {
         item.onclick = (e) => {
           if (e.target.type !== 'checkbox') {
@@ -864,59 +752,165 @@ export const Modal = {
         };
       });
     }
-
-    msg.textContent = '';
-    DOM.showModal(modal);
   },
 
-  _ensureDeleteExpiredModal() {
-    if (document.getElementById('deleteExpiredModal')) return;
-
+  _ensureSessionManagerModal() {
+    if (document.getElementById('smModal')) return;
+    
     const html = `
-      <div id="deleteExpiredModal" class="modal">
-        <div class="modal-content de-modal">
+      <div id="smModal" class="modal">
+        <div class="modal-content sm-modal">
           <div class="modal-header">
             <div class="traffic-lights">
-              <span class="tl-btn tl-close" id="deTlClose"></span>
+              <span class="tl-btn tl-close" id="smTlClose"></span>
               <span class="tl-btn tl-minimize"></span>
               <span class="tl-btn tl-maximize"></span>
             </div>
-            <h3><i class="fa-solid fa-trash-can mr-2 text-red-500"></i>Delete Expired</h3>
+            <h3><i class="fa-solid fa-sliders mr-2 text-indigo-500"></i>Session Manager</h3>
           </div>
           <div class="modal-body">
-            <div class="de-summary">
-              <i class="fa-solid fa-circle-exclamation text-red-500"></i>
-              <span>Found <strong id="deCount">0</strong> expired sessions</span>
+            <div class="sm-tabs">
+              <button class="sm-tab active" data-tab="domain"><i class="fa-solid fa-layer-group mr-1"></i>By Domain</button>
+              <button class="sm-tab" data-tab="expired"><i class="fa-solid fa-trash-can mr-1"></i>Expired</button>
             </div>
-            <div id="deList" class="de-list"></div>
-            <div class="modal-message" id="deMessage"></div>
+            
+            <!-- Domain Pane -->
+            <div class="sm-pane active" id="smPaneDomain">
+              <div class="gm-toolbar">
+                <button class="gm-select-all" id="smSelectAll">Select All</button>
+                <span class="gm-selected-count" id="smSelectedCount">0 selected</span>
+              </div>
+              <div id="smDomainList" class="gm-list"></div>
+              <div class="modal-message" id="smDomainMessage"></div>
+              <div class="sm-actions">
+                <button class="btn btn-secondary" id="smBackupJSON"><i class="fa-solid fa-file-code mr-1"></i>JSON</button>
+                <button class="btn btn-secondary" id="smBackupOWI"><i class="fa-solid fa-lock mr-1"></i>OWI</button>
+                <button class="btn btn-danger" id="smDomainDelete"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
+              </div>
+            </div>
+            
+            <!-- Expired Pane -->
+            <div class="sm-pane" id="smPaneExpired">
+              <div class="de-summary">
+                <i class="fa-solid fa-circle-exclamation text-red-500"></i>
+                <span>Found <strong id="smExpiredCount">0</strong> expired sessions</span>
+              </div>
+              <div id="smExpiredList" class="de-list"></div>
+              <div class="modal-message" id="smExpiredMessage"></div>
+              <div class="sm-actions">
+                <button class="btn btn-danger" id="smExpiredDelete"><i class="fa-solid fa-trash mr-1"></i>Delete Selected</button>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" id="deCancel">Cancel</button>
-            <button class="btn btn-danger" id="deDelete"><i class="fa-solid fa-trash mr-1"></i>Delete Selected</button>
+            <button class="btn btn-secondary" id="smCancel">Close</button>
           </div>
         </div>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', html);
-    this._wireDeleteExpiredModal();
+    this._wireSessionManagerModal();
   },
 
-  _wireDeleteExpiredModal() {
-    const modal = document.getElementById('deleteExpiredModal');
-    const msg = modal.querySelector('#deMessage');
-
-    DOM.wireModalClose(modal, { closeBtn: '#deTlClose', cancelBtn: '#deCancel' });
-
-    modal.querySelector('#deDelete').onclick = async () => {
+  _wireSessionManagerModal() {
+    const modal = document.getElementById('smModal');
+    const domainMsg = modal.querySelector('#smDomainMessage');
+    const expiredMsg = modal.querySelector('#smExpiredMessage');
+    
+    DOM.wireModalClose(modal, { closeBtn: '#smTlClose', cancelBtn: '#smCancel' });
+    
+    // Tab switching with content reload
+    modal.querySelectorAll('.sm-tab').forEach(tab => {
+      tab.onclick = async () => {
+        modal.querySelectorAll('.sm-tab').forEach(t => t.classList.toggle('active', t === tab));
+        modal.querySelectorAll('.sm-pane').forEach(p => 
+          p.classList.toggle('active', p.id === `smPane${tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1)}`)
+        );
+        if (tab.dataset.tab === 'domain') {
+          await this._loadDomainPane(modal);
+        } else {
+          await this._loadExpiredPane(modal);
+        }
+      };
+    });
+    
+    // ===== Domain pane actions =====
+    const getSelectedTimestamps = () =>
+      Array.from(modal.querySelectorAll('.gm-session-check:checked')).map(cb => parseInt(cb.dataset.ts));
+    
+    modal._updateDomainCount = () => {
+      const count = getSelectedTimestamps().length;
+      modal.querySelector('#smSelectedCount').textContent = `${count} selected`;
+    };
+    
+    modal.querySelector('#smSelectAll').onclick = () => {
+      const allChecks = modal.querySelectorAll('.gm-session-check');
+      const allChecked = Array.from(allChecks).every(c => c.checked);
+      allChecks.forEach(cb => {
+        cb.checked = !allChecked;
+        cb.closest('.gm-session').classList.toggle('selected', !allChecked);
+      });
+      modal.querySelectorAll('.gm-domain-check').forEach(cb => {
+        cb.checked = !allChecked;
+        cb.indeterminate = false;
+      });
+      if (!allChecked) modal.querySelectorAll('.gm-group').forEach(g => g.classList.add('expanded'));
+      modal._updateDomainCount();
+    };
+    
+    const getSelectedSessions = () => {
+      const timestamps = new Set(getSelectedTimestamps());
+      return (modal._groups || []).flatMap(g => g.sessions).filter(s => timestamps.has(s.timestamp));
+    };
+    
+    modal.querySelector('#smBackupJSON').onclick = () => {
+      const sessions = getSelectedSessions();
+      if (!sessions.length) { domainMsg.textContent = 'Select at least one session'; domainMsg.className = 'modal-message error'; return; }
+      DOM.downloadFile(JSON.stringify(sessions, null, 2), `backup-${sessions.length}sessions.json`, 'application/json');
+      domainMsg.textContent = `Exported ${sessions.length} sessions`;
+      domainMsg.className = 'modal-message success';
+    };
+    
+    modal.querySelector('#smBackupOWI').onclick = () => {
+      const sessions = getSelectedSessions();
+      if (!sessions.length) { domainMsg.textContent = 'Select at least one session'; domainMsg.className = 'modal-message error'; return; }
+      this.openBatchOWIExport(sessions, `backup-${sessions.length}sessions`, () => {
+        domainMsg.textContent = `Exported ${sessions.length} sessions`;
+        domainMsg.className = 'modal-message success';
+      });
+    };
+    
+    modal.querySelector('#smDomainDelete').onclick = () => {
+      const timestamps = getSelectedTimestamps();
+      if (!timestamps.length) { domainMsg.textContent = 'Select at least one session'; domainMsg.className = 'modal-message error'; return; }
+      
+      this.openConfirm({
+        title: 'Delete Sessions',
+        message: `Delete ${timestamps.length} selected session(s)?`,
+        confirmText: 'Delete',
+        confirmClass: 'btn-danger',
+        onConfirm: async () => {
+          const res = await SessionStorage.deleteMany(timestamps);
+          domainMsg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
+          domainMsg.className = res.success ? 'modal-message success' : 'modal-message error';
+          if (res.success) {
+            emitEvent(EVENTS.SESSIONS_DELETED);
+            await this._loadDomainPane(modal);
+          }
+        }
+      });
+    };
+    
+    // ===== Expired pane actions =====
+    modal.querySelector('#smExpiredDelete').onclick = () => {
       const selected = Array.from(modal.querySelectorAll('.de-check:checked')).map(cb => parseInt(cb.dataset.ts));
-
+      
       if (!selected.length) {
-        msg.textContent = 'No sessions selected';
-        msg.className = 'modal-message error';
+        expiredMsg.textContent = 'No sessions selected';
+        expiredMsg.className = 'modal-message error';
         return;
       }
-
+      
       this.openConfirm({
         title: 'Delete Expired',
         message: `Delete ${selected.length} expired session(s)?`,
@@ -924,15 +918,21 @@ export const Modal = {
         confirmClass: 'btn-danger',
         onConfirm: async () => {
           const res = await SessionStorage.deleteMany(selected);
-          msg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
-          msg.className = res.success ? 'modal-message success' : 'modal-message error';
+          expiredMsg.textContent = res.success ? `Deleted ${res.data.deleted} sessions` : res.error;
+          expiredMsg.className = res.success ? 'modal-message success' : 'modal-message error';
           if (res.success) {
             emitEvent(EVENTS.SESSIONS_DELETED);
-            setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_SLOW);
+            await this._loadExpiredPane(modal);
           }
         }
       });
     };
+  },
+
+  // ========== Utility ==========
+  close(id) {
+    const modal = document.getElementById(id);
+    if (modal) DOM.closeModal(modal);
   },
 
   // ========== Edit Session Modal ==========

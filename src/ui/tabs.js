@@ -405,9 +405,8 @@ export const ManageTab = {
     };
 
     wire('backupRestore', () => Modal.openBackupRestore());
-    wire('groupManage', () => this.handleGroupManage());
+    wire('sessionManager', () => Modal.openSessionManager());
     wire('cleanCurrentTabData', () => this.handleClean());
-    wire('deleteExpiredSessions', () => this.handleDeleteExpired());
     wire('quickAction', () => Modal.openQuickAction());
   },
 
@@ -449,15 +448,7 @@ export const ManageTab = {
     }
   },
 
-  handleGroupManage() {
-    Modal.openGroupManage();
-  },
-
   handleClean() {
     Modal.openCleanTab();
-  },
-
-  handleDeleteExpired() {
-    Modal.openDeleteExpired();
   }
 };
