@@ -622,15 +622,15 @@ async function initLockScreen() {
     verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Verifying...';
 
     const { MasterPassword } = await import('./core/crypto.js');
-    const isCorrect = await MasterPassword.verifyRecoveryAnswer(answer);
+    const result = await MasterPassword.verifyRecoveryAnswer(answer);
 
-    if (isCorrect) {
+    if (result.success) {
       resetError.classList.add('hidden');
       resetStep1.classList.add('hidden');
       resetStep2.classList.remove('hidden');
       resetNewPwd.focus();
     } else {
-      resetError.textContent = 'Incorrect answer';
+      resetError.textContent = result.error || 'Incorrect answer';
       resetError.classList.remove('hidden');
     }
 

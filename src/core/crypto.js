@@ -362,17 +362,51 @@ export const MasterPassword = {
     return question || null;
   },
 
-  /** Verify recovery answer (without resetting) */
+  /** Verify recovery answer with brute-force protection */
   async verifyRecoveryAnswer(answer) {
     try {
+      // Check lockout status
+      const lockoutData = await chrome.storage.local.get([
+        STORAGE_KEYS.MP_RECOVERY_LOCKOUT, 
+        STORAGE_KEYS.MP_RECOVERY_ATTEMPTS
+      ]);
+      const lockoutUntil = lockoutData[STORAGE_KEYS.MP_RECOVERY_LOCKOUT] || 0;
+      const attempts = lockoutData[STORAGE_KEYS.MP_RECOVERY_ATTEMPTS] || 0;
+
+      if (Date.now() < lockoutUntil) {
+        const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+        return { success: false, error: `Too many attempts. Try again in ${remaining}s` };
+      }
+
       const data = await chrome.storage.local.get([STORAGE_KEYS.MP_RECOVERY_A, STORAGE_KEYS.MP_RECOVERY_SALT]);
-      if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) return false;
+      if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) {
+        return { success: false, error: 'No recovery set' };
+      }
 
       const normalizedAnswer = answer.toLowerCase().trim();
       const answerHash = hashPassword(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
-      return safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A]);
+      
+      if (!safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A])) {
+        // Increment failed attempts
+        const newAttempts = attempts + 1;
+        const updates = { [STORAGE_KEYS.MP_RECOVERY_ATTEMPTS]: newAttempts };
+
+        // Exponential backoff: lockout after 3 attempts (stricter for recovery)
+        // 3 fails = 60s, 4 = 120s, 5 = 300s (5min max)
+        if (newAttempts >= 3) {
+          const lockoutSeconds = Math.min(300, 60 * Math.pow(2, newAttempts - 3));
+          updates[STORAGE_KEYS.MP_RECOVERY_LOCKOUT] = Date.now() + (lockoutSeconds * 1000);
+        }
+
+        await chrome.storage.local.set(updates);
+        return { success: false, error: 'Incorrect answer' };
+      }
+
+      // Success - reset attempts
+      await chrome.storage.local.remove([STORAGE_KEYS.MP_RECOVERY_ATTEMPTS, STORAGE_KEYS.MP_RECOVERY_LOCKOUT]);
+      return { success: true };
     } catch {
-      return false;
+      return { success: false, error: 'Verification failed' };
     }
   },
 

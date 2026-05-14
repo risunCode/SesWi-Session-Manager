@@ -32,6 +32,8 @@ export const STORAGE_KEYS = {
   MP_RECOVERY_Q: '_seswi_mp_recovery_q',
   MP_RECOVERY_A: '_seswi_mp_recovery_a',
   MP_RECOVERY_SALT: '_seswi_mp_recovery_salt',
+  MP_RECOVERY_ATTEMPTS: '_seswi_mp_recovery_attempts',
+  MP_RECOVERY_LOCKOUT: '_seswi_mp_recovery_lockout',
   ENCRYPTED_SESSIONS: '_seswi_encrypted',
 };
 
