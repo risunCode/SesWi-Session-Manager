@@ -3154,6 +3154,42 @@ input, button, textarea, select {
 
 .reset-no-recovery i { margin-right: 6px; }
 
+#resetStep1, #resetStep2 {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#resetStep2.hidden { display: none; }
+
+.reset-pwd-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.reset-pwd-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.pwd-toggle-reset {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+}
+
+.pwd-toggle-reset:hover { color: rgba(255,255,255,0.8); }
+
 /* ========== Master Password Modal ========== */
 .mp-notice {
   display: flex;

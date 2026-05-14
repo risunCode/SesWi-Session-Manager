@@ -544,12 +544,44 @@ async function initLockScreen() {
   const resetPanel = document.getElementById('lockResetPanel');
   const resetBackBtn = document.getElementById('resetBackBtn');
   const resetQuestion = document.getElementById('resetQuestion');
+  const resetStep1 = document.getElementById('resetStep1');
+  const resetStep2 = document.getElementById('resetStep2');
   const resetAnswer = document.getElementById('resetAnswer');
+  const verifyBtn = document.getElementById('verifyAnswerBtn');
   const resetNewPwd = document.getElementById('resetNewPassword');
   const resetConfirmPwd = document.getElementById('resetConfirmPassword');
   const resetBtn = document.getElementById('resetPasswordBtn');
   const resetError = document.getElementById('resetError');
   const noRecoveryMsg = document.getElementById('resetNoRecovery');
+
+  // Password toggle for reset panel
+  resetPanel.querySelectorAll('.pwd-toggle-reset').forEach(btn => {
+    btn.onclick = () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (input) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.innerHTML = `<i class="fa-solid fa-eye${isPassword ? '-slash' : ''}"></i>`;
+      }
+    };
+  });
+
+  const resetToStep1 = () => {
+    resetStep1.classList.remove('hidden');
+    resetStep2.classList.add('hidden');
+    resetAnswer.value = '';
+    resetNewPwd.value = '';
+    resetConfirmPwd.value = '';
+    resetError.classList.add('hidden');
+    resetError.style.color = '';
+    // Reset password toggles
+    resetPanel.querySelectorAll('.pwd-toggle-reset').forEach(btn => {
+      btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+    });
+    resetNewPwd.type = 'password';
+    resetConfirmPwd.type = 'password';
+  };
 
   forgotBtn.onclick = async () => {
     const { MasterPassword } = await import('./core/crypto.js');
@@ -558,20 +590,14 @@ async function initLockScreen() {
     if (hasRecovery) {
       const question = await MasterPassword.getRecoveryQuestion();
       resetQuestion.textContent = question;
-      resetAnswer.value = '';
-      resetNewPwd.value = '';
-      resetConfirmPwd.value = '';
-      resetError.classList.add('hidden');
       noRecoveryMsg.classList.add('hidden');
-      resetAnswer.closest('.lock-reset-panel').querySelectorAll('input, button#resetPasswordBtn').forEach(el => el.style.display = '');
+      resetStep1.style.display = '';
+      resetToStep1();
     } else {
       resetQuestion.textContent = '';
       noRecoveryMsg.classList.remove('hidden');
-      // Hide input fields when no recovery
-      resetAnswer.style.display = 'none';
-      resetNewPwd.parentElement.style.display = 'none';
-      resetConfirmPwd.parentElement.style.display = 'none';
-      resetBtn.style.display = 'none';
+      resetStep1.style.display = 'none';
+      resetStep2.classList.add('hidden');
     }
     
     resetPanel.classList.remove('hidden');
@@ -579,23 +605,44 @@ async function initLockScreen() {
 
   resetBackBtn.onclick = () => {
     resetPanel.classList.add('hidden');
-    // Reset display of all elements
-    resetAnswer.style.display = '';
-    resetNewPwd.parentElement.style.display = '';
-    resetConfirmPwd.parentElement.style.display = '';
-    resetBtn.style.display = '';
+    resetToStep1();
+    resetStep1.style.display = '';
   };
 
-  resetBtn.onclick = async () => {
+  // Step 1: Verify answer
+  verifyBtn.onclick = async () => {
     const answer = resetAnswer.value.trim();
-    const newPwd = resetNewPwd.value;
-    const confirmPwd = resetConfirmPwd.value;
-
     if (!answer) {
       resetError.textContent = 'Please enter your answer';
       resetError.classList.remove('hidden');
       return;
     }
+
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Verifying...';
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const isCorrect = await MasterPassword.verifyRecoveryAnswer(answer);
+
+    if (isCorrect) {
+      resetError.classList.add('hidden');
+      resetStep1.classList.add('hidden');
+      resetStep2.classList.remove('hidden');
+      resetNewPwd.focus();
+    } else {
+      resetError.textContent = 'Incorrect answer';
+      resetError.classList.remove('hidden');
+    }
+
+    verifyBtn.disabled = false;
+    verifyBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Verify';
+  };
+
+  // Step 2: Reset password
+  resetBtn.onclick = async () => {
+    const answer = resetAnswer.value.trim();
+    const newPwd = resetNewPwd.value;
+    const confirmPwd = resetConfirmPwd.value;
 
     if (!newPwd) {
       resetError.textContent = 'Please enter a new password';

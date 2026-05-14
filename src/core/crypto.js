@@ -362,6 +362,20 @@ export const MasterPassword = {
     return question || null;
   },
 
+  /** Verify recovery answer (without resetting) */
+  async verifyRecoveryAnswer(answer) {
+    try {
+      const data = await chrome.storage.local.get([STORAGE_KEYS.MP_RECOVERY_A, STORAGE_KEYS.MP_RECOVERY_SALT]);
+      if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) return false;
+
+      const normalizedAnswer = answer.toLowerCase().trim();
+      const answerHash = hashPassword(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
+      return safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A]);
+    } catch {
+      return false;
+    }
+  },
+
   /** Reset password using recovery answer */
   async resetByRecovery(answer, newPassword) {
     try {
