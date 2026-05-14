@@ -435,6 +435,12 @@ export const ManageTab = {
           sessionStorage: sessionRes.data || {}
         };
         DOM.downloadFile(JSON.stringify(payload, null, 2), `${domain}_session.json`, 'application/json');
+      } else if (format === 'cookieeditor') {
+        if (cookies.length === 0) {
+          Modal.openConfirm({ title: 'No Data', message: 'No cookies found for this tab.', confirmText: 'OK', onConfirm: () => {} });
+          return;
+        }
+        DOM.downloadFile(Export.toCookieEditor(cookies), `${domain}_cookies.json`, 'application/json');
       } else {
         if (cookies.length === 0) {
           Modal.openConfirm({ title: 'No Data', message: 'No cookies found for this tab.', confirmText: 'OK', onConfirm: () => {} });

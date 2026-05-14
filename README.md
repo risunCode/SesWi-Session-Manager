@@ -7,13 +7,14 @@ Chrome extension for saving and restoring login sessions. Captures cookies, loca
 - **Save & Restore** — Save complete login sessions and restore them later
 - **Smart Expiration** — Tracks cookie expiration based on longest-lasting cookie *(experimental, may be inaccurate)*
 - **Domain Groups** — Auto-groups sessions by domain for easy management
-- **Backup/Export** — JSON (raw array) or OWI (AES-256 encrypted) formats
+- **Backup/Export** — JSON, Netscape, Cookie Editor, or OWI (AES-256-GCM encrypted) formats
 - **Batch Operations** — Bulk backup, delete expired, or manage by domain
 - **Import Cookies** — Paste raw cookie JSON (Cookie Editor format) or import from file directly in Add Session
 - **Batch Restore** — Restore from multiple JSON files at once
 - **Clean Tab** — Selectively clear cookies, storage, history, and cache
-- **Export Tab Data** — Copy JSON to clipboard, export JSON or Netscape format from current tab
+- **Export Tab Data** — Copy JSON to clipboard, export JSON/Netscape/Cookie Editor format from current tab
 - **Randomized Storage** — Session data stored under a unique random key per installation
+- **Native Encryption** — Web Crypto API (AES-256-GCM) with PBKDF2 key derivation
 
 ## Showcase
 
@@ -45,8 +46,9 @@ Chrome extension for saving and restoring login sessions. Captures cookies, loca
 | Format | Contents |
 |--------|----------|
 | JSON | `{ cookies, localStorage, sessionStorage }` |
-| OWI | AES-256 encrypted JSON backup |
-| Netscape | Browser-compatible cookie file |
+| Cookie Editor | Cookie array compatible with Cookie Editor extension |
+| Netscape | Browser-compatible cookie file (curl/wget) |
+| OWI | AES-256-GCM encrypted JSON backup |
 
 ## Permissions
 
@@ -73,7 +75,6 @@ MIT License - See LICENSE file for details.
 
 ## Credits
 
-- [SJCL](https://github.com/bitwiseshiftleft/sjcl) for encryption
 - [Netscape Cookies Exporter](https://github.com/osiro/netscape-cookies-exporter) for Netscape format reference
 - [FontAwesome](https://fontawesome.com/) for icons
 - Built by [risunCode](https://github.com/risunCode)

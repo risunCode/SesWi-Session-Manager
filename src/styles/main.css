@@ -611,6 +611,36 @@ input, button, textarea, select {
   color: #0d9488;
 }
 
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  animation: pulse-badge 2s ease-in-out infinite;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.update-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.update-badge i {
+  font-size: 10px;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
 /* ========== Empty/Error States ========== */
 .empty-state, .error-state {
   display: flex;

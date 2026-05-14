@@ -1,18 +1,132 @@
 /**
  * SesWi Crypto Module
  * Handles: OWI encryption/decryption, Master Password
+ * Uses Web Crypto API (AES-256-GCM) exclusively
  */
 
 import { Response, Logger, Normalize, DOM } from '../utils.js';
 import { STORAGE_KEYS, LIMITS } from '../constants.js';
 
-// SJCL loaded globally from lib/sjcl.min.js
-const getSJCL = () => {
-  const sjcl = window.sjcl;
-  if (!sjcl) {
-    Logger.error('SJCL library not loaded');
+// ========== Web Crypto API ==========
+const PBKDF2_ITERATIONS = 100000;
+const PBKDF2_ITERATIONS_RECOVERY = 200000;
+
+const WebCrypto = {
+  /** Convert string to Uint8Array */
+  encode: (str) => new TextEncoder().encode(str),
+  
+  /** Convert Uint8Array to string */
+  decode: (buf) => new TextDecoder().decode(buf),
+  
+  /** Convert Uint8Array to base64 (handles large buffers) */
+  toBase64: (buf) => {
+    let str = '';
+    for (let i = 0; i < buf.length; i++) str += String.fromCharCode(buf[i]);
+    return btoa(str);
+  },
+  
+  /** Convert base64 to Uint8Array */
+  fromBase64: (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
+  
+  /** Convert Uint8Array to hex */
+  toHex: (buf) => Array.from(buf, b => b.toString(16).padStart(2, '0')).join(''),
+  
+  /** Convert hex to Uint8Array */
+  fromHex: (hex) => new Uint8Array(hex.match(/.{2}/g).map(h => parseInt(h, 16))),
+
+  /** Generate random bytes */
+  randomBytes: (length) => {
+    const arr = new Uint8Array(length);
+    crypto.getRandomValues(arr);
+    return arr;
+  },
+
+  /** Derive key from password using PBKDF2 */
+  async deriveKey(password, salt, iterations = PBKDF2_ITERATIONS) {
+    const passwordKey = await crypto.subtle.importKey(
+      'raw',
+      this.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: typeof salt === 'string' ? this.fromHex(salt) : salt,
+        iterations,
+        hash: 'SHA-256'
+      },
+      passwordKey,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  },
+
+  /** Hash password with PBKDF2 (returns hex string) */
+  async hashPassword(password, salt, iterations = PBKDF2_ITERATIONS) {
+    const passwordKey = await crypto.subtle.importKey(
+      'raw',
+      this.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    
+    const bits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: typeof salt === 'string' ? this.fromHex(salt) : salt,
+        iterations,
+        hash: 'SHA-256'
+      },
+      passwordKey,
+      256
+    );
+    
+    return this.toHex(new Uint8Array(bits));
+  },
+
+  /** Encrypt data with AES-GCM */
+  async encrypt(data, password) {
+    const salt = this.randomBytes(16);
+    const iv = this.randomBytes(12);
+    const key = await this.deriveKey(password, salt);
+    
+    const plaintext = this.encode(JSON.stringify(data));
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      plaintext
+    );
+    
+    // Format: base64 of salt(16) + iv(12) + ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+    
+    return this.toBase64(combined);
+  },
+
+  /** Decrypt data with AES-GCM */
+  async decrypt(encrypted, password) {
+    const combined = this.fromBase64(encrypted);
+    const salt = combined.slice(0, 16);
+    const iv = combined.slice(16, 28);
+    const ciphertext = combined.slice(28);
+    
+    const key = await this.deriveKey(password, salt);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      ciphertext
+    );
+    
+    return JSON.parse(this.decode(plaintext));
   }
-  return sjcl;
 };
 
 // Validate password meets requirements
@@ -25,29 +139,16 @@ const validatePassword = (password) => {
   return null; // Valid
 };
 
-// Generate random salt
-const generateSalt = () => {
-  const arr = new Uint8Array(16);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-};
+// Generate random salt (hex string)
+const generateSalt = () => WebCrypto.toHex(WebCrypto.randomBytes(16));
 
-// Hash password with salt for verification
-const hashPassword = (password, salt) => {
-  const sjcl = getSJCL();
-  if (!sjcl) throw new Error('SJCL not loaded');
-  const bits = sjcl.misc.pbkdf2(password, salt, 100000, 256);
-  return sjcl.codec.hex.fromBits(bits);
-};
+// Hash password with PBKDF2
+const hashPassword = (password, salt) => 
+  WebCrypto.hashPassword(password, salt, PBKDF2_ITERATIONS);
 
 // Hash recovery answer with higher iterations (compensate for lower entropy)
-const hashRecoveryAnswer = (answer, salt) => {
-  const sjcl = getSJCL();
-  if (!sjcl) throw new Error('SJCL not loaded');
-  // 200k iterations for recovery answers (2x normal) to compensate for lower entropy
-  const bits = sjcl.misc.pbkdf2(answer, salt, 200000, 256);
-  return sjcl.codec.hex.fromBits(bits);
-};
+const hashRecoveryAnswer = (answer, salt) =>
+  WebCrypto.hashPassword(answer, salt, PBKDF2_ITERATIONS_RECOVERY);
 
 // Constant-time string comparison (prevents timing attacks)
 // Always iterates 64 chars (256-bit hash = 64 hex chars) regardless of input
@@ -115,21 +216,14 @@ export const SessionToken = {
 };
 
 export const Crypto = {
-  encrypt(data, password) {
-    const sjcl = getSJCL();
-    if (!sjcl) throw new Error('SJCL not loaded');
-    
-    const json = JSON.stringify(data);
-    // iter: 100000 for strong PBKDF2 key derivation (OWASP recommended minimum)
-    return sjcl.encrypt(password, json, { mode: 'ccm', ts: 128, ks: 256, iter: 100000 });
+  /** Encrypt data with AES-256-GCM */
+  async encrypt(data, password) {
+    return WebCrypto.encrypt(data, password);
   },
 
-  decrypt(encrypted, password) {
-    const sjcl = getSJCL();
-    if (!sjcl) throw new Error('SJCL not loaded');
-    
-    const json = sjcl.decrypt(password, encrypted);
-    return JSON.parse(json);
+  /** Decrypt data with AES-256-GCM */
+  async decrypt(encrypted, password) {
+    return WebCrypto.decrypt(encrypted, password);
   },
 
   async exportOWI(sessions, password, filename = 'sessions-backup') {
@@ -137,19 +231,17 @@ export const Crypto = {
       if (!password?.trim()) return Response.error('Password required');
       
       const payload = { version: '1.0', exportDate: new Date().toISOString(), sessions };
-      const encrypted = this.encrypt(payload, password);
+      const encrypted = await this.encrypt(payload, password);
       
       const owiData = {
-        version: '1.0',
+        version: '2.0',
         format: 'OWI',
         created: new Date().toISOString(),
         type: 'multi',
         encryptedData: encrypted
       };
       
-      // Download
       DOM.downloadFile(JSON.stringify(owiData, null, 2), `${filename}.owi`, 'application/octet-stream');
-      
       return Response.success(null, 'OWI created');
     } catch (e) {
       Logger.error('exportOWI failed:', e);
@@ -164,7 +256,7 @@ export const Crypto = {
         return Response.error('Invalid OWI file');
       }
       
-      const data = this.decrypt(parsed.encryptedData, password);
+      const data = await this.decrypt(parsed.encryptedData, password);
       const sessions = Normalize.importSessions(data);
       if (!sessions.length) return Response.error('No sessions found in OWI file');
       return Response.success({ sessions });
@@ -190,16 +282,14 @@ export const MasterPassword = {
       if (pwdError) return Response.error(pwdError);
 
       const salt = generateSalt();
-      const hash = hashPassword(password, salt);
+      const hash = await hashPassword(password, salt);
 
       // Get existing sessions to encrypt
       const { Storage } = await import('./storage.js');
       const sessions = await Storage.getAllSessions();
 
-      // Encrypt sessions
-      const encrypted = Crypto.encrypt(sessions, password);
+      const encrypted = await Crypto.encrypt(sessions, password);
 
-      // Store everything
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_ENABLED]: true,
         [STORAGE_KEYS.MP_SALT]: salt,
@@ -235,16 +325,14 @@ export const MasterPassword = {
         return Response.error('Master password not set');
       }
 
-      const hash = hashPassword(password, data[STORAGE_KEYS.MP_SALT]);
+      const hash = await hashPassword(password, data[STORAGE_KEYS.MP_SALT]);
       
-      // Use constant-time comparison to prevent timing attacks
+      // Constant-time comparison to prevent timing attacks
       if (!safeCompare(hash, data[STORAGE_KEYS.MP_VERIFY])) {
-        // Increment failed attempts
         const newAttempts = attempts + 1;
         const updates = { [STORAGE_KEYS.MP_ATTEMPTS]: newAttempts };
         
         // Exponential backoff: lockout after 5 attempts
-        // 5 fails = 30s, 6 = 60s, 7 = 120s, 8 = 300s (5min max)
         if (newAttempts >= 5) {
           const lockoutSeconds = Math.min(300, 30 * Math.pow(2, newAttempts - 5));
           updates[STORAGE_KEYS.MP_LOCKOUT] = Date.now() + (lockoutSeconds * 1000);
@@ -268,17 +356,17 @@ export const MasterPassword = {
       const { [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted } = await chrome.storage.local.get(STORAGE_KEYS.ENCRYPTED_SESSIONS);
       if (!encrypted) return Response.success([]);
 
-      const sessions = Crypto.decrypt(encrypted, password);
+      const sessions = await Crypto.decrypt(encrypted, password);
       return Response.success(sessions);
     } catch (e) {
       return Response.error(e, 'MasterPassword.decryptSessions');
     }
   },
 
-  /** Re-encrypt sessions (call when sessions change) */
+  /** Re-encrypt sessions */
   async encryptSessions(sessions, password) {
     try {
-      const encrypted = Crypto.encrypt(sessions, password);
+      const encrypted = await Crypto.encrypt(sessions, password);
       await chrome.storage.local.set({ [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted });
       return Response.success(null);
     } catch (e) {
@@ -292,18 +380,15 @@ export const MasterPassword = {
       const pwdError = validatePassword(newPassword);
       if (pwdError) return Response.error(pwdError);
 
-      // Verify current password
       const verifyResult = await this.verify(currentPassword);
       if (!verifyResult.success) return verifyResult;
 
-      // Decrypt sessions with old password
       const sessionsResult = await this.decryptSessions(currentPassword);
       if (!sessionsResult.success) return sessionsResult;
 
-      // Setup with new password
       const salt = generateSalt();
-      const hash = hashPassword(newPassword, salt);
-      const encrypted = Crypto.encrypt(sessionsResult.data, newPassword);
+      const hash = await hashPassword(newPassword, salt);
+      const encrypted = await Crypto.encrypt(sessionsResult.data, newPassword);
 
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_SALT]: salt,
@@ -320,21 +405,17 @@ export const MasterPassword = {
   /** Remove master password (decrypt sessions back to normal storage) */
   async remove(password) {
     try {
-      // Verify password
       const verifyResult = await this.verify(password);
       if (!verifyResult.success) return verifyResult;
 
-      // Decrypt sessions
       const sessionsResult = await this.decryptSessions(password);
       if (!sessionsResult.success) return sessionsResult;
 
-      // Restore sessions to normal storage
       const { Storage } = await import('./storage.js');
       for (const session of sessionsResult.data) {
         await Storage.saveSession(session);
       }
 
-      // Clear MP data
       await chrome.storage.local.remove([
         STORAGE_KEYS.MP_ENABLED,
         STORAGE_KEYS.MP_SALT,
@@ -356,15 +437,13 @@ export const MasterPassword = {
     try {
       if (!question || !answer) return Response.error('Question and answer required');
       
-      // Validate minimum answer length
       const normalizedAnswer = answer.toLowerCase().trim();
       if (normalizedAnswer.length < LIMITS.RECOVERY_ANSWER_MIN) {
         return Response.error(`Answer must be at least ${LIMITS.RECOVERY_ANSWER_MIN} characters`);
       }
       
       const salt = generateSalt();
-      // Use higher iteration hash for recovery answers (lower entropy)
-      const hash = hashRecoveryAnswer(normalizedAnswer, salt);
+      const hash = await hashRecoveryAnswer(normalizedAnswer, salt);
 
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_RECOVERY_Q]: question,
@@ -393,7 +472,6 @@ export const MasterPassword = {
   /** Verify recovery answer with brute-force protection */
   async verifyRecoveryAnswer(answer) {
     try {
-      // Check lockout status
       const lockoutData = await chrome.storage.local.get([
         STORAGE_KEYS.MP_RECOVERY_LOCKOUT, 
         STORAGE_KEYS.MP_RECOVERY_ATTEMPTS
@@ -412,15 +490,13 @@ export const MasterPassword = {
       }
 
       const normalizedAnswer = answer.toLowerCase().trim();
-      const answerHash = hashRecoveryAnswer(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
+      const answerHash = await hashRecoveryAnswer(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
       
       if (!safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A])) {
-        // Increment failed attempts
         const newAttempts = attempts + 1;
         const updates = { [STORAGE_KEYS.MP_RECOVERY_ATTEMPTS]: newAttempts };
 
-        // Exponential backoff: lockout after 3 attempts (stricter for recovery)
-        // 3 fails = 60s, 4 = 120s, 5 = 300s (5min max)
+        // Exponential backoff: lockout after 3 attempts
         if (newAttempts >= 3) {
           const lockoutSeconds = Math.min(300, 60 * Math.pow(2, newAttempts - 3));
           updates[STORAGE_KEYS.MP_RECOVERY_LOCKOUT] = Date.now() + (lockoutSeconds * 1000);
@@ -430,7 +506,6 @@ export const MasterPassword = {
         return Response.error('Incorrect answer');
       }
 
-      // Success - reset attempts
       await chrome.storage.local.remove([STORAGE_KEYS.MP_RECOVERY_ATTEMPTS, STORAGE_KEYS.MP_RECOVERY_LOCKOUT]);
       return Response.success(true);
     } catch (e) {
@@ -438,35 +513,26 @@ export const MasterPassword = {
     }
   },
 
-  /** Reset password using recovery answer (uses verifyRecoveryAnswer for brute-force protection) */
+  /** Reset password using recovery answer */
   async resetByRecovery(answer, newPassword) {
     try {
-      // Validate new password first (before answer verification to avoid wasting attempts)
       const pwdError = validatePassword(newPassword);
       if (pwdError) return Response.error(pwdError);
 
-      // Verify recovery answer WITH brute-force protection
       const verifyResult = await this.verifyRecoveryAnswer(answer);
-      if (!verifyResult.success) {
-        return verifyResult; // Pass through lockout/error messages
-      }
+      if (!verifyResult.success) return verifyResult;
 
-      // Can't recover sessions without the original password, so we'll reset everything
-      // This is a security trade-off: recovery means losing encrypted data
       const salt = generateSalt();
-      const hash = hashPassword(newPassword, salt);
+      const hash = await hashPassword(newPassword, salt);
 
-      // Keep MP enabled but with new password and empty sessions
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_SALT]: salt,
         [STORAGE_KEYS.MP_VERIFY]: hash,
-        [STORAGE_KEYS.ENCRYPTED_SESSIONS]: Crypto.encrypt([], newPassword)
+        [STORAGE_KEYS.ENCRYPTED_SESSIONS]: await Crypto.encrypt([], newPassword)
       });
 
-      // Reset password lockout (not recovery lockout - that was already reset by verifyRecoveryAnswer)
       await chrome.storage.local.remove([STORAGE_KEYS.MP_ATTEMPTS, STORAGE_KEYS.MP_LOCKOUT]);
-
-      return Response.success(null, 'Password reset successfully. Note: All encrypted sessions were cleared.');
+      return Response.success(null, 'Password reset. All encrypted sessions were cleared.');
     } catch (e) {
       return Response.error(e, 'MasterPassword.resetByRecovery');
     }

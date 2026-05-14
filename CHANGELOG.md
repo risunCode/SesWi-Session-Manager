@@ -1,5 +1,31 @@
 # Changelog
 
+## v3.4.0 (2026-05-14)
+
+### Breaking Changes
+- **Web Crypto API Only** — Encryption now uses native Web Crypto API (AES-256-GCM) exclusively
+  - SJCL library support has been removed
+  - Users upgrading from v3.3.0 or earlier must export sessions as JSON first, then re-import after updating
+  - OWI files from previous versions are no longer compatible
+
+### New Features
+- **Cookie Editor Export** — New export format compatible with Cookie Editor extension
+  - Available in Quick Actions modal alongside JSON and Netscape formats
+  - Includes `hostOnly`, `session`, `storeId`, and `sameSite` fields
+- **Update Checker** — Automatically checks GitHub releases for new versions
+  - Badge appears in footer when update is available
+  - Checks once per 24 hours (cached to avoid API rate limits)
+  - Click badge to go directly to release page
+
+### Security
+- **Native AES-256-GCM** — Replaced SJCL with Web Crypto API
+  - PBKDF2 with SHA-256 for key derivation (100k iterations)
+  - Recovery answers use 200k iterations (compensate for lower entropy)
+  - 12-byte IV, 16-byte salt, authenticated encryption
+- **Cleaner codebase** — Removed ~100 lines of legacy SJCL compatibility code
+
+---
+
 ## v3.2.1 (2026-05-13)
 
 ### New Features

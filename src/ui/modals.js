@@ -1443,6 +1443,15 @@ export const Modal = {
                   <div class="qa-export-desc">Browser-compatible format</div>
                 </div>
               </button>
+              <button class="qa-export-btn" id="qaCookieEditor">
+                <span class="qa-export-icon" style="background:#fae8ff;color:#a855f7;">
+                  <i class="fa-solid fa-cookie-bite"></i>
+                </span>
+                <div class="qa-export-text">
+                  <div class="qa-export-title">Cookie Editor</div>
+                  <div class="qa-export-desc">Compatible with Cookie Editor ext</div>
+                </div>
+              </button>
             </div>
             <div class="modal-message" id="qaMessage"></div>
           </div>
@@ -1490,6 +1499,7 @@ export const Modal = {
 
     modal.querySelector('#qaJSON').onclick = () => handleExport('json');
     modal.querySelector('#qaNetscape').onclick = () => handleExport('netscape');
+    modal.querySelector('#qaCookieEditor').onclick = () => handleExport('cookieeditor');
   },
 
   // ========== Simple Confirm Modal (Generic) ==========

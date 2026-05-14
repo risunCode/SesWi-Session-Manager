@@ -1,6 +1,6 @@
 /**
  * SesWi Export Module
- * Handles data formatting for exports (JSON, Netscape)
+ * Handles data formatting for exports (JSON, Netscape, Cookie Editor)
  */
 
 export const Export = {
@@ -11,6 +11,29 @@ export const Export = {
    */
   toJSON(cookies) {
     return JSON.stringify(cookies, null, 2);
+  },
+
+  /**
+   * Convert cookies to Cookie Editor format
+   * Compatible with Cookie Editor extension (https://cookie-editor.com)
+   * @param {Array} cookies - Array of cookie objects
+   * @returns {string} JSON string in Cookie Editor format
+   */
+  toCookieEditor(cookies) {
+    const formatted = cookies.map(c => ({
+      domain: c.domain || '',
+      expirationDate: c.expirationDate || undefined,
+      hostOnly: !c.domain?.startsWith('.'),
+      httpOnly: c.httpOnly || false,
+      name: c.name,
+      path: c.path || '/',
+      sameSite: c.sameSite || 'unspecified',
+      secure: c.secure || false,
+      session: !c.expirationDate,
+      storeId: '0',
+      value: c.value || ''
+    }));
+    return JSON.stringify(formatted, null, 2);
   },
 
   /**

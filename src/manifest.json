@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SesWi - Session Manager",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Advanced Session Manager - Save & restore login sessions easily",
   "permissions": [
     "tabs",
@@ -13,7 +13,10 @@
     "favicon",
     "contextMenus"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["<all_urls>", "https://api.github.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.github.com"
+  },
   "icons": {
     "16": "assets/icons/16.png",
     "48": "assets/icons/48.png",

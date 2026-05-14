@@ -8,6 +8,7 @@ import { tabIcons } from './core/icons.js';
 import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
 import { Domain, DOM, Normalize } from './utils.js';
 import { EVENTS, TIMING, emitEvent } from './constants.js';
+import { checkForUpdate } from './core/updater.js';
 
 // Master Password state (in-memory only, cleared on popup close)
 let _mpUnlocked = false;
@@ -25,6 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const manifest = chrome.runtime.getManifest();
   const versionEl = document.getElementById('appVersion');
   if (versionEl) versionEl.textContent = `v${manifest.version}`;
+
+  // Check for updates (non-blocking)
+  checkForUpdate().then(result => {
+    if (result?.hasUpdate) {
+      const badge = document.getElementById('updateBadge');
+      if (badge) {
+        badge.href = result.releaseUrl;
+        badge.title = `v${result.latestVersion} available`;
+        badge.classList.remove('hidden');
+      }
+    }
+  });
 
   // Batch fetch: MP status + remember setting (faster than sequential)
   const [localData, sessionData] = await Promise.all([

@@ -68,6 +68,67 @@ function setupContextMenus() {
 }
 setupContextMenus();
 
+// ========== Update Checker ==========
+const UPDATE_CACHE_KEY = '_seswi_update_cache';
+const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+const GITHUB_API = 'https://api.github.com/repos/risunCode/SesWi-Session-Manager/releases/latest';
+
+function compareVersions(a, b) {
+  const partsA = a.replace(/^v/, '').split('.').map(Number);
+  const partsB = b.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] || 0;
+    const numB = partsB[i] || 0;
+    if (numA > numB) return 1;
+    if (numA < numB) return -1;
+  }
+  return 0;
+}
+
+async function checkForUpdate() {
+  try {
+    const cached = await chrome.storage.local.get(UPDATE_CACHE_KEY);
+    const cache = cached[UPDATE_CACHE_KEY];
+    
+    if (cache && Date.now() - cache.checkedAt < UPDATE_CHECK_INTERVAL) {
+      return cache.result;
+    }
+    
+    const res = await fetch(GITHUB_API, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    
+    if (!res.ok) return null;
+    
+    const data = await res.json();
+    const latestVersion = data.tag_name || '';
+    const releaseUrl = data.html_url || '';
+    const currentVersion = chrome.runtime.getManifest().version;
+    
+    const result = {
+      hasUpdate: compareVersions(latestVersion, currentVersion) > 0,
+      latestVersion: latestVersion.replace(/^v/, ''),
+      releaseUrl
+    };
+    
+    await chrome.storage.local.set({
+      [UPDATE_CACHE_KEY]: { checkedAt: Date.now(), result }
+    });
+    
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'checkForUpdate') {
+    checkForUpdate().then(sendResponse);
+    return true; // Keep channel open for async response
+  }
+});
+
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.url || tab.url.startsWith('chrome://')) return;
   const domain = getBase(tab.url);

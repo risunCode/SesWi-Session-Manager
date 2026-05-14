@@ -54,7 +54,7 @@ async function syncEncryptedSessions(sessions) {
   if (!_mpEnabled || !_mpPassword) return;
   try {
     const { Crypto } = await import('./crypto.js');
-    const encrypted = Crypto.encrypt(sessions, _mpPassword);
+    const encrypted = await Crypto.encrypt(sessions, _mpPassword);
     await chrome.storage.local.set({ [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted });
     _decryptedCache = sessions;
   } catch (e) {
