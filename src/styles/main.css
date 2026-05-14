@@ -35,9 +35,13 @@
   /* Surface & Background */
   --clr-surface: #ffffff;
   --clr-background: #f8fafc;
+  --clr-background-alt: #f1f5f9;
   --clr-border: #e2e8f0;
+  --clr-border-light: #f1f5f9;
   --clr-text: #1e293b;
+  --clr-text-secondary: #475569;
   --clr-text-muted: #64748b;
+  --clr-text-light: #94a3b8;
 
   /* Modal */
   --modal-width: 340px;
@@ -74,7 +78,7 @@ body {
   font-family: 'Cause', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-base);
   background: linear-gradient(135deg, #bfdbfe, #fef3c7);
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 /* Force all form elements to inherit font */
@@ -169,7 +173,7 @@ input, button, textarea, select {
   display: flex;
   gap: 4px;
   padding: 6px 10px 4px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 14px;
   justify-content: center;
   position: sticky;
@@ -183,10 +187,10 @@ input, button, textarea, select {
 .tab-btn {
   padding: 5px 10px;
   border: none;
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
   border-radius: 12px;
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   cursor: pointer;
   min-width: 90px;
 }
@@ -198,7 +202,7 @@ input, button, textarea, select {
 }
 
 .tab-btn:hover:not(.active) {
-  background: #e2e8f0;
+  background: var(--clr-border);
 }
 
 /* ========== Main Content ========== */
@@ -249,7 +253,7 @@ input, button, textarea, select {
 
 .current-pagination:not(:empty) {
   padding: 4px 0 2px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--clr-background-alt);
   background: white;
 }
 
@@ -265,8 +269,8 @@ input, button, textarea, select {
 
 .session-card {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   padding: 11px 10px;
   cursor: pointer;
@@ -296,13 +300,13 @@ input, button, textarea, select {
 }
 
 .session-card.just-saved {
-  border: 1px solid #10b981 !important;
+  border: 1px solid var(--clr-success) !important;
   background: #f0fdf4 !important;
 }
 
 .session-card.just-saved::before {
   opacity: 1;
-  background: #10b981;
+  background: var(--clr-success);
 }
 
 .session-header {
@@ -328,7 +332,7 @@ input, button, textarea, select {
   flex: 1 1 auto;
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   min-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -338,7 +342,7 @@ input, button, textarea, select {
 .session-meta {
   font-size: var(--fs-xs);
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   margin-left: 23px;
   display: flex;
   align-items: center;
@@ -354,7 +358,7 @@ input, button, textarea, select {
   display: flex;
   align-items: center;
   gap: 3px;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   flex-shrink: 0;
 }
 
@@ -362,7 +366,7 @@ input, button, textarea, select {
   font-size: 9px;
   font-weight: 700;
   color: #fff;
-  background: #3b82f6;
+  background: var(--clr-primary);
   border-radius: 4px;
   padding: 1px 4px;
   letter-spacing: 0.02em;
@@ -376,15 +380,15 @@ input, button, textarea, select {
   gap: 12px;
   padding: 8px 12px;
   margin: 0 12px 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
 }
 
 .overview-label {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #64748b;
+  color: var(--clr-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -403,18 +407,18 @@ input, button, textarea, select {
 
 .overview-stat i {
   font-size: var(--fs-base);
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .overview-stat span {
   font-size: var(--fs-md);
   font-weight: 700;
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 .overview-stat label {
   font-size: var(--fs-sm);
-  color: #94a3b8;
+  color: var(--clr-text-light);
 }
 
 /* ========== Group Cards ========== */
@@ -424,7 +428,6 @@ input, button, textarea, select {
   gap: 0;
   padding: 4px 0;
 }
-
 
 /* ========== Manage Cards ========== */
 .manage-cards {
@@ -440,8 +443,8 @@ input, button, textarea, select {
   width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-surface);
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
@@ -464,10 +467,10 @@ input, button, textarea, select {
   flex-shrink: 0;
 }
 
-.card-icon--blue   { background: #dbeafe; color: #2563eb; }
+.card-icon--blue   { background: #dbeafe; color: var(--clr-primary-hover); }
 .card-icon--green  { background: #d1fae5; color: #059669; }
 .card-icon--indigo { background: #e0e7ff; color: #4f46e5; }
-.card-icon--red    { background: #fee2e2; color: #dc2626; }
+.card-icon--red    { background: #fee2e2; color: var(--clr-danger-hover); }
 .card-icon--amber  { background: #fef3c7; color: #d97706; }
 .card-icon--pink   { background: #fce7f3; color: #be185d; }
 .card-icon--violet { background: #ede9fe; color: #7c3aed; }
@@ -486,7 +489,7 @@ input, button, textarea, select {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   padding: 4px 2px 2px;
   margin-top: 4px;
 }
@@ -498,7 +501,7 @@ input, button, textarea, select {
 .manage-card-divider {
   margin: 4px 0;
   border: none;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--clr-background-alt);
 }
 
 /* ========== Quick Action Modal ========== */
@@ -507,9 +510,9 @@ input, button, textarea, select {
   align-items: flex-start;
   gap: 8px;
   font-size: var(--fs-sm);
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: var(--clr-text-muted);
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   padding: 8px 10px;
   margin-bottom: 12px;
@@ -526,8 +529,8 @@ input, button, textarea, select {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   padding: 10px 12px;
   cursor: pointer;
@@ -555,12 +558,12 @@ input, button, textarea, select {
 .qa-export-title {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 .qa-export-desc {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   margin-top: 1px;
 }
 
@@ -573,7 +576,7 @@ input, button, textarea, select {
 
 .card-title {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   font-size: var(--fs-sm);
 }
 
@@ -591,15 +594,15 @@ input, button, textarea, select {
 .app-footer {
   padding: 10px 14px;
   background: linear-gradient(135deg, #bfdbfe, #fef3c7);
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--clr-border);
   text-align: center;
   font-size: var(--fs-base);
   font-weight: 700;
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .footer-link {
-  color: #64748b;
+  color: var(--clr-text-muted);
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -616,16 +619,16 @@ input, button, textarea, select {
   justify-content: center;
   padding: 60px 20px;
   text-align: center;
-  background: #f8fafc;
+  background: var(--clr-background);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   margin: 20px 0;
   min-height: 200px;
 }
 
 .empty-state p, .error-state p {
   font-size: var(--fs-lg);
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 /* ========== Pagination ========== */
@@ -642,17 +645,17 @@ input, button, textarea, select {
   flex: 1;
   text-align: center;
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .page-btn, .dpage-btn {
   padding: 5px 14px;
   border: 1px solid #cbd5e1;
-  background: #ffffff;
+  background: var(--clr-surface);
   border-radius: 6px;
   font-size: var(--fs-lg);
   font-weight: 700;
-  color: #475569;
+  color: var(--clr-text-secondary);
   cursor: pointer;
   min-width: 32px;
   display: flex;
@@ -669,9 +672,9 @@ input, button, textarea, select {
 
 .page-btn:hover:not(.active):not(:disabled),
 .dpage-btn:hover:not(.active):not(:disabled) {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #1e293b;
+  background: var(--clr-background-alt);
+  border-color: var(--clr-text-light);
+  color: var(--clr-text);
 }
 
 .page-btn:disabled, .dpage-btn:disabled {
@@ -853,10 +856,9 @@ input, button, textarea, select {
 .modal-header h3 {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   margin: 0;
 }
-
 
 .modal-body { padding: 10px 12px; }
 
@@ -882,7 +884,7 @@ input, button, textarea, select {
 
 .modal-body input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--clr-primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -890,11 +892,11 @@ input, button, textarea, select {
   display: flex;
   justify-content: space-between;
   font-size: var(--fs-base);
-  color: #64748b;
+  color: var(--clr-text-muted);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--clr-background);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
 }
 
 /* Enhanced Modal Info */
@@ -903,15 +905,15 @@ input, button, textarea, select {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: #f8fafc;
+  background: var(--clr-background);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   margin-bottom: 10px;
   transition: background 0.2s;
 }
 
 .modal-info-enhanced.shimmer {
-  background: linear-gradient(90deg, #f8fafc 25%, #e8f0fe 50%, #f8fafc 75%);
+  background: linear-gradient(90deg, var(--clr-background) 25%, #e8f0fe 50%, var(--clr-background) 75%);
   background-size: 200% 100%;
   animation: shimmer-sweep 1.2s infinite linear;
   border-color: #bfdbfe;
@@ -932,14 +934,14 @@ input, button, textarea, select {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--clr-border);
   object-fit: cover;
 }
 
 .modal-domain-text {
   font-size: var(--fs-md);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 .modal-stats-row {
@@ -953,7 +955,7 @@ input, button, textarea, select {
   align-items: center;
   gap: 4px;
   font-size: var(--fs-base);
-  color: #64748b;
+  color: var(--clr-text-muted);
   cursor: help;
 }
 
@@ -965,7 +967,7 @@ input, button, textarea, select {
 .stats-info-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   cursor: pointer;
   padding: 2px 4px;
   font-size: var(--fs-base);
@@ -973,7 +975,7 @@ input, button, textarea, select {
 }
 
 .stats-info-btn:hover {
-  color: #3b82f6;
+  color: var(--clr-primary);
 }
 
 .stats-info-text {
@@ -1017,7 +1019,7 @@ input, button, textarea, select {
   align-items: center;
   justify-content: center;
   font-size: var(--fs-xs);
-  color: #3b82f6;
+  color: var(--clr-primary);
 }
 
 /* ========== Modal Buttons ========== */
@@ -1059,22 +1061,21 @@ input, button, textarea, select {
 .btn-violet { background: var(--clr-violet); color: white; }
 .btn-violet:hover { background: #7c3aed; }
 
-
 /* ========== Modal Messages ========== */
 .modal-message {
   margin: 6px 0;
   font-size: var(--fs-base);
   min-height: 16px;
-  color: #475569;
+  color: var(--clr-text-secondary);
   font-weight: 500;
   padding: 6px 10px;
   border-radius: 6px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
 }
 .modal-message:empty { display: none; }
-.modal-message.success { color: #065f46; background: #ecfdf5; border-color: #10b981; }
-.modal-message.error { color: #991b1b; background: #fef2f2; border-color: #ef4444; }
+.modal-message.success { color: #065f46; background: #ecfdf5; border-color: var(--clr-success); }
+.modal-message.error { color: #991b1b; background: #fef2f2; border-color: var(--clr-danger); }
 
 /* ========== Modal Options (Backup Format) ========== */
 .modal-options {
@@ -1092,7 +1093,7 @@ input, button, textarea, select {
   padding: 16px;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--clr-surface);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1100,21 +1101,21 @@ input, button, textarea, select {
 .option-card:hover { background: #f9fafb; }
 .option-card.active,
 .option-card.selected {
-  border-color: #10b981;
+  border-color: var(--clr-success);
   background: #ecfdf5;
   box-shadow: 0 0 0 2px rgba(16,185,129,0.15) inset;
 }
 
 .option-icon { font-size: 24px; }
 .option-title { font-weight: 600; font-size: var(--fs-md); color: #111827; }
-.option-desc { font-size: var(--fs-sm); color: #64748b; }
+.option-desc { font-size: var(--fs-sm); color: var(--clr-text-muted); }
 
 /* ========== Modal Tabs (Backup/Restore & Session Manager) ========== */
 .br-tabs, .sm-tabs {
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -1127,7 +1128,7 @@ input, button, textarea, select {
   background: transparent;
   font-size: var(--fs-sm);
   font-weight: 500;
-  color: #64748b;
+  color: var(--clr-text-muted);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1135,7 +1136,7 @@ input, button, textarea, select {
 .br-tab:hover, .sm-tab:hover { color: #334155; }
 .br-tab.active, .sm-tab.active {
   background: white;
-  color: #1e293b;
+  color: var(--clr-text);
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -1175,18 +1176,18 @@ input, button, textarea, select {
 /* ========== Dropzone (Restore) ========== */
 .dropzone {
   border: 2px dashed #cbd5e1;
-  background: #f8fafc;
+  background: var(--clr-background);
   border-radius: 10px;
   padding: 24px;
   text-align: center;
-  color: #475569;
+  color: var(--clr-text-secondary);
   font-size: var(--fs-base);
   cursor: pointer;
   margin-bottom: 12px;
 }
 
 .dropzone:hover, .dropzone.dragover {
-  border-color: #3b82f6;
+  border-color: var(--clr-primary);
   background: #eff6ff;
 }
 
@@ -1211,9 +1212,8 @@ input, button, textarea, select {
 .rm-file-item.success { background: #f0fdf4; color: #166534; }
 .rm-file-item.success i { color: #16a34a; }
 .rm-file-item.error { background: #fef2f2; color: #991b1b; }
-.rm-file-item.error i { color: #dc2626; }
+.rm-file-item.error i { color: var(--clr-danger-hover); }
 .rm-file-item span { margin-left: auto; opacity: 0.7; }
-
 
 /* ========== Session Actions Modal ========== */
 .sa-modal .modal-body {
@@ -1229,8 +1229,8 @@ input, button, textarea, select {
 }
 
 .sa-header-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 10px;
   padding: 9px 12px;
   display: flex;
@@ -1259,7 +1259,7 @@ input, button, textarea, select {
   align-items: center;
   justify-content: center;
   font-size: var(--fs-sm);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   flex-shrink: 0;
 }
 
@@ -1292,7 +1292,7 @@ input, button, textarea, select {
 
 .sa-visit-icon-btn:hover {
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--clr-primary-hover);
 }
 
 .sa-header-row2 {
@@ -1322,14 +1322,14 @@ input, button, textarea, select {
 
 .sa-header-meta {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 /* Info card (data + expiry combined) */
 .sa-info-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1337,14 +1337,14 @@ input, button, textarea, select {
 .sa-info-card-top {
   display: flex;
   align-items: center;
-  background: #f8fafc;
+  background: var(--clr-background);
   cursor: pointer;
   transition: background 0.15s;
   padding: 0;
 }
 
 .sa-info-card-top:hover {
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
 }
 
 .sa-info-stat {
@@ -1356,19 +1356,19 @@ input, button, textarea, select {
   padding: 7px 4px;
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 .sa-info-stat label {
   font-size: var(--fs-xs);
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--clr-text-light);
 }
 
 .sa-info-sep {
   width: 1px;
   height: 24px;
-  background: #e2e8f0;
+  background: var(--clr-border);
   flex-shrink: 0;
 }
 
@@ -1383,7 +1383,7 @@ input, button, textarea, select {
 .sa-info-card-bottom {
   border-radius: 0 !important;
   border: none !important;
-  border-top: 1px solid #e2e8f0 !important;
+  border-top: 1px solid var(--clr-border) !important;
 }
 
 /* Expiration bar (compact 1 line) */
@@ -1398,8 +1398,8 @@ input, button, textarea, select {
   gap: 6px;
   padding: 5px 8px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-background);
   cursor: pointer;
   font-size: var(--fs-xs);
   transition: all 0.15s;
@@ -1409,13 +1409,13 @@ input, button, textarea, select {
 .sa-exp-bar.warning { border-color: #fde68a; background: #fffbeb; }
 .sa-exp-bar.critical{ border-color: #fca5a5; background: #fef2f2; }
 .sa-exp-bar.expired { border-color: #fca5a5; background: #fef2f2; }
-.sa-exp-bar.session { border-color: #e2e8f0; background: #f8fafc; }
-.sa-exp-bar.neutral { border-color: #e2e8f0; background: #f8fafc; }
+.sa-exp-bar.session { border-color: var(--clr-border); background: var(--clr-background); }
+.sa-exp-bar.neutral { border-color: var(--clr-border); background: var(--clr-background); }
 
 .sa-exp-icon { font-size: var(--fs-xs); flex-shrink: 0; }
-.sa-exp-text { flex: 1; color: #475569; }
-.sa-exp-status { font-weight: 600; color: #1e293b; }
-.sa-exp-chevron { font-size: var(--fs-xs); color: #94a3b8; transition: transform 0.2s; }
+.sa-exp-text { flex: 1; color: var(--clr-text-secondary); }
+.sa-exp-status { font-weight: 600; color: var(--clr-text); }
+.sa-exp-chevron { font-size: var(--fs-xs); color: var(--clr-text-light); transition: transform 0.2s; }
 .sa-exp-bar.expanded .sa-exp-chevron { transform: rotate(180deg); }
 
 /* Buttons */
@@ -1448,7 +1448,7 @@ input, button, textarea, select {
 }
 
 .sa-btn-primary {
-  background: linear-gradient(135deg, #10b981, #14b8a6);
+  background: linear-gradient(135deg, var(--clr-success), #14b8a6);
   color: white;
   border-color: #0d9488;
   padding: 9px 10px;
@@ -1460,27 +1460,27 @@ input, button, textarea, select {
 
 .sa-btn-secondary {
   background: white;
-  color: #475569;
-  border-color: #e2e8f0;
+  color: var(--clr-text-secondary);
+  border-color: var(--clr-border);
 }
 .sa-btn-secondary:hover {
-  background: #f8fafc;
+  background: var(--clr-background);
   border-color: #cbd5e1;
 }
 
 .sa-btn-export {
   background: white;
-  color: #475569;
-  border-color: #e2e8f0;
+  color: var(--clr-text-secondary);
+  border-color: var(--clr-border);
 }
 .sa-btn-export:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: var(--clr-background);
+  border-color: var(--clr-text-light);
 }
 
 .sa-btn-danger {
   background: white;
-  color: #dc2626;
+  color: var(--clr-danger-hover);
   border-color: #fecaca;
 }
 .sa-btn-danger:hover {
@@ -1490,13 +1490,13 @@ input, button, textarea, select {
 
 .sa-btn-danger-outline {
   background: transparent;
-  color: #94a3b8;
-  border-color: #e2e8f0;
+  color: var(--clr-text-light);
+  border-color: var(--clr-border);
   border-style: solid;
 }
 .sa-btn-danger-outline:hover {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--clr-danger-hover);
   border-color: #fca5a5;
 }
 
@@ -1535,7 +1535,7 @@ input, button, textarea, select {
   right: 0;
   margin-top: 4px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 10;
@@ -1561,7 +1561,7 @@ input, button, textarea, select {
   background: transparent;
   font-size: var(--fs-sm);
   font-weight: 500;
-  color: #475569;
+  color: var(--clr-text-secondary);
   cursor: pointer;
   transition: all 0.12s;
 }
@@ -1573,7 +1573,7 @@ input, button, textarea, select {
 
 .sa-split-dropdown button i {
   font-size: var(--fs-sm);
-  color: #10b981;
+  color: var(--clr-success);
 }
 
 /* ========== Domain Warning ========== */
@@ -1605,7 +1605,7 @@ input, button, textarea, select {
   display: none;
   padding: 8px 10px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-top: none;
   border-radius: 0 0 6px 6px;
 }
@@ -1618,7 +1618,7 @@ input, button, textarea, select {
   display: flex;
   gap: 12px;
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
   margin-bottom: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1643,8 +1643,8 @@ input, button, textarea, select {
   justify-content: space-between;
   padding: 5px 8px;
   border-radius: 5px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-background);
 }
 
 .exp-pill.valid  { border-color: #bbf7d0; background: #f0fdf4; }
@@ -1665,14 +1665,14 @@ input, button, textarea, select {
   flex-shrink: 0;
   background: #cbd5e1;
 }
-.exp-pill.valid  .exp-pill-dot { background: #10b981; }
+.exp-pill.valid  .exp-pill-dot { background: var(--clr-success); }
 .exp-pill.warning .exp-pill-dot { background: #f59e0b; }
-.exp-pill.expired .exp-pill-dot { background: #ef4444; }
+.exp-pill.expired .exp-pill-dot { background: var(--clr-danger); }
 
 .exp-pill-name {
   font-size: var(--fs-xs);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1687,7 +1687,7 @@ input, button, textarea, select {
 
 .exp-pill-date {
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .exp-pill-days {
@@ -1695,8 +1695,8 @@ input, button, textarea, select {
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--clr-border);
+  color: var(--clr-text-secondary);
 }
 .exp-pill.valid   .exp-pill-days { background: #dcfce7; color: #15803d; }
 .exp-pill.warning .exp-pill-days { background: #fef9c3; color: #a16207; }
@@ -1704,7 +1704,7 @@ input, button, textarea, select {
 
 .exp-pills-more {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   text-align: center;
   margin-top: 5px;
   font-style: italic;
@@ -1723,8 +1723,8 @@ input, button, textarea, select {
   display: flex;
   gap: 3px;
   padding: 6px 8px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border-bottom: 1px solid var(--clr-border);
   flex-shrink: 0;
 }
 
@@ -1734,7 +1734,7 @@ input, button, textarea, select {
   padding: 5px 4px;
   font-size: var(--fs-xs);
   font-weight: 500;
-  color: #64748b;
+  color: var(--clr-text-muted);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -1748,7 +1748,7 @@ input, button, textarea, select {
 }
 
 .sd-tab-btn:hover {
-  background: #e2e8f0;
+  background: var(--clr-border);
 }
 
 .sd-tab-btn.active {
@@ -1759,7 +1759,7 @@ input, button, textarea, select {
 }
 
 .sd-tab-btn .tab-count {
-  background: #e2e8f0;
+  background: var(--clr-border);
   padding: 1px 5px;
   border-radius: 8px;
   font-size: var(--fs-xs);
@@ -1787,7 +1787,7 @@ input, button, textarea, select {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   padding: 8px 10px;
-  background: #ffffff;
+  background: var(--clr-surface);
 }
 
 .data-row-header {
@@ -1830,15 +1830,15 @@ input, button, textarea, select {
   padding: 0;
 }
 
-.data-copy-btn:hover { color: #3b82f6; background: #eff6ff; }
-.data-copy-btn.copied { color: #10b981; }
+.data-copy-btn:hover { color: var(--clr-primary); background: #eff6ff; }
+.data-copy-btn.copied { color: var(--clr-success); }
 
 .data-row-exp {
   font-size: var(--fs-xs);
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
 }
 
 .data-row-exp.valid { background: #dcfce7; color: #15803d; }
@@ -1847,7 +1847,7 @@ input, button, textarea, select {
 
 .data-row-flags {
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
   margin-bottom: 4px;
 }
 
@@ -1855,8 +1855,8 @@ input, button, textarea, select {
   font-family: 'Cause', system-ui, sans-serif;
   font-size: var(--fs-xs);
   color: #374151;
-  background: #f8fafc;
-  border: 1px dashed #e2e8f0;
+  background: var(--clr-background);
+  border: 1px dashed var(--clr-border);
   border-radius: 4px;
   padding: 6px;
   word-break: break-all;
@@ -1867,7 +1867,7 @@ input, button, textarea, select {
 .empty-data-msg {
   text-align: center;
   padding: 30px 20px;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   font-size: var(--fs-md);
 }
 
@@ -1888,8 +1888,8 @@ input, button, textarea, select {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: var(--fs-md);
@@ -1897,14 +1897,14 @@ input, button, textarea, select {
 }
 
 .clean-option:hover {
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
   border-color: #cbd5e1;
 }
 
 .clean-option input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #ef4444;
+  accent-color: var(--clr-danger);
 }
 
 .clean-label {
@@ -1914,8 +1914,8 @@ input, button, textarea, select {
 .clean-count {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #64748b;
-  background: #e2e8f0;
+  color: var(--clr-text-muted);
+  background: var(--clr-border);
   padding: 2px 8px;
   border-radius: 10px;
   min-width: 28px;
@@ -1934,7 +1934,7 @@ input, button, textarea, select {
 
 .ct-expand-icon {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   transition: transform 0.2s ease;
   cursor: pointer;
   padding: 4px;
@@ -1942,7 +1942,7 @@ input, button, textarea, select {
 }
 
 .ct-expand-icon:hover {
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .ct-expand-icon.expanded {
@@ -1953,7 +1953,7 @@ input, button, textarea, select {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.25s ease, padding 0.25s ease;
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
   border-radius: 0 0 8px 8px;
   margin-top: -4px;
 }
@@ -1962,7 +1962,7 @@ input, button, textarea, select {
   max-height: 220px; /* ~4 items */
   overflow-y: auto;
   padding: 8px 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-top: none;
 }
 
@@ -2018,21 +2018,21 @@ input, button, textarea, select {
 
 .ct-data-exp.expired {
   background: #fee2e2;
-  color: #dc2626;
+  color: var(--clr-danger-hover);
 }
 
 .ct-data-flags {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   margin: 2px 0;
 }
 
 .ct-data-value {
-  color: #64748b;
+  color: var(--clr-text-muted);
   font-family: 'Cause', system-ui, sans-serif;
   font-size: var(--fs-xs);
   word-break: break-all;
-  background: #f8fafc;
+  background: var(--clr-background);
   padding: 2px 4px;
   border-radius: 2px;
   margin-top: 2px;
@@ -2041,23 +2041,23 @@ input, button, textarea, select {
 .ct-more {
   text-align: center;
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   padding: 4px;
   font-style: italic;
 }
 
 .ct-data-time {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   white-space: nowrap;
 }
 
 .ct-data-url {
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
   word-break: break-all;
   font-family: 'Cause', system-ui, sans-serif;
-  background: #f8fafc;
+  background: var(--clr-background);
   padding: 2px 4px;
   border-radius: 2px;
   margin-top: 2px;
@@ -2090,17 +2090,17 @@ input, button, textarea, select {
   padding: 4px 10px;
   border-radius: 4px;
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   cursor: pointer;
 }
 
 .gm-select-all:hover {
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
 }
 
 .gm-selected-count {
   font-size: var(--fs-sm);
-  color: #94a3b8;
+  color: var(--clr-text-light);
 }
 
 .gm-list {
@@ -2111,7 +2111,7 @@ input, button, textarea, select {
 
 /* Domain group (parent) */
 .gm-group {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -2124,12 +2124,12 @@ input, button, textarea, select {
   padding: 9px 12px;
   cursor: pointer;
   user-select: none;
-  background: #f8fafc;
+  background: var(--clr-background);
   transition: background 0.1s;
 }
 
 .gm-group-header:hover {
-  background: #e2e8f0;
+  background: var(--clr-border);
 }
 
 .gm-group-toggle {
@@ -2137,7 +2137,7 @@ input, button, textarea, select {
   align-items: center;
   justify-content: center;
   width: 16px;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   font-size: var(--fs-xs);
   transition: transform 0.15s;
   flex-shrink: 0;
@@ -2157,19 +2157,19 @@ input, button, textarea, select {
 .gm-domain {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
 }
 
 .gm-stats {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
 }
 
 /* Session children */
 .gm-group-sessions {
   display: none;
   flex-direction: column;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--clr-background-alt);
 }
 
 .gm-group.expanded .gm-group-sessions {
@@ -2186,9 +2186,9 @@ input, button, textarea, select {
 .gm-session-count {
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  color: var(--clr-text-muted);
+  background: var(--clr-background-alt);
+  border: 1px solid var(--clr-border);
   border-radius: 10px;
   padding: 1px 7px;
   flex-shrink: 0;
@@ -2201,7 +2201,7 @@ input, button, textarea, select {
   gap: 8px;
   padding: 7px 12px 7px 36px;
   cursor: pointer;
-  border-bottom: 1px solid #f8fafc;
+  border-bottom: 1px solid var(--clr-background);
   transition: background 0.1s;
 }
 
@@ -2210,7 +2210,7 @@ input, button, textarea, select {
 }
 
 .gm-session:hover {
-  background: #f8fafc;
+  background: var(--clr-background);
 }
 
 .gm-session.selected {
@@ -2233,7 +2233,7 @@ input, button, textarea, select {
 
 .gm-session-meta {
   font-size: var(--fs-xs);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   flex-shrink: 0;
 }
 
@@ -2242,7 +2242,7 @@ input, button, textarea, select {
 .gm-session input[type="checkbox"] {
   width: 14px;
   height: 14px;
-  accent-color: #10b981;
+  accent-color: var(--clr-success);
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -2273,7 +2273,7 @@ input, button, textarea, select {
 .modal-checkbox-row.warning-row {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--clr-border);
   color: #b45309;
 }
 
@@ -2285,8 +2285,8 @@ input, button, textarea, select {
 /* ========== Add Session Mode Tabs ========== */
 .add-mode-tabs {
   display: flex;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--clr-border);
+  background: var(--clr-background);
 }
 
 .add-mode-tab {
@@ -2294,7 +2294,7 @@ input, button, textarea, select {
   padding: 8px 0;
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #64748b;
+  color: var(--clr-text-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -2305,8 +2305,8 @@ input, button, textarea, select {
 .add-mode-tab:hover { color: #334155; }
 
 .add-mode-tab.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: var(--clr-primary);
+  border-bottom-color: var(--clr-primary);
   background: #fff;
 }
 
@@ -2314,12 +2314,12 @@ input, button, textarea, select {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   font-size: var(--fs-xs);
   font-family: 'Cause', system-ui, sans-serif;
   color: #334155;
-  background: #f8fafc;
+  background: var(--clr-background);
   resize: vertical;
   margin-top: 8px;
   line-height: 1.5;
@@ -2327,25 +2327,25 @@ input, button, textarea, select {
   transition: border-color 0.15s;
 }
 
-.import-cookie-textarea:focus { border-color: #3b82f6; background: #fff; }
+.import-cookie-textarea:focus { border-color: var(--clr-primary); background: #fff; }
 
 .import-format-hint {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--clr-text-muted);
   margin-top: 6px;
 }
 
-.import-format-hint i { color: #94a3b8; }
+.import-format-hint i { color: var(--clr-text-light); }
 
 .import-preview {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: var(--fs-sm);
-  color: #475569;
+  color: var(--clr-text-secondary);
   margin-top: 6px;
   padding: 6px 10px;
   background: #f0fdf4;
@@ -2356,8 +2356,8 @@ input, button, textarea, select {
 .import-preview i { font-size: var(--fs-base); }
 
 .add-options-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   padding: 10px 12px;
   margin: 10px 0;
@@ -2366,7 +2366,7 @@ input, button, textarea, select {
 .add-options-title {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: #64748b;
+  color: var(--clr-text-muted);
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2375,7 +2375,7 @@ input, button, textarea, select {
 .info-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   cursor: pointer;
   padding: 2px 4px;
   font-size: var(--fs-base);
@@ -2383,7 +2383,7 @@ input, button, textarea, select {
 }
 
 .info-btn:hover {
-  color: #3b82f6;
+  color: var(--clr-primary);
 }
 
 .clear-info-text {
@@ -2398,12 +2398,10 @@ input, button, textarea, select {
 }
 
 .recommend-tag {
-  color: #2563eb;
+  color: var(--clr-primary-hover);
   font-weight: 700;
   font-size: var(--fs-sm);
 }
-
-
 
 /* ========== Utilities ========== */
 .flex { display: flex; }
@@ -2424,17 +2422,17 @@ input, button, textarea, select {
 .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
 .text-2xl { font-size: 1.5rem; line-height: 2rem; }
 .font-bold { font-weight: 700; }
-.text-slate-400 { color: #94a3b8; }
-.text-slate-500 { color: #64748b; }
-.text-slate-600 { color: #475569; }
-.text-blue-500 { color: #3b82f6; }
-.text-emerald-500 { color: #10b981; }
+.text-slate-400 { color: var(--clr-text-light); }
+.text-slate-500 { color: var(--clr-text-muted); }
+.text-slate-600 { color: var(--clr-text-secondary); }
+.text-blue-500 { color: var(--clr-primary); }
+.text-emerald-500 { color: var(--clr-success); }
 .text-amber-500 { color: #f59e0b; }
-.text-violet-500 { color: #8b5cf6; }
+.text-violet-500 { color: var(--clr-violet); }
 .w-full { width: 100%; }
 .modal-row { display: flex; gap: 8px; align-items: center; width: 100%; }
-.form-label-sm { min-width: 72px; color: #475569; font-size: var(--fs-base); }
-.modal-subtext { margin: 4px 0 10px 0; color: #475569; }
+.form-label-sm { min-width: 72px; color: var(--clr-text-secondary); font-size: var(--fs-base); }
+.modal-subtext { margin: 4px 0 10px 0; color: var(--clr-text-secondary); }
 
 /* ========== Tags & Search Feature ========== */
 
@@ -2455,7 +2453,7 @@ input, button, textarea, select {
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: var(--clr-text-light);
   font-size: var(--fs-sm);
   pointer-events: none;
 }
@@ -2463,22 +2461,22 @@ input, button, textarea, select {
 .search-input {
   width: 100%;
   padding: 8px 10px 8px 30px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 8px;
   font-size: var(--fs-base);
-  color: #1e293b;
+  color: var(--clr-text);
   background: white;
   transition: all 0.2s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--clr-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .search-input::placeholder {
-  color: #94a3b8;
+  color: var(--clr-text-light);
 }
 
 /* Expiration Badge */
@@ -2496,23 +2494,22 @@ input, button, textarea, select {
   font-size: var(--fs-xs);
 }
 
-.exp-badge.expired { background: #fef2f2; color: #dc2626; }
-.exp-badge.critical { background: #fef2f2; color: #dc2626; animation: pulse-critical 1.5s infinite; }
+.exp-badge.expired { background: #fef2f2; color: var(--clr-danger-hover); }
+.exp-badge.critical { background: #fef2f2; color: var(--clr-danger-hover); animation: pulse-critical 1.5s infinite; }
 .exp-badge.warning { background: #fffbeb; color: #d97706; }
 .exp-badge.notice { background: #f0f9ff; color: #0284c7; }
 .exp-badge.valid { background: #f0fdf4; color: #16a34a; }
-.exp-badge.session { background: #f1f5f9; color: #64748b; }
+.exp-badge.session { background: var(--clr-background-alt); color: var(--clr-text-muted); }
 
 @keyframes pulse-critical {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
 
-
 /* Domain Card Styling (Groups Tab) */
 .domain-card {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 10px;
   margin: 6px 10px;
   overflow: hidden;
@@ -2534,12 +2531,12 @@ input, button, textarea, select {
   align-items: center;
   padding: 12px 14px;
   cursor: pointer;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  background: linear-gradient(135deg, var(--clr-background), var(--clr-background-alt));
   transition: background 0.2s;
 }
 
 .domain-card-header:hover {
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  background: linear-gradient(135deg, var(--clr-background-alt), var(--clr-border));
 }
 
 .domain-card-left {
@@ -2555,9 +2552,9 @@ input, button, textarea, select {
   height: 28px;
   border-radius: 6px;
   object-fit: contain;
-  background: #f1f5f9;
+  background: var(--clr-background-alt);
   padding: 2px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   flex-shrink: 0;
 }
 
@@ -2566,10 +2563,10 @@ input, button, textarea, select {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  background: linear-gradient(135deg, var(--clr-border), #cbd5e1);
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--clr-text-muted);
   font-size: var(--fs-base);
   flex-shrink: 0;
 }
@@ -2584,7 +2581,7 @@ input, button, textarea, select {
 .domain-name {
   font-size: var(--fs-md);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2592,7 +2589,7 @@ input, button, textarea, select {
 
 .domain-meta {
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
   font-weight: 500;
 }
 
@@ -2606,7 +2603,7 @@ input, button, textarea, select {
 .domain-card-content {
   padding: 6px 8px;
   background: #fafafa;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--clr-background-alt);
 }
 
 /* ========== Delete Expired Modal ========== */
@@ -2641,7 +2638,7 @@ input, button, textarea, select {
   gap: 10px;
   padding: 8px 10px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -2658,7 +2655,7 @@ input, button, textarea, select {
 .de-item input[type="checkbox"] {
   width: 14px;
   height: 14px;
-  accent-color: #ef4444;
+  accent-color: var(--clr-danger);
 }
 
 .de-info {
@@ -2672,7 +2669,7 @@ input, button, textarea, select {
 .de-name {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2680,13 +2677,13 @@ input, button, textarea, select {
 
 .de-domain {
   font-size: var(--fs-xs);
-  color: #64748b;
+  color: var(--clr-text-muted);
 }
 
 .de-exp {
   font-size: var(--fs-xs);
   font-weight: 600;
-  color: #dc2626;
+  color: var(--clr-danger-hover);
   background: #fee2e2;
   padding: 2px 6px;
   border-radius: 4px;
@@ -2698,11 +2695,11 @@ input, button, textarea, select {
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   font-size: var(--fs-base);
-  color: #475569;
+  color: var(--clr-text-secondary);
   margin-top: 8px;
 }
 
@@ -2726,8 +2723,8 @@ input, button, textarea, select {
 
 .dc-session-info {
   padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
 }
 
@@ -2743,14 +2740,14 @@ input, button, textarea, select {
 
 .dc-label {
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   min-width: 55px;
 }
 
 .dc-value {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2776,8 +2773,8 @@ input, button, textarea, select {
 
 .rc-session-info {
   padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   margin-bottom: 12px;
 }
@@ -2794,14 +2791,14 @@ input, button, textarea, select {
 
 .rc-label {
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   min-width: 55px;
 }
 
 .rc-value {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2809,7 +2806,7 @@ input, button, textarea, select {
 
 .rc-desc {
   font-size: var(--fs-base);
-  color: #475569;
+  color: var(--clr-text-secondary);
   line-height: 1.4;
   margin-bottom: 8px;
 }
@@ -2821,8 +2818,8 @@ input, button, textarea, select {
 
 .oe-session-info {
   padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--clr-background);
+  border: 1px solid var(--clr-border);
   border-radius: 6px;
   margin-bottom: 16px;
 }
@@ -2839,14 +2836,14 @@ input, button, textarea, select {
 
 .oe-label {
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   min-width: 55px;
 }
 
 .oe-value {
   font-size: var(--fs-base);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--clr-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2882,7 +2879,7 @@ input, button, textarea, select {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -2893,12 +2890,12 @@ input, button, textarea, select {
 }
 
 .oe-toggle-pwd:hover {
-  color: #475569;
+  color: var(--clr-text-secondary);
 }
 
 .oe-password-hint {
   font-size: var(--fs-sm);
-  color: #64748b;
+  color: var(--clr-text-muted);
   margin-top: 6px;
 }
 
@@ -3019,7 +3016,7 @@ input, button, textarea, select {
   padding: 0;
   margin: 0;
   border: none;
-  accent-color: #8b5cf6;
+  accent-color: var(--clr-violet);
   cursor: pointer;
 }
 
@@ -3086,7 +3083,7 @@ input, button, textarea, select {
   margin-bottom: 16px;
 }
 
-.lock-reset-panel h3 i { color: #8b5cf6; }
+.lock-reset-panel h3 i { color: var(--clr-violet); }
 
 .reset-question {
   color: rgba(255,255,255,0.9);
@@ -3109,7 +3106,7 @@ input, button, textarea, select {
 }
 
 .lock-reset-panel input::placeholder { color: rgba(255,255,255,0.4); }
-.lock-reset-panel input:focus { border-color: #8b5cf6; outline: none; }
+.lock-reset-panel input:focus { border-color: var(--clr-violet); outline: none; }
 
 .lock-reset-panel .form-group {
   width: 100%;
@@ -3204,7 +3201,7 @@ input, button, textarea, select {
   min-height: 16px;
 }
 
-.mp-strength.weak { color: #dc2626; }
+.mp-strength.weak { color: var(--clr-danger-hover); }
 .mp-strength.fair { color: #d97706; }
 .mp-strength.good { color: #059669; }
 .mp-strength.strong { color: #7c3aed; }
@@ -3271,14 +3268,14 @@ input, button, textarea, select {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--clr-text-light);
   cursor: pointer;
   padding: 4px;
   font-size: 14px;
   line-height: 1;
 }
 
-.pwd-toggle:hover { color: #64748b; }
+.pwd-toggle:hover { color: var(--clr-text-muted); }
 
 /* Lock screen password toggle */
 .lock-pwd-wrap {
@@ -3307,5 +3304,4 @@ input, button, textarea, select {
 }
 
 .pwd-toggle-lock:hover { color: rgba(255,255,255,0.9); }
-
 
