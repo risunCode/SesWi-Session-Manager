@@ -14,7 +14,8 @@ export const Crypto = {
     if (!sjcl) throw new Error('SJCL not loaded');
     
     const json = JSON.stringify(data);
-    return sjcl.encrypt(password, json, { mode: 'ccm', ts: 128, ks: 256, iter: 1000 });
+    // iter: 100000 for strong PBKDF2 key derivation (OWASP recommended minimum)
+    return sjcl.encrypt(password, json, { mode: 'ccm', ts: 128, ks: 256, iter: 100000 });
   },
 
   decrypt(encrypted, password) {

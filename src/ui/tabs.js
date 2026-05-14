@@ -299,14 +299,15 @@ export const GroupTab = {
       ? `<span class="exp-badge ${authStatus.status}"><i class="fa-solid ${authStatus.icon}"></i>${authStatus.label}</span>`
       : (authStatus?.status === 'valid' ? `<span class="exp-badge valid"><i class="fa-solid fa-circle-check"></i></span>` : '');
 
+    const escapedDomain = DOM.escapeHtml(domain);
     return `
-      <div class="domain-card${isExpanded ? ' expanded' : ''}" data-domain="${domain}">
+      <div class="domain-card${isExpanded ? ' expanded' : ''}" data-domain="${escapedDomain}">
         <div class="domain-card-header">
           <div class="domain-card-left">
-            <img class="domain-favicon" src="${faviconUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <img class="domain-favicon" src="${DOM.escapeHtml(faviconUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
             <span class="domain-favicon-fallback"><i class="fa-solid fa-globe"></i></span>
             <div class="domain-info">
-              <span class="domain-name">${DOM.escapeHtml(domain)}</span>
+              <span class="domain-name">${escapedDomain}</span>
               <span class="domain-meta">${sessions.length} sessions · ${totalCookies} cookies</span>
             </div>
           </div>
@@ -328,6 +329,7 @@ export const GroupTab = {
     const items = Pagination.getPage(sessions, page, perPage);
     const totalPages = Pagination.getTotalPages(sessions, perPage);
     const restoredTs = CurrentTab._restoredMap?.[domain] || null;
+    const escapedDomain = DOM.escapeHtml(domain);
 
     return items.map((s, i) => Renderer.sessionCard(s, {
       index: (page - 1) * perPage + i + 1,
@@ -335,9 +337,9 @@ export const GroupTab = {
       restored: restoredTs === String(s.timestamp)
     })).join('') + (totalPages > 1 ? `
       <div class="pagination">
-        <button class="dpage-btn" data-domain="${domain}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹</button>
+        <button class="dpage-btn" data-domain="${escapedDomain}" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹</button>
         <span>${page}/${totalPages}</span>
-        <button class="dpage-btn" data-domain="${domain}" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>›</button>
+        <button class="dpage-btn" data-domain="${escapedDomain}" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>›</button>
       </div>
     ` : '');
   },

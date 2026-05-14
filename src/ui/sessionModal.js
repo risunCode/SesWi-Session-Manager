@@ -363,6 +363,7 @@ function wireActions() {
     const session = _current.session;
     if (!session) return;
     const url = session.originalUrl || `https://${session.domain}`;
+    if (!Domain.isSafeUrl(url)) { setMsg('Invalid URL', 'error'); return; }
     if (chrome?.tabs?.create) await chrome.tabs.create({ url });
     else window.open(url, '_blank');
   };
@@ -382,6 +383,7 @@ function wireActions() {
 
     const tabId = tabInfo.data.tabId;
     const targetUrl = session.originalUrl || `https://${session.domain}`;
+    if (!Domain.isSafeUrl(targetUrl)) { setMsg('Invalid URL', 'error'); return; }
 
     // For "Restore & Go": navigate first, then restore after page loads
     if (goToOriginal) {

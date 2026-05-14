@@ -86,6 +86,21 @@ export const Domain = {
     
     // Keyword heuristics
     return /google|gmail|googleapis|gstatic|googleusercontent|youtube|microsoft|office|outlook|live|msn|sharepoint|azure/i.test(d);
+  },
+
+  /**
+   * Validate URL is safe to open (http/https only, no javascript:, data:, etc.)
+   * @param {string} url - URL to validate
+   * @returns {boolean} True if URL is safe to open
+   */
+  isSafeUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      const parsed = new URL(url);
+      return ['http:', 'https:'].includes(parsed.protocol);
+    } catch {
+      return false;
+    }
   }
 };
 
@@ -310,6 +325,48 @@ export const Validate = {
     if (missing.length) return { valid: false, error: `Missing: ${missing.join(', ')}` };
     if (!Array.isArray(session.cookies)) return { valid: false, error: 'Cookies must be array' };
     return { valid: true };
+  },
+
+  /**
+   * Validate and sanitize a cookie object
+   * @param {Object} cookie - Cookie to validate
+   * @returns {{valid: boolean, cookie?: Object, error?: string}}
+   */
+  cookie(cookie) {
+    if (!cookie || typeof cookie !== 'object') return { valid: false, error: 'Invalid cookie object' };
+    if (typeof cookie.name !== 'string' || !cookie.name.trim()) return { valid: false, error: 'Cookie name required' };
+    if (typeof cookie.value !== 'string') return { valid: false, error: 'Cookie value must be string' };
+    
+    // Sanitize and return only allowed fields
+    const sanitized = {
+      name: String(cookie.name).slice(0, 4096),
+      value: String(cookie.value).slice(0, 4096),
+      domain: typeof cookie.domain === 'string' ? cookie.domain.slice(0, 255) : '',
+      path: typeof cookie.path === 'string' ? cookie.path.slice(0, 1024) : '/',
+      secure: Boolean(cookie.secure),
+      httpOnly: Boolean(cookie.httpOnly),
+      sameSite: ['no_restriction', 'lax', 'strict'].includes(cookie.sameSite) ? cookie.sameSite : 'lax',
+      session: Boolean(cookie.session)
+    };
+    if (typeof cookie.expirationDate === 'number') sanitized.expirationDate = cookie.expirationDate;
+    if (typeof cookie.hostOnly === 'boolean') sanitized.hostOnly = cookie.hostOnly;
+    return { valid: true, cookie: sanitized };
+  },
+
+  /**
+   * Validate and sanitize array of cookies
+   * @param {Array} cookies - Cookies array
+   * @returns {{valid: boolean, cookies: Array, errors: Array}}
+   */
+  cookies(cookies) {
+    if (!Array.isArray(cookies)) return { valid: false, cookies: [], errors: ['Not an array'] };
+    const result = { valid: true, cookies: [], errors: [] };
+    for (const c of cookies) {
+      const v = this.cookie(c);
+      if (v.valid) result.cookies.push(v.cookie);
+      else result.errors.push(v.error);
+    }
+    return result;
   }
 };
 
@@ -343,9 +400,13 @@ export const Normalize = {
   },
 
   _wrapCookies(cookies, hint = {}) {
+    // Validate and sanitize cookies
+    const validated = Validate.cookies(cookies);
+    const safeCookies = validated.cookies;
+
     // Infer domain from cookies: most common domain
     const domainCounts = {};
-    cookies.forEach(c => {
+    safeCookies.forEach(c => {
       const d = (c.domain || '').replace(/^\./, '');
       domainCounts[d] = (domainCounts[d] || 0) + 1;
     });
@@ -355,7 +416,7 @@ export const Normalize = {
       name: hint.name || `Imported ${new Date().toLocaleDateString()}`,
       domain: hint.domain || inferredDomain,
       originalUrl: hint.originalUrl || `https://${hint.domain || inferredDomain}`,
-      cookies,
+      cookies: safeCookies,
       localStorage: hint.localStorage || {},
       sessionStorage: hint.sessionStorage || {},
       timestamp: hint.timestamp || Date.now(),

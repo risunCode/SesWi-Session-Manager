@@ -613,9 +613,10 @@ export const Modal = {
 
     list.innerHTML = groups.map(g => {
       const totalCookies = g.sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
+      const escapedDomain = DOM.escapeHtml(g.domain);
       const sessionsHtml = g.sessions.map(s => `
         <div class="gm-session" data-ts="${s.timestamp}">
-          <input type="checkbox" class="gm-session-check" data-ts="${s.timestamp}" data-domain="${g.domain}">
+          <input type="checkbox" class="gm-session-check" data-ts="${s.timestamp}" data-domain="${escapedDomain}">
           <div class="gm-session-info">
             <span class="gm-session-name">${DOM.escapeHtml(s.name)}</span>
             <span class="gm-session-meta">${s.cookies?.length || 0} cookies</span>
@@ -624,12 +625,12 @@ export const Modal = {
       `).join('');
 
       return `
-        <div class="gm-group" data-domain="${DOM.escapeHtml(g.domain)}">
+        <div class="gm-group" data-domain="${escapedDomain}">
           <div class="gm-group-header">
-            <input type="checkbox" class="gm-domain-check" data-domain="${g.domain}" title="Select all in ${g.domain}">
+            <input type="checkbox" class="gm-domain-check" data-domain="${escapedDomain}" title="Select all in ${escapedDomain}">
             <span class="gm-group-toggle"><i class="fa-solid fa-chevron-right"></i></span>
             <div class="gm-group-info">
-              <span class="gm-domain">${DOM.escapeHtml(g.domain)}</span>
+              <span class="gm-domain">${escapedDomain}</span>
               <span class="gm-stats">${totalCookies} cookies</span>
             </div>
             <span class="gm-session-count">${g.sessions.length}</span>
