@@ -17,6 +17,9 @@ let _mpPassword = null;
 export const getMPPassword = () => _mpPassword;
 export const isMPUnlocked = () => _mpUnlocked;
 
+// Unlock session duration (3 minutes)
+const UNLOCK_DURATION = 3 * 60 * 1000;
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Load version from manifest
   const manifest = chrome.runtime.getManifest();
@@ -28,11 +31,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mpEnabled = await MasterPassword.isEnabled();
   
   if (mpEnabled) {
+    // Check if we have a valid unlock session (within 3 minutes)
+    const session = await chrome.storage.session.get(['mpUnlockTime', 'mpPassword']);
+    const unlockTime = session.mpUnlockTime || 0;
+    const sessionPwd = session.mpPassword;
+    
+    if (sessionPwd && Date.now() - unlockTime < UNLOCK_DURATION) {
+      // Still within unlock window - auto unlock
+      _mpUnlocked = true;
+      _mpPassword = sessionPwd;
+      
+      const sessionsResult = await MasterPassword.decryptSessions(sessionPwd);
+      const sessions = sessionsResult.success ? sessionsResult.data : [];
+      setMPState(true, sessionPwd, sessions);
+      
+      await initializeApp();
+      initMasterPasswordUI(true);
+      return;
+    }
+    
     // Show lock screen
     document.getElementById('lockScreen')?.classList.remove('hidden');
     initLockScreen();
     initMasterPasswordUI(true);
-    return; // Don't initialize UI until unlocked
+    return;
   }
 
   // Normal initialization (no MP or already unlocked)
@@ -439,6 +461,14 @@ function initLockScreen() {
   const lockPassword = document.getElementById('lockPassword');
   const unlockBtn = document.getElementById('unlockBtn');
   const lockError = document.getElementById('lockError');
+  const lockPwdToggle = document.getElementById('lockPwdToggle');
+
+  // Password toggle
+  lockPwdToggle.onclick = () => {
+    const isPassword = lockPassword.type === 'password';
+    lockPassword.type = isPassword ? 'text' : 'password';
+    lockPwdToggle.innerHTML = `<i class="fa-solid fa-eye${isPassword ? '-slash' : ''}"></i>`;
+  };
 
   const doUnlock = async () => {
     const password = lockPassword.value;
@@ -453,6 +483,12 @@ function initLockScreen() {
     if (result.success) {
       _mpUnlocked = true;
       _mpPassword = password;
+      
+      // Save unlock session (valid for 3 minutes)
+      await chrome.storage.session.set({
+        mpUnlockTime: Date.now(),
+        mpPassword: password
+      });
       
       // Decrypt sessions and set MP state in storage module
       const sessionsResult = await MasterPassword.decryptSessions(password);
@@ -484,12 +520,26 @@ function initMasterPasswordUI(mpEnabled) {
   const mpBadge = document.getElementById('mpBadge');
   const mpStatus = document.getElementById('mpStatus');
   const modal = document.getElementById('mpModal');
+  const setupBtn = document.getElementById('mpSetupBtn');
+  const saveBtn = document.getElementById('mpSaveBtn');
+  const removeBtn = document.getElementById('mpRemoveBtn');
 
   // Update badge/status
   if (mpEnabled) {
     mpBadge?.classList.remove('hidden');
     if (mpStatus) mpStatus.textContent = 'Enabled - sessions encrypted';
   }
+
+  // Wire password toggle buttons
+  modal.querySelectorAll('.pwd-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.innerHTML = `<i class="fa-solid fa-eye${isPassword ? '-slash' : ''}"></i>`;
+    };
+  });
 
   // Open modal
   mpCard.onclick = async () => {
@@ -498,9 +548,6 @@ function initMasterPasswordUI(mpEnabled) {
 
     const setupView = document.getElementById('mpSetupView');
     const manageView = document.getElementById('mpManageView');
-    const setupBtn = document.getElementById('mpSetupBtn');
-    const saveBtn = document.getElementById('mpSaveBtn');
-    const removeBtn = document.getElementById('mpRemoveBtn');
 
     if (enabled) {
       setupView.classList.add('hidden');
@@ -516,11 +563,14 @@ function initMasterPasswordUI(mpEnabled) {
       removeBtn.classList.add('hidden');
     }
 
-    // Clear inputs
-    document.getElementById('mpNewPassword').value = '';
-    document.getElementById('mpConfirmPassword').value = '';
-    document.getElementById('mpCurrentPassword').value = '';
-    document.getElementById('mpChangePassword').value = '';
+    // Clear inputs and reset toggles
+    ['mpNewPassword', 'mpConfirmPassword', 'mpCurrentPassword', 'mpChangePassword'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input) { input.value = ''; input.type = 'password'; }
+    });
+    modal.querySelectorAll('.pwd-toggle').forEach(btn => {
+      btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+    });
     document.getElementById('mpMessage').style.display = 'none';
     document.getElementById('mpStrength').textContent = '';
 
@@ -537,8 +587,20 @@ function initMasterPasswordUI(mpEnabled) {
     mpStrength.className = `mp-strength ${strength.level}`;
   };
 
+  // Helper for button loading state
+  const withLoading = (btn, originalHtml, action) => async () => {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Processing...';
+    try {
+      await action();
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  };
+
   // Setup button (enable MP)
-  document.getElementById('mpSetupBtn').onclick = async () => {
+  setupBtn.onclick = withLoading(setupBtn, '<i class="fa-solid fa-lock mr-1"></i>Enable', async () => {
     const password = document.getElementById('mpNewPassword').value;
     const confirm = document.getElementById('mpConfirmPassword').value;
     const msg = document.getElementById('mpMessage');
@@ -557,6 +619,9 @@ function initMasterPasswordUI(mpEnabled) {
       _mpUnlocked = true;
       _mpPassword = password;
       
+      // Save unlock session
+      await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: password });
+      
       // Decrypt sessions and set MP state
       const sessionsResult = await MasterPassword.decryptSessions(password);
       const sessions = sessionsResult.success ? sessionsResult.data : [];
@@ -573,10 +638,10 @@ function initMasterPasswordUI(mpEnabled) {
       msg.className = 'modal-message error';
       msg.style.display = 'block';
     }
-  };
+  });
 
   // Save button (change password)
-  document.getElementById('mpSaveBtn').onclick = async () => {
+  saveBtn.onclick = withLoading(saveBtn, '<i class="fa-solid fa-save mr-1"></i>Save', async () => {
     const current = document.getElementById('mpCurrentPassword').value;
     const newPwd = document.getElementById('mpChangePassword').value;
     const msg = document.getElementById('mpMessage');
@@ -600,6 +665,7 @@ function initMasterPasswordUI(mpEnabled) {
 
     if (result.success) {
       _mpPassword = newPwd;
+      await chrome.storage.session.set({ mpUnlockTime: Date.now(), mpPassword: newPwd });
       msg.textContent = 'Password changed!';
       msg.className = 'modal-message success';
       msg.style.display = 'block';
@@ -609,10 +675,10 @@ function initMasterPasswordUI(mpEnabled) {
       msg.className = 'modal-message error';
       msg.style.display = 'block';
     }
-  };
+  });
 
   // Remove button
-  document.getElementById('mpRemoveBtn').onclick = async () => {
+  removeBtn.onclick = withLoading(removeBtn, '<i class="fa-solid fa-unlock mr-1"></i>Remove', async () => {
     const current = document.getElementById('mpCurrentPassword').value;
     const msg = document.getElementById('mpMessage');
 
@@ -630,6 +696,7 @@ function initMasterPasswordUI(mpEnabled) {
       _mpUnlocked = false;
       _mpPassword = null;
       setMPState(false, null, null);
+      await chrome.storage.session.remove(['mpUnlockTime', 'mpPassword']);
       
       msg.textContent = 'Master password removed!';
       msg.className = 'modal-message success';
@@ -645,11 +712,11 @@ function initMasterPasswordUI(mpEnabled) {
       msg.className = 'modal-message error';
       msg.style.display = 'block';
     }
-  };
+  });
 
   // Modal close handlers
   DOM.wireModalClose(modal, {
-    closeBtn: document.getElementById('mpModalClose'),
-    cancelBtn: document.getElementById('mpModalCancel')
+    closeBtn: '#mpModalClose',
+    cancelBtn: '#mpModalCancel'
   });
 }

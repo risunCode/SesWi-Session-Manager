@@ -3034,6 +3034,54 @@ input, button, textarea, select {
 
 .text-violet-500 { color: #8b5cf6; }
 
+/* Password toggle button */
+.input-pwd-wrap {
+  position: relative;
+}
+
+.input-pwd-wrap input {
+  padding-right: 40px;
+}
+
+.pwd-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.pwd-toggle:hover { color: #64748b; }
+
+/* Lock screen password toggle */
+.lock-pwd-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.lock-pwd-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.pwd-toggle-lock {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.pwd-toggle-lock:hover { color: rgba(255,255,255,0.8); }
+
 .btn-danger {
   background: #ef4444 !important;
   color: white !important;

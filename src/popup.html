@@ -3,7 +3,7 @@
 <head>
   <title>SesWi - Session Manager</title>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' data:; connect-src 'self';">
   <link rel="stylesheet" href="./styles/fontawesome.css">
   <link rel="stylesheet" href="./styles/main.css">
 </head>
@@ -283,11 +283,17 @@
         <div id="mpSetupView">
           <div class="form-group">
             <label>New Password</label>
-            <input type="password" id="mpNewPassword" placeholder="Enter master password" autocomplete="new-password" />
+            <div class="input-pwd-wrap">
+              <input type="password" id="mpNewPassword" placeholder="Enter master password" autocomplete="new-password" />
+              <button type="button" class="pwd-toggle" data-target="mpNewPassword"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <div class="form-group">
             <label>Confirm Password</label>
-            <input type="password" id="mpConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
+            <div class="input-pwd-wrap">
+              <input type="password" id="mpConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
+              <button type="button" class="pwd-toggle" data-target="mpConfirmPassword"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <div class="mp-strength" id="mpStrength"></div>
         </div>
@@ -300,11 +306,17 @@
           </div>
           <div class="form-group">
             <label>Current Password (to change or remove)</label>
-            <input type="password" id="mpCurrentPassword" placeholder="Enter current password" autocomplete="current-password" />
+            <div class="input-pwd-wrap">
+              <input type="password" id="mpCurrentPassword" placeholder="Enter current password" autocomplete="current-password" />
+              <button type="button" class="pwd-toggle" data-target="mpCurrentPassword"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <div class="form-group">
             <label>New Password (leave empty to remove)</label>
-            <input type="password" id="mpChangePassword" placeholder="New password (optional)" autocomplete="new-password" />
+            <div class="input-pwd-wrap">
+              <input type="password" id="mpChangePassword" placeholder="New password (optional)" autocomplete="new-password" />
+              <button type="button" class="pwd-toggle" data-target="mpChangePassword"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
         </div>
 
@@ -325,7 +337,10 @@
       <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
       <h2>SesWi is Locked</h2>
       <p>Enter your master password to unlock</p>
-      <input type="password" id="lockPassword" placeholder="Master password" autocomplete="current-password" />
+      <div class="lock-pwd-wrap">
+        <input type="password" id="lockPassword" placeholder="Master password" autocomplete="current-password" />
+        <button type="button" class="pwd-toggle-lock" id="lockPwdToggle"><i class="fa-solid fa-eye"></i></button>
+      </div>
       <button class="btn btn-primary" id="unlockBtn"><i class="fa-solid fa-unlock mr-1"></i>Unlock</button>
       <div class="lock-error hidden" id="lockError">Incorrect password</div>
     </div>
