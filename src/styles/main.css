@@ -3246,22 +3246,26 @@ input, button, textarea, select {
 /* Password toggle button */
 .input-pwd-wrap {
   position: relative;
+  width: 100%;
 }
 
 .input-pwd-wrap input {
+  width: 100%;
   padding-right: 40px;
 }
 
 .pwd-toggle {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .pwd-toggle:hover { color: #64748b; }
