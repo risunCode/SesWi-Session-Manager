@@ -222,7 +222,11 @@
         <!-- Import mode -->
         <div id="addPaneImport" class="hidden">
           <input type="text" id="importSessionName" placeholder="Session name..." maxlength="50">
-          <textarea id="importCookieInput" class="import-cookie-textarea" placeholder='Paste cookie JSON array here...&#10;[{"name":"token","value":"...","domain":".example.com",...}]' rows="7" spellcheck="false"></textarea>
+          <textarea id="importCookieInput" class="import-cookie-textarea" placeholder="Paste cookies in any format:&#10;&#10;• JSON: [{&quot;name&quot;:&quot;token&quot;,&quot;value&quot;:&quot;...&quot;}]&#10;• Netscape: .domain.com[TAB]TRUE[TAB]/[TAB]...&#10;• Header: Cookie: name=value; name2=value2&#10;• Key-Value: name=value (one per line)" rows="7" spellcheck="false"></textarea>
+          <div class="import-format-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            Supports: Cookie Editor JSON, Netscape (curl/wget), Header string, Key-Value
+          </div>
           <div id="importPreview" class="import-preview hidden">
             <i class="fa-solid fa-circle-check text-emerald-500"></i>
             <span id="importPreviewText"></span>
@@ -285,6 +289,29 @@
             </div>
           </div>
           <div class="mp-strength" id="mpStrength"></div>
+          <div class="mp-recovery-section">
+            <div class="mp-recovery-header">
+              <i class="fa-solid fa-life-ring"></i>
+              <span>Recovery Question (optional)</span>
+            </div>
+            <div class="form-group">
+              <select id="mpRecoveryQuestion">
+                <option value="">-- Select a question --</option>
+                <option value="pet">What was your first pet's name?</option>
+                <option value="city">In what city were you born?</option>
+                <option value="school">What was your first school's name?</option>
+                <option value="movie">What is your favorite movie?</option>
+                <option value="food">What is your favorite food?</option>
+                <option value="custom">Custom question...</option>
+              </select>
+            </div>
+            <div class="form-group hidden" id="mpCustomQuestionWrap">
+              <input type="text" id="mpCustomQuestion" placeholder="Enter your custom question" maxlength="100" />
+            </div>
+            <div class="form-group">
+              <input type="text" id="mpRecoveryAnswer" placeholder="Your answer (case-insensitive)" maxlength="50" autocomplete="off" />
+            </div>
+          </div>
         </div>
 
         <!-- Manage view (when MP is set) -->
@@ -336,6 +363,27 @@
       </label>
       <button class="btn btn-primary" id="unlockBtn"><i class="fa-solid fa-unlock mr-1"></i>Unlock</button>
       <div class="lock-error hidden" id="lockError">Incorrect password</div>
+      <button class="lock-forgot-link" id="forgotPasswordBtn">Forgot password?</button>
+    </div>
+    
+    <!-- Reset Password Panel (slides in) -->
+    <div class="lock-reset-panel hidden" id="lockResetPanel">
+      <button class="lock-reset-back" id="resetBackBtn"><i class="fa-solid fa-arrow-left"></i></button>
+      <h3><i class="fa-solid fa-life-ring mr-2"></i>Reset Password</h3>
+      <p id="resetQuestion" class="reset-question"></p>
+      <input type="text" id="resetAnswer" placeholder="Your answer" autocomplete="off" />
+      <div class="form-group">
+        <input type="password" id="resetNewPassword" placeholder="New password" autocomplete="new-password" />
+      </div>
+      <div class="form-group">
+        <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary" id="resetPasswordBtn"><i class="fa-solid fa-key mr-1"></i>Reset Password</button>
+      <div class="lock-error hidden" id="resetError"></div>
+      <p class="reset-no-recovery hidden" id="resetNoRecovery">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        No recovery question was set. You cannot reset the password.
+      </p>
     </div>
   </div>
 

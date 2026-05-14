@@ -230,21 +230,22 @@ function initAddSessionModal() {
     finally { btn.disabled = false; }
   };
 
-  // Live parse preview for import textarea
+  // Live parse preview for import textarea (supports multiple formats)
   const importInput = document.getElementById('importCookieInput');
   const importPreview = document.getElementById('importPreview');
   const importPreviewText = document.getElementById('importPreviewText');
+  const FORMAT_LABELS = { json: 'JSON', netscape: 'Netscape', header: 'Header', keyvalue: 'Key-Value' };
   DOM.debounceInput(importInput, (val) => {
     if (!val.trim()) { importPreview.classList.add('hidden'); return; }
-    try {
-      const data = JSON.parse(val);
-      const sessions = Normalize.importSessions(data);
-      const totalCookies = sessions.reduce((s, sess) => s + (sess.cookies?.length || 0), 0);
-      importPreviewText.textContent = `${totalCookies} cookies · domain: ${sessions[0]?.domain || '?'}`;
+    const result = Normalize.parseCookieString(val);
+    if (result.sessions.length > 0) {
+      const totalCookies = result.sessions.reduce((s, sess) => s + (sess.cookies?.length || 0), 0);
+      const formatLabel = FORMAT_LABELS[result.format] || result.format;
+      importPreviewText.textContent = `${totalCookies} cookies · ${formatLabel} · ${result.sessions[0]?.domain || '?'}`;
       importPreview.classList.remove('hidden');
       importPreview.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-500';
-    } catch {
-      importPreviewText.textContent = 'Invalid JSON';
+    } else {
+      importPreviewText.textContent = result.error || 'Invalid format';
       importPreview.classList.remove('hidden');
       importPreview.querySelector('i').className = 'fa-solid fa-circle-xmark text-red-500';
     }
@@ -335,7 +336,7 @@ function initAddSessionModal() {
     if (infoCard) infoCard.classList.remove('shimmer');
   };
 
-  const closeModal = () => { modal.style.display = 'none'; };
+  const closeModal = () => DOM.closeModal(modal);
 
   // ---- Save ----
   const saveSession = async () => {
@@ -348,19 +349,17 @@ function initAddSessionModal() {
       const raw = document.getElementById('importCookieInput').value.trim();
 
       if (!name) { msg.textContent = 'Please enter a name'; msg.style.display = 'block'; return; }
-      if (!raw) { msg.textContent = 'Please paste cookie JSON'; msg.style.display = 'block'; return; }
+      if (!raw) { msg.textContent = 'Please paste cookies'; msg.style.display = 'block'; return; }
 
-      let sessions;
-      try {
-        const data = JSON.parse(raw);
-        sessions = Normalize.importSessions(data, { name });
-      } catch {
-        msg.textContent = 'Invalid JSON';
+      const result = Normalize.parseCookieString(raw, { name });
+      if (result.error || !result.sessions.length) {
+        msg.textContent = result.error || 'Invalid format';
         msg.className = 'modal-message error';
         return;
       }
 
-      if (!sessions.length || !sessions[0].cookies?.length) {
+      const sessions = result.sessions;
+      if (!sessions[0].cookies?.length) {
         msg.textContent = 'No cookies found in pasted data';
         msg.className = 'modal-message error';
         return;
@@ -539,6 +538,108 @@ async function initLockScreen() {
   unlockBtn.onclick = doUnlock;
   lockPassword.onkeydown = (e) => { if (e.key === 'Enter') doUnlock(); };
   lockPassword.focus();
+
+  // Forgot password functionality
+  const forgotBtn = document.getElementById('forgotPasswordBtn');
+  const resetPanel = document.getElementById('lockResetPanel');
+  const resetBackBtn = document.getElementById('resetBackBtn');
+  const resetQuestion = document.getElementById('resetQuestion');
+  const resetAnswer = document.getElementById('resetAnswer');
+  const resetNewPwd = document.getElementById('resetNewPassword');
+  const resetConfirmPwd = document.getElementById('resetConfirmPassword');
+  const resetBtn = document.getElementById('resetPasswordBtn');
+  const resetError = document.getElementById('resetError');
+  const noRecoveryMsg = document.getElementById('resetNoRecovery');
+
+  forgotBtn.onclick = async () => {
+    const { MasterPassword } = await import('./core/crypto.js');
+    const hasRecovery = await MasterPassword.hasRecovery();
+    
+    if (hasRecovery) {
+      const question = await MasterPassword.getRecoveryQuestion();
+      resetQuestion.textContent = question;
+      resetAnswer.value = '';
+      resetNewPwd.value = '';
+      resetConfirmPwd.value = '';
+      resetError.classList.add('hidden');
+      noRecoveryMsg.classList.add('hidden');
+      resetAnswer.closest('.lock-reset-panel').querySelectorAll('input, button#resetPasswordBtn').forEach(el => el.style.display = '');
+    } else {
+      resetQuestion.textContent = '';
+      noRecoveryMsg.classList.remove('hidden');
+      // Hide input fields when no recovery
+      resetAnswer.style.display = 'none';
+      resetNewPwd.parentElement.style.display = 'none';
+      resetConfirmPwd.parentElement.style.display = 'none';
+      resetBtn.style.display = 'none';
+    }
+    
+    resetPanel.classList.remove('hidden');
+  };
+
+  resetBackBtn.onclick = () => {
+    resetPanel.classList.add('hidden');
+    // Reset display of all elements
+    resetAnswer.style.display = '';
+    resetNewPwd.parentElement.style.display = '';
+    resetConfirmPwd.parentElement.style.display = '';
+    resetBtn.style.display = '';
+  };
+
+  resetBtn.onclick = async () => {
+    const answer = resetAnswer.value.trim();
+    const newPwd = resetNewPwd.value;
+    const confirmPwd = resetConfirmPwd.value;
+
+    if (!answer) {
+      resetError.textContent = 'Please enter your answer';
+      resetError.classList.remove('hidden');
+      return;
+    }
+
+    if (!newPwd) {
+      resetError.textContent = 'Please enter a new password';
+      resetError.classList.remove('hidden');
+      return;
+    }
+
+    if (newPwd !== confirmPwd) {
+      resetError.textContent = 'Passwords do not match';
+      resetError.classList.remove('hidden');
+      return;
+    }
+
+    resetBtn.disabled = true;
+    resetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Resetting...';
+
+    const { MasterPassword } = await import('./core/crypto.js');
+    const result = await MasterPassword.resetByRecovery(answer, newPwd);
+
+    if (result.success) {
+      resetError.textContent = 'Password reset! All sessions cleared.';
+      resetError.classList.remove('hidden');
+      resetError.style.color = '#4ade80';
+      
+      // Auto unlock after reset
+      setTimeout(async () => {
+        _mpUnlocked = true;
+        _mpPassword = newPwd;
+        const sessionsResult = await MasterPassword.decryptSessions(newPwd);
+        const sessions = sessionsResult.success ? sessionsResult.data : [];
+        setMPState(true, newPwd, sessions);
+        lockScreen.classList.add('hidden');
+        await initializeApp();
+        initMasterPasswordUI(true);
+      }, 1500);
+    } else {
+      resetError.textContent = result.error;
+      resetError.classList.remove('hidden');
+      resetError.style.color = '';
+    }
+
+    resetBtn.disabled = false;
+    resetBtn.innerHTML = '<i class="fa-solid fa-key mr-1"></i>Reset Password';
+  };
 }
 
 // ========== Master Password Modal ==========
@@ -600,9 +701,31 @@ function initMasterPasswordUI(mpEnabled) {
     });
     document.getElementById('mpMessage').style.display = 'none';
     document.getElementById('mpStrength').textContent = '';
+    
+    // Reset recovery fields
+    const recoveryQ = document.getElementById('mpRecoveryQuestion');
+    const customQ = document.getElementById('mpCustomQuestion');
+    const recoveryA = document.getElementById('mpRecoveryAnswer');
+    if (recoveryQ) recoveryQ.value = '';
+    if (customQ) customQ.value = '';
+    if (recoveryA) recoveryA.value = '';
+    document.getElementById('mpCustomQuestionWrap')?.classList.add('hidden');
 
     DOM.showModal(modal);
   };
+
+  // Custom question toggle
+  const recoveryQuestionSelect = document.getElementById('mpRecoveryQuestion');
+  const customQuestionWrap = document.getElementById('mpCustomQuestionWrap');
+  if (recoveryQuestionSelect) {
+    recoveryQuestionSelect.onchange = () => {
+      if (recoveryQuestionSelect.value === 'custom') {
+        customQuestionWrap?.classList.remove('hidden');
+      } else {
+        customQuestionWrap?.classList.add('hidden');
+      }
+    };
+  }
 
   // Password strength indicator
   const mpNewPassword = document.getElementById('mpNewPassword');
@@ -645,6 +768,20 @@ function initMasterPasswordUI(mpEnabled) {
     if (result.success) {
       _mpUnlocked = true;
       _mpPassword = password;
+      
+      // Save recovery question if provided
+      const recoverySelect = document.getElementById('mpRecoveryQuestion');
+      const customQuestion = document.getElementById('mpCustomQuestion')?.value.trim();
+      const recoveryAnswer = document.getElementById('mpRecoveryAnswer')?.value.trim();
+      
+      if (recoverySelect?.value && recoveryAnswer) {
+        let question = recoverySelect.value === 'custom' 
+          ? customQuestion 
+          : recoverySelect.options[recoverySelect.selectedIndex]?.text;
+        if (question) {
+          await MasterPassword.setupRecovery(question, recoveryAnswer);
+        }
+      }
       
       // Decrypt sessions and set MP state (no session save on first setup)
       const sessionsResult = await MasterPassword.decryptSessions(password);

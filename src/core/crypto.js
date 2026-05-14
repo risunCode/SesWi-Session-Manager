@@ -316,12 +316,99 @@ export const MasterPassword = {
         STORAGE_KEYS.MP_ENABLED,
         STORAGE_KEYS.MP_SALT,
         STORAGE_KEYS.MP_VERIFY,
+        STORAGE_KEYS.MP_RECOVERY_Q,
+        STORAGE_KEYS.MP_RECOVERY_A,
+        STORAGE_KEYS.MP_RECOVERY_SALT,
         STORAGE_KEYS.ENCRYPTED_SESSIONS
       ]);
 
       return Response.success(null, 'Master password removed');
     } catch (e) {
       return Response.error(e, 'MasterPassword.remove');
+    }
+  },
+
+  /** Setup recovery question */
+  async setupRecovery(question, answer) {
+    try {
+      if (!question || !answer) return Response.error('Question and answer required');
+      
+      const salt = generateSalt();
+      // Normalize answer: lowercase, trim
+      const normalizedAnswer = answer.toLowerCase().trim();
+      const hash = hashPassword(normalizedAnswer, salt);
+
+      await chrome.storage.local.set({
+        [STORAGE_KEYS.MP_RECOVERY_Q]: question,
+        [STORAGE_KEYS.MP_RECOVERY_A]: hash,
+        [STORAGE_KEYS.MP_RECOVERY_SALT]: salt
+      });
+
+      return Response.success(null, 'Recovery question set');
+    } catch (e) {
+      return Response.error(e, 'MasterPassword.setupRecovery');
+    }
+  },
+
+  /** Check if recovery is available */
+  async hasRecovery() {
+    const data = await chrome.storage.local.get([STORAGE_KEYS.MP_RECOVERY_Q, STORAGE_KEYS.MP_RECOVERY_A]);
+    return !!(data[STORAGE_KEYS.MP_RECOVERY_Q] && data[STORAGE_KEYS.MP_RECOVERY_A]);
+  },
+
+  /** Get recovery question */
+  async getRecoveryQuestion() {
+    const { [STORAGE_KEYS.MP_RECOVERY_Q]: question } = await chrome.storage.local.get(STORAGE_KEYS.MP_RECOVERY_Q);
+    return question || null;
+  },
+
+  /** Reset password using recovery answer */
+  async resetByRecovery(answer, newPassword) {
+    try {
+      // Validate new password
+      if (!newPassword || newPassword.length < 8) {
+        return Response.error('Password must be at least 8 characters');
+      }
+      if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+        return Response.error('Password must contain letters and numbers');
+      }
+
+      // Verify recovery answer
+      const data = await chrome.storage.local.get([
+        STORAGE_KEYS.MP_RECOVERY_A, 
+        STORAGE_KEYS.MP_RECOVERY_SALT,
+        STORAGE_KEYS.ENCRYPTED_SESSIONS
+      ]);
+
+      if (!data[STORAGE_KEYS.MP_RECOVERY_A] || !data[STORAGE_KEYS.MP_RECOVERY_SALT]) {
+        return Response.error('No recovery question set');
+      }
+
+      const normalizedAnswer = answer.toLowerCase().trim();
+      const answerHash = hashPassword(normalizedAnswer, data[STORAGE_KEYS.MP_RECOVERY_SALT]);
+
+      if (!safeCompare(answerHash, data[STORAGE_KEYS.MP_RECOVERY_A])) {
+        return Response.error('Incorrect answer');
+      }
+
+      // Can't recover sessions without the original password, so we'll reset everything
+      // This is a security trade-off: recovery means losing encrypted data
+      const salt = generateSalt();
+      const hash = hashPassword(newPassword, salt);
+
+      // Keep MP enabled but with new password and empty sessions
+      await chrome.storage.local.set({
+        [STORAGE_KEYS.MP_SALT]: salt,
+        [STORAGE_KEYS.MP_VERIFY]: hash,
+        [STORAGE_KEYS.ENCRYPTED_SESSIONS]: Crypto.encrypt([], newPassword)
+      });
+
+      // Reset lockout
+      await chrome.storage.local.remove([STORAGE_KEYS.MP_ATTEMPTS, STORAGE_KEYS.MP_LOCKOUT]);
+
+      return Response.success(null, 'Password reset successfully. Note: All encrypted sessions were cleared.');
+    } catch (e) {
+      return Response.error(e, 'MasterPassword.resetByRecovery');
     }
   },
 

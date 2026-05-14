@@ -146,24 +146,27 @@ export const DOM = {
   },
 
   /**
-   * Close modal with animation
+   * Close modal with animation (with fallback timeout)
    * @param {HTMLElement} modal - Modal element
    */
   closeModal(modal) {
     if (!modal) return;
     const content = modal.querySelector('.modal-content');
-    if (content) {
-      content.classList.add('closing');
-      content.addEventListener('animationend', () => {
-        modal.classList.remove('is-visible');
-        modal.classList.add('is-hidden');
-        modal.style.display = 'none';
-        content.classList.remove('closing');
-      }, { once: true });
-    } else {
+    const hideModal = () => {
       modal.classList.remove('is-visible');
       modal.classList.add('is-hidden');
       modal.style.display = 'none';
+      if (content) content.classList.remove('closing');
+    };
+    if (content) {
+      content.classList.add('closing');
+      let done = false;
+      const finish = () => { if (!done) { done = true; hideModal(); } };
+      content.addEventListener('animationend', finish, { once: true });
+      // Fallback: if animationend doesn't fire within 200ms, force close
+      setTimeout(finish, 200);
+    } else {
+      hideModal();
     }
   },
 
@@ -397,6 +400,127 @@ export const Normalize = {
       return [this._wrapCookies(data.cookies, { ...hint, localStorage: data.localStorage, sessionStorage: data.sessionStorage })];
     }
     return [];
+  },
+
+  /**
+   * Parse cookie string (any format) into session array.
+   * Supports: JSON, Netscape, Header string, key=value pairs
+   * @param {string} raw - Raw input string
+   * @param {object} hint - Optional hints (name, domain)
+   * @returns {{ sessions: Array, format: string, error?: string }}
+   */
+  parseCookieString(raw, hint = {}) {
+    const trimmed = raw.trim();
+    if (!trimmed) return { sessions: [], format: 'empty', error: 'Empty input' };
+
+    // Try JSON first
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const data = JSON.parse(trimmed);
+        const sessions = this.importSessions(data, hint);
+        if (sessions.length > 0) return { sessions, format: 'json' };
+      } catch { /* not valid JSON, try other formats */ }
+    }
+
+    // Try Netscape format (tab-separated, starts with # or domain)
+    if (trimmed.includes('\t') && (trimmed.startsWith('#') || /^\.?[a-z0-9-]+\.[a-z]{2,}/im.test(trimmed))) {
+      const cookies = this._parseNetscape(trimmed);
+      if (cookies.length > 0) {
+        return { sessions: [this._wrapCookies(cookies, hint)], format: 'netscape' };
+      }
+    }
+
+    // Try Header string format: "Cookie: name=value; name2=value2" or "name=value; name2=value2"
+    if (trimmed.includes('=') && !trimmed.includes('\n')) {
+      const cookies = this._parseHeaderString(trimmed, hint.domain);
+      if (cookies.length > 0) {
+        return { sessions: [this._wrapCookies(cookies, hint)], format: 'header' };
+      }
+    }
+
+    // Try multi-line key=value pairs
+    if (trimmed.includes('=') && trimmed.includes('\n')) {
+      const cookies = this._parseKeyValueLines(trimmed, hint.domain);
+      if (cookies.length > 0) {
+        return { sessions: [this._wrapCookies(cookies, hint)], format: 'keyvalue' };
+      }
+    }
+
+    return { sessions: [], format: 'unknown', error: 'Unrecognized format' };
+  },
+
+  /**
+   * Parse Netscape cookie format (curl, wget, browser export)
+   * Format: domain \t flag \t path \t secure \t expiry \t name \t value
+   */
+  _parseNetscape(text) {
+    const cookies = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const parts = trimmed.split('\t');
+      if (parts.length >= 7) {
+        const [domain, , path, secure, expiry, name, value] = parts;
+        if (name && domain) {
+          cookies.push({
+            name: name.trim(),
+            value: (value || '').trim(),
+            domain: domain.trim(),
+            path: path?.trim() || '/',
+            secure: secure?.toUpperCase() === 'TRUE',
+            httpOnly: false,
+            expirationDate: expiry && expiry !== '0' ? parseInt(expiry, 10) : undefined
+          });
+        }
+      }
+    }
+    return cookies;
+  },
+
+  /**
+   * Parse header string format: "Cookie: name=value; name2=value2"
+   */
+  _parseHeaderString(text, domain = 'unknown') {
+    let str = text.trim();
+    // Remove "Cookie:" prefix if present
+    if (str.toLowerCase().startsWith('cookie:')) str = str.slice(7).trim();
+    // Remove "Set-Cookie:" prefix if present (single cookie)
+    if (str.toLowerCase().startsWith('set-cookie:')) str = str.slice(11).trim();
+
+    const cookies = [];
+    const pairs = str.split(';');
+    for (const pair of pairs) {
+      const eqIdx = pair.indexOf('=');
+      if (eqIdx > 0) {
+        const name = pair.slice(0, eqIdx).trim();
+        const value = pair.slice(eqIdx + 1).trim();
+        // Skip cookie attributes (path, expires, domain, etc.)
+        const lowerName = name.toLowerCase();
+        if (['path', 'expires', 'domain', 'max-age', 'secure', 'httponly', 'samesite'].includes(lowerName)) continue;
+        if (name) cookies.push({ name, value, domain, path: '/' });
+      }
+    }
+    return cookies;
+  },
+
+  /**
+   * Parse multi-line key=value format
+   */
+  _parseKeyValueLines(text, domain = 'unknown') {
+    const cookies = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        const name = trimmed.slice(0, eqIdx).trim();
+        const value = trimmed.slice(eqIdx + 1).trim();
+        if (name) cookies.push({ name, value, domain, path: '/' });
+      }
+    }
+    return cookies;
   },
 
   _wrapCookies(cookies, hint = {}) {

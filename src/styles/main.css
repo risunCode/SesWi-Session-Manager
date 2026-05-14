@@ -2353,6 +2353,17 @@ input, button, textarea, select {
 
 .import-cookie-textarea:focus { border-color: #3b82f6; background: #fff; }
 
+.import-format-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.import-format-hint i { color: #94a3b8; }
+
 .import-preview {
   display: flex;
   align-items: center;
@@ -3017,8 +3028,9 @@ input, button, textarea, select {
 .lock-remember {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin: 12px 0;
+  margin: 0 0 12px 0;
   font-size: 13px;
   color: rgba(255,255,255,0.8);
   cursor: pointer;
@@ -3027,13 +3039,120 @@ input, button, textarea, select {
 .lock-remember input[type="checkbox"] {
   width: 16px;
   height: 16px;
+  min-width: 16px;
+  padding: 0;
+  margin: 0;
+  border: none;
   accent-color: #8b5cf6;
   cursor: pointer;
+}
+
+.lock-remember span {
+  line-height: 1;
 }
 
 .lock-remember:hover {
   color: white;
 }
+
+.lock-forgot-link {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lock-forgot-link:hover { color: rgba(255,255,255,0.8); }
+
+/* Reset Password Panel */
+.lock-reset-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(15,23,42,0.97);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  animation: slideInRight 0.25s ease-out;
+}
+
+.lock-reset-panel.hidden { display: none; }
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.lock-reset-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.lock-reset-back:hover { background: rgba(255,255,255,0.2); }
+
+.lock-reset-panel h3 {
+  color: white;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.lock-reset-panel h3 i { color: #8b5cf6; }
+
+.reset-question {
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-style: italic;
+}
+
+.lock-reset-panel input {
+  width: 100%;
+  max-width: 280px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.lock-reset-panel input::placeholder { color: rgba(255,255,255,0.4); }
+.lock-reset-panel input:focus { border-color: #8b5cf6; outline: none; }
+
+.lock-reset-panel .form-group {
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 0;
+}
+
+.lock-reset-panel .btn {
+  margin-top: 8px;
+}
+
+.reset-no-recovery {
+  color: #fbbf24;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.reset-no-recovery i { margin-right: 6px; }
 
 /* ========== Master Password Modal ========== */
 .mp-notice {
@@ -3078,6 +3197,50 @@ input, button, textarea, select {
 .mp-strength.good { color: #059669; }
 .mp-strength.strong { color: #7c3aed; }
 
+.mp-recovery-section {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+}
+
+.mp-recovery-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 10px;
+}
+
+.mp-recovery-header i { color: #d97706; }
+
+.mp-recovery-section select,
+.mp-recovery-section input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+}
+
+.mp-recovery-section select:focus,
+.mp-recovery-section input:focus {
+  outline: none;
+  border-color: #f59e0b;
+}
+
+.mp-recovery-section .form-group {
+  margin-bottom: 8px;
+}
+
+.mp-recovery-section .form-group:last-child {
+  margin-bottom: 0;
+}
+
 .text-violet-500 { color: #8b5cf6; }
 
 /* Password toggle button */
@@ -3107,26 +3270,29 @@ input, button, textarea, select {
 .lock-pwd-wrap {
   position: relative;
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .lock-pwd-wrap input {
   width: 100%;
   padding-right: 44px;
+  margin-bottom: 0;
 }
 
 .pwd-toggle-lock {
   position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 10px;
+  top: 12px;
   background: none;
   border: none;
   color: rgba(255,255,255,0.5);
   cursor: pointer;
   padding: 4px;
+  font-size: 14px;
+  line-height: 1;
 }
 
-.pwd-toggle-lock:hover { color: rgba(255,255,255,0.8); }
+.pwd-toggle-lock:hover { color: rgba(255,255,255,0.9); }
 
 .btn-danger {
   background: #ef4444 !important;
