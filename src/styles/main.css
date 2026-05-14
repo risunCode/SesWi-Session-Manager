@@ -1922,21 +1922,6 @@ input, button, textarea, select {
   text-align: center;
 }
 
-.btn-danger {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: var(--fs-base);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
 /* Clean Tab Expandable Preview */
 .clean-option-wrap {
   display: flex;
@@ -2269,15 +2254,6 @@ input, button, textarea, select {
 }
 
 /* ========== Add Session Modal Extras ========== */
-.modal-favicon {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  object-fit: cover;
-}
-
 .modal-checkbox-row {
   display: flex;
   align-items: center;
@@ -3277,8 +3253,6 @@ input, button, textarea, select {
   margin-bottom: 0;
 }
 
-.text-violet-500 { color: #8b5cf6; }
-
 /* Password toggle button */
 .input-pwd-wrap {
   position: relative;
@@ -3334,11 +3308,4 @@ input, button, textarea, select {
 
 .pwd-toggle-lock:hover { color: rgba(255,255,255,0.9); }
 
-.btn-danger {
-  background: #ef4444 !important;
-  color: white !important;
-}
 
-.btn-danger:hover {
-  background: #dc2626 !important;
-}
