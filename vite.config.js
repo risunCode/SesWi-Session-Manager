@@ -65,4 +65,11 @@ export default defineConfig({
       }
     }
   ],
+  test: {
+    include: ['__tests__/**/*.test.js'],
+    setupFiles: ['__tests__/setup.js'],
+    coverage: {
+      provider: 'v8'
+    }
+  },
 });

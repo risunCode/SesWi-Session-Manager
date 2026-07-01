@@ -130,6 +130,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.pageUrl?.startsWith('chrome://') || info.pageUrl?.startsWith('about:')) return;
+
   if (!tab?.url || tab.url.startsWith('chrome://')) return;
   const domain = getBase(tab.url);
   if (!domain) return;
@@ -143,6 +145,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }, 300);
 
   } else if (info.menuItemId === 'seswi-restore') {
+    const mpState = await chrome.storage.local.get('_seswi_mp_enabled');
+    if (mpState._seswi_mp_enabled) {
+      await chrome.action.openPopup();
+      return;
+    }
+
     // Restore most recent session for this domain
     const key = await getStorageKey();
     const data = await chrome.storage.local.get(key);

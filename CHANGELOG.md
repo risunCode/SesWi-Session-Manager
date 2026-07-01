@@ -1,5 +1,34 @@
 # Changelog
 
+## v3.4.1 (2026-07-01)
+
+### New Features
+- **2FA Tab** — Dedicated tab for TOTP-based two-factor authentication secrets
+  - Manual entry with issuer, account, secret, algorithm, digits, period
+  - QR scan via `chrome.tabs.captureVisibleTab` + jsQR decode
+  - Auto-updating TOTP codes with progress bar countdown
+  - Copy code by clicking card body; group by issuer; search support
+- **Split Backup/Restore** — Export or import per data type (All/Sessions/2FA)
+  - `Backup.createPayload(kind)` with `all|sessions|twoFactor`
+  - Selective restore with per-type checkboxes
+- **Canonical Backup Payload** — Unified `{ version, kind, data: { sessions, twoFactorEntries } }` format
+  - Legacy payloads upgraded in-memory on parse
+  - Master password protects both sessions and 2FA entries
+- **Cookie Editor Restore Fix** — Raw cookie arrays auto-wrapped into session objects
+
+### UI Changes
+- **2FA Card Redesign** — Stacked layout (name, code+timer, actions), body-click copy, amber/red action buttons
+- **Include Pills → Card** — Backup export type selector changed to bordered card with icon rows
+- **ActiveTab permission** — Added `activeTab` to manifest for `captureVisibleTab`
+
+### Bug Fixes
+- Fixed 2FA modal using `DOM.hideModal` (undefined) instead of `DOM.closeModal`
+- Fixed QR scan modal close animation
+- Fixed issuer fallback to extract domain from email in account name
+- Fixed edit/delete buttons requiring multiple clicks (DOM replaced every ticker cycle)
+- Fixed toast overlapping action buttons (`pointer-events: none`)
+
+---
 ## v3.4.0 (2026-05-14)
 
 ### Breaking Changes

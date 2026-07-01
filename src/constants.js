@@ -6,7 +6,6 @@
 // ========== Timing (ms) ==========
 export const TIMING = {
   MODAL_CLOSE_DELAY: 500,
-  MODAL_CLOSE_SLOW: 800,
   MESSAGE_DISPLAY: 1500,
   DEBOUNCE_INPUT: 300,
   SHIMMER_MIN: 400,
@@ -35,6 +34,7 @@ export const STORAGE_KEYS = {
   MP_RECOVERY_ATTEMPTS: '_seswi_mp_recovery_attempts',
   MP_RECOVERY_LOCKOUT: '_seswi_mp_recovery_lockout',
   ENCRYPTED_SESSIONS: '_seswi_encrypted',
+  TWO_FACTOR: '_seswi_2fa',
 };
 
 // ========== Custom Events ==========
@@ -44,13 +44,13 @@ export const EVENTS = {
   SESSION_REPLACED: 'seswi:session-replaced',
   SESSIONS_RESTORED: 'seswi:sessions-restored',
   SESSIONS_DELETED: 'seswi:sessions-deleted',
+  TWO_FACTOR_UPDATED: 'seswi:two-factor-updated',
 };
 
 // ========== Pagination ==========
 export const PAGINATION = {
   CURRENT_TAB: 6,
   GROUP_TAB: 4,
-  DEFAULT: 5,
 };
 
 // ========== Limits ==========
@@ -66,12 +66,6 @@ export const LIMITS = {
   MAX_ICON_ENTRIES: 300,
 };
 
-// ========== File Formats ==========
-export const FILE_FORMATS = {
-  JSON: 'json',
-  OWI: 'owi',
-  NETSCAPE: 'netscape',
-};
 
 // ========== Helper to emit events ==========
 export const emitEvent = (eventName) => {

@@ -32,34 +32,56 @@ export const uniqueTimestamp = () => {
   return ts;
 };
 
-// Master Password state for encrypted session handling
-let _mpEnabled = false;
-let _mpPassword = null;
-let _decryptedCache = null;
-
-/** Set MP state after unlock (called from popup.js) */
-export function setMPState(enabled, password, sessions = null) {
-  _mpEnabled = enabled;
-  _mpPassword = password;
-  _decryptedCache = sessions;
+// Protected in-memory state for encrypted-at-rest data
+let _protectedState = {
+  enabled: false,
+  password: null,
+  sessions: null,
+  twoFactorEntries: null
 }
 
-/** Check if MP is active */
-export function isMPActive() {
-  return _mpEnabled && _mpPassword !== null;
-}
-
-/** Re-encrypt sessions after changes */
-async function syncEncryptedSessions(sessions) {
-  if (!_mpEnabled || !_mpPassword) return;
-  try {
-    const { Crypto } = await import('./crypto.js');
-    const encrypted = await Crypto.encrypt(sessions, _mpPassword);
-    await chrome.storage.local.set({ [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted });
-    _decryptedCache = sessions;
-  } catch (e) {
-    Logger.error('Failed to sync encrypted sessions:', e);
+/** Set protected state after unlock (called from popup.js) */
+export function setMPState(enabled, password, sessions = null, twoFactorEntries = null) {
+  _protectedState = {
+    enabled,
+    password,
+    sessions,
+    twoFactorEntries
   }
+}
+
+/** Check if protected mode is active */
+export function isMPActive() {
+  return _protectedState.enabled && _protectedState.password !== null
+}
+
+export function getProtectedPayload() {
+  return {
+    sessions: Array.isArray(_protectedState.sessions) ? _protectedState.sessions : [],
+    twoFactorEntries: Array.isArray(_protectedState.twoFactorEntries) ? _protectedState.twoFactorEntries : []
+  }
+}
+
+async function syncProtectedPayload(updates = {}) {
+  if (!isMPActive()) return
+  try {
+    const { MasterPassword } = await import('./crypto.js')
+    const payload = {
+      ...getProtectedPayload(),
+      ...updates
+    }
+    const result = await MasterPassword.encryptProtectedData(payload, _protectedState.password)
+    if (result?.success) {
+      _protectedState.sessions = payload.sessions
+      _protectedState.twoFactorEntries = payload.twoFactorEntries
+    }
+  } catch (e) {
+    Logger.error('Failed to sync protected payload:', e)
+  }
+}
+
+export async function saveProtectedPayload(updates = {}) {
+  await syncProtectedPayload(updates)
 }
 
 async function getStorageKey() {
@@ -70,7 +92,7 @@ async function getStorageKey() {
       _storageKey = result[STORAGE_KEYS.META].storageKey;
       return _storageKey;
     }
-  } catch {}
+  } catch { console.warn('[SesWi] Failed to read storage meta, using fallback key'); }
   // Fallback to old key if meta not found (pre-migration state)
   _storageKey = STORAGE_KEYS.OLD_SESSIONS;
   return _storageKey;
@@ -200,9 +222,9 @@ export const TabInfo = {
 export const SessionStorage = {
   async getAll() {
     try {
-      // If MP is enabled, return from decrypted cache
-      if (_mpEnabled && _decryptedCache !== null) {
-        return Response.success(_decryptedCache.filter(s => Validate.session(s).valid));
+      // If MP is enabled, return from protected cache
+      if (_protectedState.enabled && _protectedState.sessions !== null) {
+        return Response.success(_protectedState.sessions.filter(s => Validate.session(s).valid));
       }
 
       const key = await getStorageKey();
@@ -229,9 +251,12 @@ export const SessionStorage = {
 
         const newSessions = [...sessions, session];
 
-        // If MP is enabled, sync to encrypted storage
-        if (_mpEnabled) {
-          await syncEncryptedSessions(newSessions);
+        // If MP is enabled, sync to protected storage
+        if (_protectedState.enabled) {
+          await syncProtectedPayload({
+            sessions: newSessions,
+            twoFactorEntries: getProtectedPayload().twoFactorEntries
+          });
         } else {
           const key = await getStorageKey();
           await chrome.storage.local.set({ [key]: newSessions });
@@ -249,8 +274,11 @@ export const SessionStorage = {
         const { data: sessions } = await this.getAll();
         const newSessions = sessions.map(s => s.timestamp === updated.timestamp ? updated : s);
 
-        if (_mpEnabled) {
-          await syncEncryptedSessions(newSessions);
+        if (_protectedState.enabled) {
+          await syncProtectedPayload({
+            sessions: newSessions,
+            twoFactorEntries: getProtectedPayload().twoFactorEntries
+          });
         } else {
           const key = await getStorageKey();
           await chrome.storage.local.set({ [key]: newSessions });
@@ -268,8 +296,11 @@ export const SessionStorage = {
         const { data: sessions } = await this.getAll();
         const newSessions = sessions.filter(s => s.timestamp !== timestamp);
 
-        if (_mpEnabled) {
-          await syncEncryptedSessions(newSessions);
+        if (_protectedState.enabled) {
+          await syncProtectedPayload({
+            sessions: newSessions,
+            twoFactorEntries: getProtectedPayload().twoFactorEntries
+          });
         } else {
           const key = await getStorageKey();
           await chrome.storage.local.set({ [key]: newSessions });
@@ -327,8 +358,11 @@ export const SessionStorage = {
         const { data: sessions } = await this.getAll();
         const filtered = sessions.filter(s => !domains.includes(s.domain));
         
-        if (_mpEnabled) {
-          await syncEncryptedSessions(filtered);
+        if (_protectedState.enabled) {
+          await syncProtectedPayload({
+            sessions: filtered,
+            twoFactorEntries: getProtectedPayload().twoFactorEntries
+          });
         } else {
           const key = await getStorageKey();
           await chrome.storage.local.set({ [key]: filtered });
@@ -347,8 +381,11 @@ export const SessionStorage = {
         const { data: sessions } = await this.getAll();
         const filtered = sessions.filter(s => !tsSet.has(s.timestamp));
         
-        if (_mpEnabled) {
-          await syncEncryptedSessions(filtered);
+        if (_protectedState.enabled) {
+          await syncProtectedPayload({
+            sessions: filtered,
+            twoFactorEntries: getProtectedPayload().twoFactorEntries
+          });
         } else {
           const key = await getStorageKey();
           await chrome.storage.local.set({ [key]: filtered });
@@ -415,6 +452,40 @@ export const BrowserStorage = {
   async getSession(tabId) { return this.get(tabId, 'session'); }
 };
 
+export const CurrentTabExport = {
+  async collect() {
+    try {
+      const tabInfo = await TabInfo.getCurrent()
+      if (!tabInfo.success) return tabInfo
+
+      const cookieRes = await Cookies.getCurrentTab()
+      if (!cookieRes.success) {
+        return Response.error(cookieRes.error, cookieRes.context || 'CurrentTabExport.collect')
+      }
+
+      const tabId = tabInfo.data?.tabId
+      const [localRes, sessionRes] = await Promise.all([
+        tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve(Response.success({})),
+        tabId ? BrowserStorage.getSession(tabId) : Promise.resolve(Response.success({}))
+      ])
+
+      if (!localRes.success) return localRes
+      if (!sessionRes.success) return sessionRes
+
+      return Response.success({
+        domain: cookieRes.data?.domain || tabInfo.data?.domain || 'unknown',
+        url: cookieRes.data?.url || tabInfo.data?.url || '',
+        cookies: cookieRes.data?.cookies || [],
+        localStorage: localRes.data || {},
+        sessionStorage: sessionRes.data || {},
+        tabId
+      })
+    } catch (e) {
+      return Response.error(e, 'CurrentTabExport.collect')
+    }
+  }
+}
+
 // ========== Storage Helpers (for MasterPassword) ==========
 export const Storage = {
   /** Get all sessions (plain, not encrypted) */
@@ -436,5 +507,18 @@ export const Storage = {
   async clearAllSessions() {
     const key = await getStorageKey();
     await chrome.storage.local.set({ [key]: [] });
+  },
+
+  async getAllTwoFactorEntries() {
+    const result = await chrome.storage.local.get(STORAGE_KEYS.TWO_FACTOR)
+    return result[STORAGE_KEYS.TWO_FACTOR] || []
+  },
+
+  async saveAllTwoFactorEntries(entries) {
+    await chrome.storage.local.set({ [STORAGE_KEYS.TWO_FACTOR]: entries })
+  },
+
+  async clearAllTwoFactorEntries() {
+    await chrome.storage.local.set({ [STORAGE_KEYS.TWO_FACTOR]: [] })
   }
 };

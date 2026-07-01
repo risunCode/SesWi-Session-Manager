@@ -1,19 +1,14 @@
-/**
- * SesWi Tabs UI Module
- * Handles: Current, Group, Manage tab rendering
- */
-
-import { SessionStorage, TabInfo, BrowserStorage, uniqueTimestamp } from '../core/storage.js';
+import { TabInfo, BrowserStorage, SessionStorage, CurrentTabExport, uniqueTimestamp } from '../core/storage.js';
 import { Cookies } from '../core/cookies.js';
 import { Export } from '../core/export.js';
 import { tabIcons } from '../core/icons.js';
-import { DOM, Time, Pagination, Domain, Response, Logger } from '../utils.js';
+import { DOM, Time, Pagination, Response, Logger } from '../utils.js';
 import { Modal } from './modals.js';
 import { Renderer } from './renderer.js';
-import { STORAGE_KEYS, PAGINATION } from '../constants.js';
+import { STORAGE_KEYS } from '../constants.js';
+import { TwoFactorStorage, TOTP } from '../core/twofa.js';
 
 // ========== Current Tab ==========
-
 export const CurrentTab = {
   page: 1,
   perPage: 6,
@@ -86,7 +81,6 @@ export const CurrentTab = {
         return;
       }
 
-      // Auto: scroll if ≤ perPage, paginate if more
       if (items.length <= this.perPage) {
         container.innerHTML = items.map((s, i) =>
           Renderer.sessionCard(s, {
@@ -181,7 +175,6 @@ export const CurrentTab = {
 
       if (!domain) return Response.error('No domain detected');
 
-      // Get browser storage based on options
       let localData = {};
       let sessionData = {};
 
@@ -194,7 +187,6 @@ export const CurrentTab = {
         sessionData = sessionRes.data || {};
       }
 
-      // Check if there's any data to save
       const hasData = cookies.length > 0 || Object.keys(localData).length > 0 || Object.keys(sessionData).length > 0;
       if (!hasData) {
         return Response.error('No data to save (cookies, localStorage, or sessionStorage)');
@@ -207,9 +199,9 @@ export const CurrentTab = {
       const ts = uniqueTimestamp();
       const session = {
         name: name.trim(),
-        domain: domain,
+        domain,
         originalUrl: cookieRes.data?.url || tabInfo.data?.url,
-        cookies: cookies,
+        cookies,
         localStorage: localData,
         sessionStorage: sessionData,
         timestamp: ts,
@@ -230,7 +222,6 @@ export const CurrentTab = {
   }
 };
 
-
 // ========== Group Tab (Domain-based) ==========
 export const GroupTab = {
   expandedDomain: {},
@@ -248,7 +239,6 @@ export const GroupTab = {
 
       let domainGroups = result.data || [];
 
-      // Update overview card (before filtering)
       const totalDomains = domainGroups.length;
       const totalSessions = domainGroups.reduce((sum, dg) => sum + dg.sessions.length, 0);
       const overviewDomains = document.getElementById('overviewDomains');
@@ -256,7 +246,6 @@ export const GroupTab = {
       if (overviewDomains) overviewDomains.textContent = totalDomains;
       if (overviewSessions) overviewSessions.textContent = totalSessions;
 
-      // Apply search filter
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
         domainGroups = domainGroups.map(dg => ({
@@ -276,9 +265,7 @@ export const GroupTab = {
         return;
       }
 
-      // Refresh icons cache
       const iconMap = await tabIcons.refresh();
-
       container.innerHTML = domainGroups.map(dg => this._renderDomainCard(dg, iconMap)).join('');
       this._wireHandlers(container, domainGroups);
     } catch (e) {
@@ -292,7 +279,6 @@ export const GroupTab = {
     const totalCookies = sessions.reduce((sum, s) => sum + (s.cookies?.length || 0), 0);
     const faviconUrl = iconMap[domain] || tabIcons.getFaviconUrl(domain);
 
-    // Get auth status for the domain (based on most recent session by timestamp)
     const latestSession = sessions.reduce((a, b) => (b.timestamp > a.timestamp ? b : a), sessions[0]);
     const authStatus = latestSession ? Time.getSessionExpiration(latestSession.cookies) : null;
     const authBadge = authStatus?.label
@@ -345,7 +331,6 @@ export const GroupTab = {
   },
 
   _wireHandlers(container, domainGroups) {
-    // Wire favicon error handlers
     container.querySelectorAll('.domain-favicon').forEach(img => {
       img.onerror = () => {
         img.style.display = 'none';
@@ -354,7 +339,6 @@ export const GroupTab = {
       };
     });
 
-    // Domain card header click
     container.querySelectorAll('.domain-card-header').forEach(header => {
       header.onclick = () => {
         const domain = header.closest('.domain-card').dataset.domain;
@@ -363,24 +347,19 @@ export const GroupTab = {
       };
     });
 
-    // Session card click
     container.querySelectorAll('.session-card').forEach(card => {
       card.onclick = (e) => {
         e.stopPropagation();
         const ts = card.dataset.ts;
-
-        // Find session across all domain groups
         let session = null;
         for (const dg of domainGroups) {
           session = dg.sessions.find(s => String(s.timestamp) === ts);
           if (session) break;
         }
-
         if (session) Modal.openSessionActions(session);
       };
     });
 
-    // Domain pagination
     container.querySelectorAll('.dpage-btn').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -395,6 +374,196 @@ export const GroupTab = {
   }
 };
 
+// ========== 2FA Tab ==========
+export const TwoFATab = {
+  searchQuery: '',
+  _timer: null,
+  _entries: [],
+  _container: null,
+
+  async render() {
+    const container = document.getElementById('twoFactorContainer');
+    if (!container) return;
+    this._container = container;
+    this.stopTicker();
+
+    try {
+      const groupedResult = await TwoFactorStorage.getGrouped(this.searchQuery);
+      if (!groupedResult.success) throw new Error(groupedResult.error);
+
+      const groups = groupedResult.data || [];
+      if (!groups.length) {
+        const emptyMsg = this.searchQuery.trim()
+          ? `No 2FA entries matching "${DOM.escapeHtml(this.searchQuery)}"`
+          : 'No 2FA entries saved yet';
+        container.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`;
+        this._entries = [];
+        return;
+      }
+
+      const allEntries = groups.flatMap((group) => group.entries);
+      this._entries = allEntries;
+
+      const groupHtml = await Promise.all(groups.map(async ({ issuer, entries }) => {
+        const cards = await Promise.all(entries.map(async (entry) => {
+          const codeResult = await TOTP.generate(entry);
+          const code = codeResult.success ? codeResult.data : '------';
+          const remaining = TOTP.timeRemaining(entry);
+          const pct = entry.period ? Math.round((remaining / entry.period) * 100) : 0;
+          const timerColor = remaining <= 5 ? 'var(--clr-danger)' : remaining <= 10 ? '#f59e0b' : 'var(--clr-success)';
+          return `
+            <div class="twofa-card" data-id="${DOM.escapeHtml(entry.id)}">
+              <div class="twofa-card-body">
+                <div class="twofa-card-name">
+                  <span class="twofa-card-issuer">${DOM.escapeHtml(issuer)}</span>
+                  <span class="twofa-card-account">${DOM.escapeHtml(entry.accountName)}</span>
+                </div>
+                <div class="twofa-card-code-row">
+                  <span class="twofa-card-code">${DOM.escapeHtml(code)}</span>
+                  <div class="twofa-card-timer">
+                    <div class="twofa-timer-track">
+                      <div class="twofa-timer-bar" style="width:${pct}%;background:${timerColor}"></div>
+                    </div>
+                    <span class="twofa-timer-text" style="color:${timerColor}">${remaining}s</span>
+                  </div>
+                </div>
+              </div>
+              <div class="twofa-card-actions">
+                <button class="btn btn-sm twofa-copy" data-id="${DOM.escapeHtml(entry.id)}"><i class="fa-solid fa-copy"></i> Copy</button>
+                <button class="btn btn-sm twofa-edit" data-id="${DOM.escapeHtml(entry.id)}"><i class="fa-solid fa-pen"></i> Edit</button>
+                <button class="btn btn-sm twofa-delete" data-id="${DOM.escapeHtml(entry.id)}"><i class="fa-solid fa-trash"></i> Delete</button>
+              </div>
+            </div>
+          `;
+        }));
+
+        return `
+          <section class="twofa-group">
+            <div class="twofa-group-heading">${DOM.escapeHtml(issuer)}</div>
+            <div class="twofa-group-list">${cards.join('')}</div>
+          </section>
+        `;
+      }));
+
+      container.innerHTML = groupHtml.join('');
+      this._wireActions(container, allEntries);
+    } catch (e) {
+      container.innerHTML = `<div class="error-state"><p>Error: ${DOM.escapeHtml(e.message)}</p></div>`;
+      this._entries = [];
+    }
+  },
+
+  async tick() {
+    const container = this._container;
+    if (!container || !this._entries.length) return;
+
+    const cards = container.querySelectorAll('.twofa-card');
+    for (const card of cards) {
+      const entry = this._entries.find((item) => item.id === card.dataset.id);
+      if (!entry) continue;
+
+      const codeResult = await TOTP.generate(entry);
+      const code = codeResult.success ? codeResult.data : '------';
+      const remaining = TOTP.timeRemaining(entry);
+      const pct = entry.period ? Math.round((remaining / entry.period) * 100) : 0;
+      const timerColor = remaining <= 5 ? 'var(--clr-danger)' : remaining <= 10 ? '#f59e0b' : 'var(--clr-success)';
+
+      const codeEl = card.querySelector('.twofa-card-code');
+      if (codeEl) codeEl.textContent = code;
+
+      const barEl = card.querySelector('.twofa-timer-bar');
+      if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.style.background = timerColor;
+      }
+
+      const textEl = card.querySelector('.twofa-timer-text');
+      if (textEl) {
+        textEl.textContent = remaining + 's';
+        textEl.style.color = timerColor;
+      }
+    }
+  },
+
+  _wireActions(container, entries) {
+    // Event delegation: card-body click = copy code
+    // Single listener on container, survives tick() since container isn't replaced
+    if (!container._twofaDelegated) {
+      container.addEventListener('click', async (e) => {
+        // Only handle clicks on .twofa-card-body or its children, not on buttons
+        const body = e.target.closest('.twofa-card-body');
+        if (!body) return;
+        if (e.target.closest('button, .btn, .twofa-copy, .twofa-edit, .twofa-delete')) return;
+        const card = body.closest('.twofa-card');
+        if (!card) return;
+        const entry = this._entries.find((item) => item.id === card.dataset.id);
+        if (!entry) return;
+        const codeResult = await TOTP.generate(entry);
+        if (!codeResult.success) return;
+        await navigator.clipboard.writeText(codeResult.data);
+        card.classList.add('twofa-card-copied');
+        setTimeout(() => card.classList.remove('twofa-card-copied'), 800);
+        showCopyToast();
+      });
+      container._twofaDelegated = true;
+    }
+
+    container.querySelectorAll('.twofa-copy').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const entry = entries.find((item) => item.id === btn.dataset.id);
+        if (!entry) return;
+        const codeResult = await TOTP.generate(entry);
+        if (!codeResult.success) return;
+        await navigator.clipboard.writeText(codeResult.data);
+        const prevText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.classList.add('twofa-copied');
+        setTimeout(() => {
+          btn.innerHTML = prevText;
+          btn.classList.remove('twofa-copied');
+        }, 1500);
+      };
+    });
+
+    container.querySelectorAll('.twofa-edit').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const entry = entries.find((item) => item.id === btn.dataset.id);
+        if (entry) Modal.openTwoFactorEntry(entry);
+      };
+    });
+
+    container.querySelectorAll('.twofa-delete').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const entry = entries.find((item) => item.id === btn.dataset.id);
+        if (entry) Modal.openTwoFactorDelete(entry);
+      };
+    });
+
+    function showCopyToast() {
+      DOM.showToast('Copied!', 'success');
+    }
+  },
+
+  startTicker() {
+    this.stopTicker();
+    this._timer = setInterval(() => this.tick(), 1000);
+  },
+
+  stopTicker() {
+    if (this._timer) {
+      clearInterval(this._timer);
+      this._timer = null;
+    }
+  },
+
+  init() {
+    document.getElementById('twoFactorAddBtn')?.addEventListener('click', () => Modal.openTwoFactorEntry());
+    document.getElementById('twoFactorScanBtn')?.addEventListener('click', () => Modal.openTwoFactorScan());
+  }
+};
 
 // ========== Manage Tab ==========
 export const ManageTab = {
@@ -408,53 +577,61 @@ export const ManageTab = {
     wire('sessionManager', () => Modal.openSessionManager());
     wire('cleanCurrentTabData', () => this.handleClean());
     wire('quickAction', () => Modal.openQuickAction());
+    wire('resetAllData', () => this.handleReset());
   },
 
   async handleExportCurrent(format) {
     try {
-      const tabInfo = await TabInfo.getCurrent();
-      const cookieRes = await Cookies.getCurrentTab();
-
-      if (!cookieRes.success) {
-        Modal.openConfirm({ title: 'Export Error', message: 'Failed to get cookies: ' + cookieRes.error, confirmText: 'OK', onConfirm: () => {} });
+      const exportRes = await CurrentTabExport.collect();
+      if (!exportRes.success) {
+        DOM.showToast('Export failed: ' + (exportRes.error || 'Unknown error'), 'error', 3000);
         return;
       }
 
-      const cookies = cookieRes.data?.cookies || [];
-      const domain = cookieRes.data?.domain || 'unknown';
-      const tabId = tabInfo.data?.tabId;
+      const { cookies, domain, localStorage, sessionStorage } = exportRes.data;
 
       if (format === 'json') {
-        const [localRes, sessionRes] = await Promise.all([
-          tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve({ data: {} }),
-          tabId ? BrowserStorage.getSession(tabId) : Promise.resolve({ data: {} })
-        ]);
-        const payload = {
-          cookies,
-          localStorage: localRes.data || {},
-          sessionStorage: sessionRes.data || {}
-        };
+        const payload = { cookies, localStorage, sessionStorage };
         DOM.downloadFile(JSON.stringify(payload, null, 2), `${domain}_session.json`, 'application/json');
-      } else if (format === 'cookieeditor') {
-        if (cookies.length === 0) {
-          Modal.openConfirm({ title: 'No Data', message: 'No cookies found for this tab.', confirmText: 'OK', onConfirm: () => {} });
-          return;
-        }
+        return;
+      }
+
+      if (cookies.length === 0) {
+        DOM.showToast('No cookies found for this tab.', 'error');
+        return;
+      }
+
+      if (format === 'cookieeditor') {
         DOM.downloadFile(Export.toCookieEditor(cookies), `${domain}_cookies.json`, 'application/json');
       } else {
-        if (cookies.length === 0) {
-          Modal.openConfirm({ title: 'No Data', message: 'No cookies found for this tab.', confirmText: 'OK', onConfirm: () => {} });
-          return;
-        }
         DOM.downloadFile(Export.toNetscape(cookies), `${domain}_cookies_netscape.txt`, 'text/plain');
       }
     } catch (e) {
       Logger.error('Export failed:', e);
-      Modal.openConfirm({ title: 'Export Failed', message: e.message, confirmText: 'OK', onConfirm: () => {} });
+      DOM.showToast('Export: ' + (e.message || 'Unknown error'), 'error', 3000);
     }
   },
 
   handleClean() {
     Modal.openCleanTab();
+  },
+
+  handleReset() {
+    Modal.openConfirm({
+      title: 'Reset All Data?',
+      message: 'This will permanently delete all saved sessions, 2FA entries, master password, and configuration. This cannot be undone.',
+      confirmText: 'Reset Everything',
+      confirmClass: 'btn-danger',
+      onConfirm: async () => {
+        try {
+          await chrome.storage.local.clear();
+          localStorage.clear();
+          DOM.showToast('All data has been reset');
+          setTimeout(() => location.reload(), 1200);
+        } catch (e) {
+          Logger.error('Reset failed:', e);
+        }
+      }
+    });
   }
 };

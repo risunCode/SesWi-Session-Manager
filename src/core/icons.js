@@ -105,7 +105,7 @@ class TabIcons {
       for (const tab of tabs) {
         if (!tab.url) continue;
         let domain = null;
-        try { domain = Domain.getBase(tab.url); } catch {}
+        try { domain = Domain.getBase(tab.url); } catch { console.warn('[SesWi] Failed to parse tab URL for icon'); }
         const icon = tab.favIconUrl || '';
         if (domain && icon) {
           this._set(domain, icon);

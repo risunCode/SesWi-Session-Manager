@@ -1,308 +1,618 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SesWi - Session Manager | Chrome Extension</title>
-  <meta name="description" content="Save, manage, and restore browser sessions with ease. A powerful Chrome extension for session management.">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="./web/style.css">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-          colors: {
-            // Solarized Light palette
-            sol: {
-              base03: '#002b36',
-              base02: '#073642',
-              base01: '#586e75',
-              base00: '#657b83',
-              base0: '#839496',
-              base1: '#93a1a1',
-              base2: '#eee8d5',
-              base3: '#fdf6e3',
-              yellow: '#b58900',
-              orange: '#cb4b16',
-              red: '#dc322f',
-              magenta: '#d33682',
-              violet: '#6c71c4',
-              blue: '#268bd2',
-              cyan: '#2aa198',
-              green: '#859900',
-            }
-          }
-        }
-      }
-    }
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SesWi — Session Manager for Chrome</title>
+<meta name="description" content="Save, manage, and restore browser sessions with ease. Capture cookies, localStorage, sessionStorage, and 2FA secrets. Free & open-source Chrome extension.">
+<meta property="og:title" content="SesWi — Session Manager">
+<meta property="og:description" content="Save, manage, and restore browser sessions. Capture cookies, localStorage, sessionStorage, and 2FA secrets. Free & open-source Chrome extension.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://github.com/risunCode/SesWi-Session-Manager">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SesWi — Session Manager">
+<meta name="twitter:description" content="Save, manage, and restore browser sessions with ease. Free & open-source Chrome extension.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍪</text></svg>">
+
+<!-- Flash-free dark mode: runs before paint -->
+<script>(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})()</script>
+
+<style>
+/* ========== Reset & Base ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--clr-bg);color:var(--clr-text);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+a{color:var(--clr-primary);text-decoration:none}
+a:hover{color:var(--clr-primary-hover)}
+img{max-width:100%;display:block}
+button{cursor:pointer;font:inherit}
+:focus-visible{outline:2px solid var(--clr-primary);outline-offset:2px;border-radius:4px}
+
+/* ========== CSS Variables ========== */
+:root{
+  --clr-primary:#4f46e5;
+  --clr-primary-hover:#4338ca;
+  --clr-primary-light:#eef2ff;
+  --clr-accent:#0d9488;
+  --clr-accent-hover:#0f766e;
+  --clr-accent-light:#f0fdfa;
+  --clr-bg:#f8fafc;
+  --clr-bg-alt:#f1f5f9;
+  --clr-surface:#ffffff;
+  --clr-text:#1e293b;
+  --clr-text-secondary:#64748b;
+  --clr-text-muted:#94a3b8;
+  --clr-border:#e2e8f0;
+  --clr-hero-gradient:linear-gradient(135deg,#eef2ff,#f0fdfa);
+  --clr-card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --clr-card-shadow-hover:0 10px 25px rgba(0,0,0,.08),0 4px 10px rgba(0,0,0,.04);
+  --clr-toggle-bg:#e2e8f0;
+  --clr-lift:#ffffff;
+  --clr-mockup-border:#e2e8f0;
+  --clr-mockup-titlebar:#f8fafc;
+  --clr-code-bg:#f1f5f9;
+  --clr-code-border:#e2e8f0;
+  --clr-nav-overlay:rgba(255,255,255,.97);
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:16px;
+  --radius-xl:20px;
+  --max-w:1100px;
+  --header-h:64px;
+}
+
+[data-theme="dark"]{
+  --clr-primary:#818cf8;
+  --clr-primary-hover:#6366f1;
+  --clr-primary-light:#1e1b4b;
+  --clr-accent:#2dd4bf;
+  --clr-accent-hover:#14b8a6;
+  --clr-accent-light:#022c22;
+  --clr-bg:#0f172a;
+  --clr-bg-alt:#1e293b;
+  --clr-surface:#1e293b;
+  --clr-text:#f1f5f9;
+  --clr-text-secondary:#94a3b8;
+  --clr-text-muted:#64748b;
+  --clr-border:#334155;
+  --clr-hero-gradient:linear-gradient(135deg,#1e1b4b,#022c22);
+  --clr-card-shadow:0 1px 3px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.15);
+  --clr-card-shadow-hover:0 10px 25px rgba(0,0,0,.3),0 4px 10px rgba(0,0,0,.2);
+  --clr-toggle-bg:#334155;
+  --clr-lift:#0f172a;
+  --clr-mockup-border:#334155;
+  --clr-mockup-titlebar:#1e293b;
+  --clr-code-bg:#1e293b;
+  --clr-code-border:#334155;
+  --clr-nav-overlay:rgba(15,23,42,.98);
+}
+
+/* ========== Utility ========== */
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ========== Header ========== */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);display:flex;align-items:center;background:var(--clr-nav-overlay);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:box-shadow .3s,background .3s}
+.header.scrolled{box-shadow:0 1px 0 var(--clr-border)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:var(--max-w);margin:0 auto;padding:0 24px;height:100%}
+.header-left{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--clr-text)}
+.header-left i{color:var(--clr-accent);font-size:20px}
+.nav-desktop{display:flex;align-items:center;gap:32px}
+.nav-desktop a{color:var(--clr-text-secondary);font-size:14px;font-weight:500;transition:color .2s}
+.nav-desktop a:hover{color:var(--clr-text)}
+.header-right{display:flex;align-items:center;gap:8px}
+.theme-toggle{background:var(--clr-toggle-bg);border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--clr-text-secondary);font-size:18px;transition:background .3s,color .3s,transform .3s}
+.theme-toggle:hover{background:var(--clr-border);color:var(--clr-text)}
+.theme-toggle:active{transform:scale(.9)}
+.theme-toggle .icon-sun{display:var(--icon-sun,block)}
+.theme-toggle .icon-moon{display:var(--icon-moon,none)}
+[data-theme="dark"] .theme-toggle{--icon-sun:none;--icon-moon:block}
+.header-github{color:var(--clr-text-secondary);font-size:20px;transition:color .2s;padding:6px}
+.header-github:hover{color:var(--clr-text)}
+.hamburger{display:none;background:none;border:none;padding:8px;color:var(--clr-text);font-size:24px;line-height:1}
+
+/* ========== Mobile Nav ========== */
+.mobile-nav{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--clr-nav-overlay);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;opacity:0;pointer-events:none;transition:opacity .3s}
+.mobile-nav.open{opacity:1;pointer-events:auto}
+.mobile-nav a{color:var(--clr-text);font-size:24px;font-weight:600}
+.mobile-nav-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--clr-text);font-size:28px;padding:8px}
+
+/* ========== Hero ========== */
+.hero{padding:120px 0 80px;background:var(--clr-hero-gradient);transition:background .3s;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(79,70,229,.08) 0%,transparent 70%);pointer-events:none}
+[data-theme="dark"] .hero::before{background:radial-gradient(circle,rgba(129,140,248,.06) 0%,transparent 70%)}
+.hero-grid{display:flex;align-items:center;gap:60px;position:relative;z-index:1}
+.hero-text{flex:1;min-width:0}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:var(--clr-primary-light);color:var(--clr-primary);font-size:12px;font-weight:600;border-radius:999px;margin-bottom:16px}
+.hero h1{font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;color:var(--clr-text)}
+.hero h1 span{color:var(--clr-primary)}
+.hero p{font-size:clamp(16px,2vw,18px);color:var(--clr-text-secondary);max-width:520px;margin-bottom:32px;line-height:1.7}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius-md);font-weight:600;font-size:15px;border:none;transition:all .2s}
+.btn-primary{background:var(--clr-primary);color:#fff}
+.btn-primary:hover{background:var(--clr-primary-hover);transform:translateY(-1px)}
+.btn-secondary{background:var(--clr-surface);color:var(--clr-text);border:1px solid var(--clr-border)}
+.btn-secondary:hover{background:var(--clr-bg-alt);transform:translateY(-1px)}
+
+/* ========== Browser Mockup ========== */
+.mockup{flex:1;min-width:0;max-width:480px}
+.mockup-frame{border:1px solid var(--clr-mockup-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--clr-surface);box-shadow:0 25px 50px -12px rgba(0,0,0,.15);transition:all .3s}
+[data-theme="dark"] .mockup-frame{box-shadow:0 25px 50px -12px rgba(0,0,0,.4)}
+.mockup-titlebar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--clr-mockup-titlebar);border-bottom:1px solid var(--clr-mockup-border);transition:all .3s}
+.mockup-dots{display:flex;gap:6px}
+.mockup-dot{width:10px;height:10px;border-radius:50%}
+.mockup-dot.r{background:#ff5f57}
+.mockup-dot.y{background:#ffbd2e}
+.mockup-dot.g{background:#28c840}
+.mockup-title{flex:1;text-align:center;font-size:12px;color:var(--clr-text-muted);font-weight:500}
+.mockup-body{padding:14px}
+.mockup-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mockup-header-left{display:flex;align-items:center;gap:8px}
+.mockup-header-left i{color:var(--clr-accent);font-size:14px}
+.mockup-header-left span{font-weight:600;font-size:13px;color:var(--clr-text)}
+.mockup-domain{font-size:11px;color:var(--clr-text-muted);background:var(--clr-bg-alt);padding:2px 8px;border-radius:4px}
+.mockup-add{background:var(--clr-primary);color:#fff;border:none;padding:4px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px}
+.mockup-add:hover{background:var(--clr-primary-hover)}
+.mockup-tabs{display:flex;gap:16px;margin-bottom:12px;border-bottom:1px solid var(--clr-border);padding-bottom:8px}
+.mockup-tab{font-size:11px;font-weight:600;color:var(--clr-text-muted);background:none;border:none;padding:4px 0;cursor:pointer}
+.mockup-tab.active{color:var(--clr-primary);border-bottom:2px solid var(--clr-primary);margin-bottom:-9px}
+.mockup-session{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--clr-border)}
+.mockup-session:last-child{border-bottom:none}
+.mockup-session-icon{width:28px;height:28px;border-radius:6px;background:var(--clr-bg-alt);display:flex;align-items:center;justify-content:center;color:var(--clr-text-muted);font-size:12px;flex-shrink:0}
+.mockup-session-info{flex:1;min-width:0}
+.mockup-session-name{font-size:13px;font-weight:600;color:var(--clr-text)}
+.mockup-session-meta{font-size:11px;color:var(--clr-text-muted)}
+.mockup-play{color:var(--clr-primary);font-size:10px}
+
+/* ========== Section Headers ========== */
+.section{padding:80px 0}
+.section-alt{background:var(--clr-bg-alt);transition:background .3s}
+.section-header{text-align:center;margin-bottom:56px}
+.section-header h2{font-size:clamp(24px,3vw,36px);font-weight:800;color:var(--clr-text);margin-bottom:12px}
+.section-header p{color:var(--clr-text-secondary);font-size:16px;max-width:560px;margin:0 auto}
+
+/* ========== Features ========== */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature-card{padding:24px;background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:var(--radius-lg);transition:all .3s;cursor:default;position:relative}
+.feature-card:hover{transform:translateY(-4px);box-shadow:var(--clr-card-shadow-hover);border-color:var(--clr-primary)}
+.feature-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+.feature-card h3{font-size:16px;font-weight:700;color:var(--clr-text);margin-bottom:6px}
+.feature-card p{font-size:14px;color:var(--clr-text-secondary);line-height:1.6}
+.feature-icon--blue{background:#dbeafe;color:#3b82f6}
+.feature-icon--teal{background:#ccfbf1;color:#0d9488}
+.feature-icon--green{background:#d1fae5;color:#10b981}
+.feature-icon--violet{background:#ede9fe;color:#8b5cf6}
+.feature-icon--amber{background:#fef3c7;color:#f59e0b}
+.feature-icon--red{background:#fee2e2;color:#ef4444}
+.feature-icon--cyan{background:#cffafe;color:#06b6d4}
+[data-theme="dark"] .feature-icon--blue{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .feature-icon--teal{background:#134e4a;color:#5eead4}
+[data-theme="dark"] .feature-icon--green{background:#14532d;color:#86efac}
+[data-theme="dark"] .feature-icon--violet{background:#2e1065;color:#c4b5fd}
+[data-theme="dark"] .feature-icon--amber{background:#451a03;color:#fcd34d}
+[data-theme="dark"] .feature-icon--red{background:#450a0a;color:#fca5a5}
+[data-theme="dark"] .feature-icon--cyan{background:#164e63;color:#67e8f9}
+
+/* ========== How It Works ========== */
+.steps{display:flex;gap:40px;counter-reset:step}
+.step{flex:1;text-align:center;position:relative}
+.step:not(:last-child)::after{content:'';position:absolute;top:32px;left:calc(50% + 40px);right:calc(-50% + 40px);height:2px;border-top:2px dashed var(--clr-border)}
+.step-num{width:64px;height:64px;border-radius:50%;background:var(--clr-primary);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;transition:background .3s}
+[data-theme="dark"] .step-num{background:var(--clr-primary);color:#0f172a}
+.step h3{font-size:16px;font-weight:700;color:var(--clr-text);margin-bottom:6px}
+.step p{font-size:14px;color:var(--clr-text-secondary);line-height:1.6;max-width:260px;margin:0 auto}
+
+/* ========== Download ========== */
+.download-box{max-width:500px;margin:0 auto}
+.terminal{border:1px solid var(--clr-mockup-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--clr-code-bg);transition:all .3s;margin-bottom:28px}
+.terminal-titlebar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--clr-surface);border-bottom:1px solid var(--clr-mockup-border)}
+.terminal-dot{width:8px;height:8px;border-radius:50%}
+.terminal-dot.r{background:#ff5f57}
+.terminal-dot.y{background:#ffbd2e}
+.terminal-dot.g{background:#28c840}
+.terminal-title{font-size:11px;color:var(--clr-text-muted);margin-left:8px}
+.terminal-body{padding:16px 20px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:13px;line-height:1.8}
+.terminal-line{display:flex;align-items:flex-start;gap:12px;color:var(--clr-text-secondary)}
+.terminal-step{width:18px;height:18px;border-radius:50%;background:var(--clr-primary);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px}
+.terminal-code{color:var(--clr-text);font-weight:500}
+.terminal-comment{color:var(--clr-text-muted);font-style:italic}
+.btn-github{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 24px;background:var(--clr-surface);color:var(--clr-text);border:1px solid var(--clr-border);border-radius:var(--radius-md);font-size:16px;font-weight:700;transition:all .2s}
+.btn-github:hover{background:var(--clr-bg-alt);transform:translateY(-2px);box-shadow:var(--clr-card-shadow-hover)}
+.btn-github i{font-size:22px}
+
+/* ========== Footer ========== */
+.footer{padding:32px 0;border-top:1px solid var(--clr-border);transition:border-color .3s}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-left{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--clr-text-secondary)}
+.footer-left i{color:var(--clr-accent)}
+.footer-right{display:flex;align-items:center;gap:20px;font-size:14px}
+.footer-right a{color:var(--clr-text-muted);transition:color .2s}
+.footer-right a:hover{color:var(--clr-text)}
+
+/* ========== Animations ========== */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease-out,transform .6s ease-out}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+.fade-in-d1{transition-delay:.1s}
+.fade-in-d2{transition-delay:.15s}
+.fade-in-d3{transition-delay:.2s}
+.fade-in-d4{transition-delay:.25s}
+.fade-in-d5{transition-delay:.3s}
+.fade-in-d6{transition-delay:.35s}
+.fade-in-d7{transition-delay:.4s}
+
+@keyframes mockupIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mockup{animation:mockupIn .7s ease-out .2s both}
+
+/* ========== Responsive ========== */
+@media(max-width:900px){
+  .features-grid{grid-template-columns:repeat(2,1fr)}
+  .hero h1{font-size:clamp(28px,4.5vw,38px)}
+}
+@media(max-width:768px){
+  .nav-desktop{display:none}
+  .hamburger{display:block}
+  .hero-grid{flex-direction:column;gap:40px;text-align:center}
+  .hero p{margin-left:auto;margin-right:auto}
+  .hero-actions{justify-content:center}
+  .mockup{max-width:100%}
+  .steps{flex-direction:column;gap:32px}
+  .step:not(:last-child)::after{display:none}
+  .features-grid{grid-template-columns:1fr;gap:16px}
+  .section{padding:60px 0}
+  .hero{padding:100px 0 60px}
+  .footer-inner{flex-direction:column;text-align:center}
+  .section-header{margin-bottom:40px}
+}
+@media(max-width:480px){
+  .hero h1{font-size:26px}
+  .btn{width:100%;justify-content:center}
+  .terminal-body{padding:12px 14px;font-size:12px}
+}
+</style>
 </head>
-<body class="bg-sol-base3 text-sol-base00 antialiased">
+<body>
 
-  <!-- Header -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-sol-base3/90 backdrop-blur-md border-b border-sol-base2">
-    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="#" class="flex items-center gap-2 text-xl font-bold text-sol-base01">
-        <i class="fa-solid fa-cookie-bite text-sol-yellow"></i>
-        <span>SesWi</span>
+<!-- ========== Header ========== -->
+<header class="header" id="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <i aria-hidden="true">🍪</i>
+      <span>SesWi</span>
+    </div>
+    <nav class="nav-desktop" aria-label="Main navigation">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it Works</a>
+      <a href="#download">Download</a>
+    </nav>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode">
+        <span class="icon-sun" aria-hidden="true">☀️</span>
+        <span class="icon-moon" aria-hidden="true">🌙</span>
+      </button>
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noopener noreferrer" class="header-github" aria-label="View on GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
       </a>
-      <nav class="hidden md:flex items-center gap-8">
-        <a href="#features" class="text-sm text-sol-base00 hover:text-sol-base01 transition">Features</a>
-        <a href="#how-it-works" class="text-sm text-sol-base00 hover:text-sol-base01 transition">How it Works</a>
-        <a href="#download" class="text-sm text-sol-base00 hover:text-sol-base01 transition">Download</a>
-      </nav>
-      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="flex items-center gap-2 text-sm text-sol-base00 hover:text-sol-base01 transition">
-        <i class="fa-brands fa-github text-lg"></i>
-        <span class="hidden sm:inline">GitHub</span>
-      </a>
+      <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <!-- Hero Section -->
-  <section class="pt-32 pb-20 px-6">
-    <div class="max-w-5xl mx-auto">
-      <div class="flex flex-col lg:flex-row items-center gap-12">
-        <!-- Hero Text -->
-        <div class="flex-1 text-center lg:text-left">
-          <span class="inline-block px-3 py-1 text-xs font-medium text-sol-blue bg-sol-base2 rounded-full mb-4">
-            Chrome Extension
-          </span>
-          <h1 class="text-4xl md:text-5xl font-bold text-sol-base01 leading-tight mb-6">
-            Save & Restore<br>Browser Sessions
-          </h1>
-          <p class="text-lg text-sol-base00 mb-8 max-w-md mx-auto lg:mx-0">
-            Manage multiple accounts, save login states, and switch between sessions instantly. Your cookies, localStorage, and sessionStorage — all in one place.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-            <a href="#download" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-sol-blue text-sol-base3 font-medium rounded-lg hover:opacity-90 transition">
-              <i class="fa-solid fa-download"></i>
-              Download Extension
-            </a>
-            <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-sol-base2 text-sol-base01 font-medium rounded-lg hover:bg-sol-base2/80 transition">
-              <i class="fa-brands fa-github"></i>
-              View on GitHub
-            </a>
-          </div>
+<!-- ========== Mobile Nav ========== -->
+<nav class="mobile-nav" id="mobileNav" role="dialog" aria-modal="true" aria-label="Navigation menu">
+  <button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="Close menu">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <a href="#features" class="mobile-nav-link">Features</a>
+  <a href="#how-it-works" class="mobile-nav-link">How it Works</a>
+  <a href="#download" class="mobile-nav-link">Download</a>
+  <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noopener noreferrer" style="font-size:18px;color:var(--clr-text-secondary)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:8px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>GitHub
+  </a>
+</nav>
+
+<!-- ========== Hero ========== -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-text">
+        <span class="hero-badge">🚀 Chrome Extension</span>
+        <h1>Manage your<br>browser <span>sessions</span>.</h1>
+        <p>Save, organize, and restore login states across websites. Cookies, localStorage, sessionStorage, and 2FA secrets — all in one extension.</p>
+        <div class="hero-actions">
+          <a href="#download" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Extension
+          </a>
+          <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            View on GitHub
+          </a>
         </div>
-
-        <!-- Hero Preview (macOS Window) -->
-        <div class="flex-1 w-full max-w-md">
-          <div class="macos-window">
-            <div class="macos-titlebar">
-              <div class="traffic-lights">
-                <span class="tl tl-close"></span>
-                <span class="tl tl-minimize"></span>
-                <span class="tl tl-maximize"></span>
-              </div>
-              <span class="titlebar-title">SesWi - Session Manager</span>
+      </div>
+      <div class="mockup" role="img" aria-label="SesWi extension preview">
+        <div class="mockup-frame">
+          <div class="mockup-titlebar">
+            <div class="mockup-dots">
+              <span class="mockup-dot r"></span>
+              <span class="mockup-dot y"></span>
+              <span class="mockup-dot g"></span>
             </div>
-            <div class="macos-content">
-              <div class="preview-header">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-cookie-bite text-amber-500"></i>
-                  <span class="font-semibold text-sm">SesWi</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">github.com</span>
-                  <button class="preview-btn">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    <span>Add</span>
-                  </button>
-                </div>
+            <span class="mockup-title">SesWi — Session Manager</span>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-header-row">
+              <div class="mockup-header-left">
+                <span aria-hidden="true">🍪</span>
+                <span>SesWi</span>
               </div>
-              <div class="preview-tabs">
-                <button class="preview-tab active">Current</button>
-                <button class="preview-tab">Groups</button>
-                <button class="preview-tab">Manage</button>
+              <div class="mockup-header-right">
+                <span class="mockup-domain">github.com</span>
+                <button class="mockup-add" type="button" disabled>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add
+                </button>
               </div>
-              <div class="preview-sessions">
-                <div class="preview-session">
-                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
-                  <div class="session-info">
-                    <span class="session-name">Work Account</span>
-                    <span class="session-meta">12 cookies · 2h ago</span>
-                  </div>
-                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+            </div>
+            <div class="mockup-tabs">
+              <button class="mockup-tab active" type="button" disabled>Current</button>
+              <button class="mockup-tab" type="button" disabled>Groups</button>
+              <button class="mockup-tab" type="button" disabled>Manage</button>
+            </div>
+            <div class="mockup-sessions">
+              <div class="mockup-session">
+                <div class="mockup-session-icon">👤</div>
+                <div class="mockup-session-info">
+                  <div class="mockup-session-name">Work Account</div>
+                  <div class="mockup-session-meta">12 cookies · 2h ago</div>
                 </div>
-                <div class="preview-session">
-                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
-                  <div class="session-info">
-                    <span class="session-name">Personal</span>
-                    <span class="session-meta">8 cookies · 1d ago</span>
-                  </div>
-                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+                <svg class="mockup-play" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="mockup-session">
+                <div class="mockup-session-icon">👤</div>
+                <div class="mockup-session-info">
+                  <div class="mockup-session-name">Personal</div>
+                  <div class="mockup-session-meta">8 cookies · 1d ago</div>
                 </div>
-                <div class="preview-session">
-                  <div class="session-icon"><i class="fa-solid fa-user"></i></div>
-                  <div class="session-info">
-                    <span class="session-name">Testing</span>
-                    <span class="session-meta">5 cookies · 3d ago</span>
-                  </div>
-                  <i class="fa-solid fa-play text-blue-500 text-xs"></i>
+                <svg class="mockup-play" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="mockup-session">
+                <div class="mockup-session-icon">👤</div>
+                <div class="mockup-session-info">
+                  <div class="mockup-session-name">Testing</div>
+                  <div class="mockup-session-meta">5 cookies · 3d ago</div>
                 </div>
+                <svg class="mockup-play" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Features Section -->
-  <section id="features" class="py-20 px-6 bg-sol-base2">
-    <div class="max-w-5xl mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl font-bold text-sol-base01 mb-4">Powerful Features</h2>
-        <p class="text-sol-base00 max-w-2xl mx-auto">Everything you need to manage browser sessions efficiently.</p>
+<!-- ========== Features ========== -->
+<section class="section section-alt" id="features">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Everything you need</h2>
+      <p>Manage browser sessions with powerful features packed into a single extension.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card fade-in fade-in-d1">
+        <div class="feature-icon feature-icon--blue" aria-hidden="true">📸</div>
+        <h3>Capture Sessions</h3>
+        <p>Save cookies, localStorage, and sessionStorage with one click. Keep your login states safe.</p>
       </div>
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-blue">
-            <i class="fa-solid fa-camera"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Capture Sessions</h3>
-          <p class="text-sm text-sol-base00">Save cookies, localStorage, and sessionStorage with one click. Keep your login states safe.</p>
-        </div>
-        <!-- Feature 2 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-green">
-            <i class="fa-solid fa-rotate"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Instant Restore</h3>
-          <p class="text-sm text-sol-base00">Switch between accounts instantly. Restore any saved session with a single click.</p>
-        </div>
-        <!-- Feature 3 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-yellow">
-            <i class="fa-solid fa-layer-group"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Organized by Domain</h3>
-          <p class="text-sm text-sol-base00">Sessions are automatically grouped by website. Easy to find and manage.</p>
-        </div>
-        <!-- Feature 4 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-violet">
-            <i class="fa-solid fa-lock"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Encrypted Backup</h3>
-          <p class="text-sm text-sol-base00">Export sessions as encrypted OWI files. Your data stays secure with password protection.</p>
-        </div>
-        <!-- Feature 5 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-red">
-            <i class="fa-solid fa-broom"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Clean Tab Data</h3>
-          <p class="text-sm text-sol-base00">Clear cookies, cache, and storage for the current tab. Start fresh when needed.</p>
-        </div>
-        <!-- Feature 6 -->
-        <div class="feature-card">
-          <div class="feature-icon bg-sol-base3 text-sol-cyan">
-            <i class="fa-solid fa-file-import"></i>
-          </div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Import & Export</h3>
-          <p class="text-sm text-sol-base00">Import from JSON or Cookie Editor format. Export for backup or sharing.</p>
-        </div>
+      <div class="feature-card fade-in fade-in-d2">
+        <div class="feature-icon feature-icon--teal" aria-hidden="true">🔄</div>
+        <h3>Instant Restore</h3>
+        <p>Switch between accounts instantly. Restore any saved session with a single click.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-d3">
+        <div class="feature-icon feature-icon--green" aria-hidden="true">🔐</div>
+        <h3>2FA Manager</h3>
+        <p>Store TOTP secrets with auto-updating codes. Generate 2FA codes directly from the extension.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-d4">
+        <div class="feature-icon feature-icon--violet" aria-hidden="true">📂</div>
+        <h3>Organized by Domain</h3>
+        <p>Sessions grouped automatically by website. Search, filter, and manage with ease.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-d5">
+        <div class="feature-icon feature-icon--amber" aria-hidden="true">🔒</div>
+        <h3>Encrypted Backup</h3>
+        <p>AES-256-GCM encrypted exports. Master password protects all session and 2FA data.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-d6">
+        <div class="feature-icon feature-icon--red" aria-hidden="true">🧹</div>
+        <h3>Clean Tab Data</h3>
+        <p>Clear cookies, cache, history, and storage per tab or domain in one click.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-d7" style="grid-column: 2;">
+        <div class="feature-icon feature-icon--cyan" aria-hidden="true">📥</div>
+        <h3>Import &amp; Export</h3>
+        <p>Multiple export formats: JSON, Cookie Editor, Netscape, OWI encrypted. Import from files.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- How it Works Section -->
-  <section id="how-it-works" class="py-20 px-6">
-    <div class="max-w-5xl mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl font-bold text-sol-base01 mb-4">How it Works</h2>
-        <p class="text-sol-base00 max-w-2xl mx-auto">Simple three-step workflow to manage your sessions.</p>
+<!-- ========== How It Works ========== -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>How it Works</h2>
+      <p>Three simple steps to manage all your browser sessions.</p>
+    </div>
+    <div class="steps">
+      <div class="step fade-in fade-in-d1">
+        <div class="step-num">1</div>
+        <h3>Save Session</h3>
+        <p>Click "Add Session" to capture your current login state — cookies, storage, and all.</p>
       </div>
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="text-center">
-          <div class="step-number">1</div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Save Session</h3>
-          <p class="text-sm text-sol-base00">Click "Add Session" to capture your current login state including all cookies and storage data.</p>
-        </div>
-        <div class="text-center">
-          <div class="step-number">2</div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Manage Sessions</h3>
-          <p class="text-sm text-sol-base00">View all saved sessions organized by domain. Edit names, backup, or delete as needed.</p>
-        </div>
-        <div class="text-center">
-          <div class="step-number">3</div>
-          <h3 class="font-semibold text-sol-base01 mb-2">Restore Anytime</h3>
-          <p class="text-sm text-sol-base00">Click on any session to restore it instantly. Switch accounts without re-logging in.</p>
-        </div>
+      <div class="step fade-in fade-in-d2">
+        <div class="step-num">2</div>
+        <h3>Manage Sessions</h3>
+        <p>View sessions by domain, edit names, backup with a master password, or delete what you don't need.</p>
+      </div>
+      <div class="step fade-in fade-in-d3">
+        <div class="step-num">3</div>
+        <h3>Restore Anytime</h3>
+        <p>Click any session to instantly restore it. Switch accounts without re-entering credentials.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Download Section -->
-  <section id="download" class="py-20 px-6 bg-sol-base2">
-    <div class="max-w-3xl mx-auto text-center">
-      <h2 class="text-3xl font-bold text-sol-base01 mb-4">Get SesWi</h2>
-      <p class="text-sol-base00 mb-8">Free and open source. Install from GitHub or load as unpacked extension.</p>
-      
-      <div class="macos-window max-w-md mx-auto mb-8">
-        <div class="macos-titlebar">
-          <div class="traffic-lights">
-            <span class="tl tl-close"></span>
-            <span class="tl tl-minimize"></span>
-            <span class="tl tl-maximize"></span>
-          </div>
-          <span class="titlebar-title">Installation</span>
+<!-- ========== Download ========== -->
+<section class="section section-alt" id="download">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Get Started</h2>
+      <p>Free and open source. Install in under a minute.</p>
+    </div>
+    <div class="download-box fade-in">
+      <div class="terminal">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot r"></span>
+          <span class="terminal-dot y"></span>
+          <span class="terminal-dot g"></span>
+          <span class="terminal-title">Installation</span>
         </div>
-        <div class="macos-content text-left">
-          <div class="space-y-3 text-sm">
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">1</span>
-              <p class="text-sol-base00">Download or clone the repository from GitHub</p>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">2</span>
-              <p class="text-sol-base00">Run <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">npm install</code> and <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">npm run build</code></p>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">3</span>
-              <p class="text-sol-base00">Open <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">chrome://extensions</code> and enable Developer mode</p>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 w-6 h-6 bg-sol-base2 text-sol-blue rounded-full flex items-center justify-center text-xs font-medium">4</span>
-              <p class="text-sol-base00">Click "Load unpacked" and select the <code class="bg-sol-base2 px-1.5 py-0.5 rounded text-xs">dist</code> folder</p>
-            </div>
-          </div>
+        <div class="terminal-body">
+          <div class="terminal-line"><span class="terminal-step">1</span><span>Clone or download the <span class="terminal-code">repository</span> from GitHub</span></div>
+          <div class="terminal-line"><span class="terminal-step">2</span><span>Run <span class="terminal-code">npm install</span> and <span class="terminal-code">npm run build</span></span></div>
+          <div class="terminal-line"><span class="terminal-step">3</span><span>Open <span class="terminal-code">chrome://extensions</span> and enable Developer mode</span></div>
+          <div class="terminal-line"><span class="terminal-step">4</span><span>Click "Load unpacked" and select the <span class="terminal-code">dist</span> folder</span></div>
+          <div class="terminal-line" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--clr-border)"><span class="terminal-comment">// That's it. You're ready to go.</span></div>
         </div>
       </div>
-
-      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-sol-base02 text-sol-base2 font-medium rounded-lg hover:opacity-90 transition">
-        <i class="fa-brands fa-github text-xl"></i>
+      <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noopener noreferrer" class="btn-github">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
         Download from GitHub
       </a>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Footer -->
-  <footer class="py-8 px-6 border-t border-sol-base2">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2 text-sol-base00">
-        <i class="fa-solid fa-cookie-bite text-sol-yellow"></i>
-        <span class="font-medium">SesWi</span>
-        <span class="text-sol-base1">·</span>
-        <span class="text-sm">Session Manager</span>
+<!-- ========== Footer ========== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span aria-hidden="true">🍪</span>
+        <span>SesWi</span>
+        <span aria-hidden="true">·</span>
+        <span>Session Manager</span>
       </div>
-      <div class="flex items-center gap-6 text-sm text-sol-base1">
-        <a href="https://github.com/risunCode" target="_blank" class="hover:text-sol-base01 transition">
-          <i class="fa-brands fa-github mr-1"></i>
-          risunCode
+      <div class="footer-right">
+        <a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noopener noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>GitHub
         </a>
-        <span class="text-sol-base1">|</span>
-        <span>MIT License</span>
+        <span style="color:var(--clr-text-muted);font-size:13px">© 2026 risunCode</span>
       </div>
     </div>
-  </footer>
+  </div>
+</footer>
 
-  <script src="./web/script.js"></script>
+<!-- ========== JavaScript ========== -->
+<script>
+(function(){
+  'use strict';
+
+  // --- Theme toggle ---
+  const html = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  let currentTheme = html.getAttribute('data-theme') || 'light';
+
+  function setTheme(theme) {
+    currentTheme = theme;
+    html.setAttribute('data-theme', theme);
+    try { localStorage.setItem('theme', theme); } catch(e) {}
+    if (toggle) {
+      toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  // --- Mobile nav ---
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobileNav');
+  const mobileNavClose = document.getElementById('mobileNavClose');
+
+  function openMobileNav() {
+    mobileNav.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileNav() {
+    mobileNav.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  if (hamburger && mobileNav) {
+    hamburger.addEventListener('click', openMobileNav);
+    mobileNavClose.addEventListener('click', closeMobileNav);
+    mobileNav.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') closeMobileNav();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && mobileNav.classList.contains('open')) closeMobileNav();
+    });
+  }
+
+  // --- Header scroll effect ---
+  const header = document.getElementById('header');
+  let ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      requestAnimationFrame(function() {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // --- Intersection Observer for fade-in ---
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(function(el) {
+    observer.observe(el);
+  });
+
+  // --- Smooth scroll for anchor links ---
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+    anchor.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href === '#') return;
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        const y = target.getBoundingClientRect().top + window.scrollY - 70;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>

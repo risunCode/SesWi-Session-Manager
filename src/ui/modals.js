@@ -3,14 +3,47 @@
  * Re-exports and manages all modals
  */
 
-import { SessionStorage } from '../core/storage.js';
+import { SessionStorage, CurrentTabExport } from '../core/storage.js';
 import { Crypto } from '../core/crypto.js';
+import { Backup } from '../core/backup.js';
+import { TwoFactorStorage } from '../core/twofa.js';
 import { DOM, Time, Normalize, Domain } from '../utils.js';
 import { openSessionActions } from './sessionModal.js';
 import { EVENTS, TIMING, LIMITS, emitEvent } from '../constants.js';
 
 export const Modal = {
   openSessionActions,
+
+  openTwoFactorEntry(entry = null) {
+    this._ensureTwoFactorModal();
+    const modal = document.getElementById('twoFactorModal');
+    modal.dataset.mode = entry ? 'edit' : 'create';
+    modal.dataset.entryId = entry?.id || '';
+    modal.querySelector('#tfmTitle').textContent = entry ? 'Edit 2FA Entry' : 'Add 2FA Entry';
+    modal.querySelector('#tfmIssuer').value = entry?.issuer || '';
+    modal.querySelector('#tfmAccountName').value = entry?.accountName || '';
+    modal.querySelector('#tfmSecret').value = entry?.secret || '';
+    modal.querySelector('#tfmDigits').value = String(entry?.digits || 6);
+    modal.querySelector('#tfmPeriod').value = String(entry?.period || 30);
+    modal.querySelector('#tfmAlgorithm').value = entry?.algorithm || 'SHA1';
+    modal.querySelector('#tfmDomains').value = (entry?.linkedDomains || []).join(', ');
+    modal.querySelector('#tfmMessage').textContent = '';
+    modal.querySelector('#tfmMessage').className = 'modal-message';
+    DOM.showModal(modal);
+  },
+
+  openTwoFactorDelete(entry) {
+    this.openConfirm({
+      title: 'Delete 2FA Entry',
+      message: `Delete ${entry.accountName} from ${entry.issuer || 'Unknown'}?`,
+      confirmText: 'Delete',
+      confirmClass: 'btn-danger',
+      onConfirm: async () => {
+        const result = await TwoFactorStorage.delete(entry.id);
+        if (result.success) emitEvent(EVENTS.TWO_FACTOR_UPDATED);
+      }
+    });
+  },
 
   // ========== Backup & Restore Modal (Combined) ==========
   openBackupRestore(tab = 'export') {
@@ -20,6 +53,7 @@ export const Modal = {
     // Reset state
     modal._format = 'json';
     modal._parsedSessions = [];
+    modal._parsedPayload = null;
     modal._fileType = null;
     modal._owiFile = null;
     
@@ -68,6 +102,7 @@ export const Modal = {
             
             <!-- Export Pane -->
             <div class="br-pane active" id="brPaneExport">
+              <div class="br-section-label"><i class="fa-solid fa-file-export mr-1"></i>Format</div>
               <div class="modal-options">
                 <button class="option-card" id="brExpJSON">
                   <i class="fa-solid fa-file-code text-2xl text-amber-500"></i>
@@ -78,6 +113,39 @@ export const Modal = {
                   <i class="fa-solid fa-lock text-2xl text-violet-500"></i>
                   <span class="option-title">OWI</span>
                   <span class="option-desc">Encrypted</span>
+                </button>
+              </div>
+              <div class="br-section-label mt-3"><i class="fa-solid fa-database mr-1"></i>Include</div>
+              <div class="include-card">
+                <button class="include-option active" id="brExpTypeAll" data-kind="all">
+                  <div class="include-option-left">
+                    <div class="option-icon-wrap option-icon--all"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="include-option-text">
+                      <div class="option-title">All Data</div>
+                      <div class="option-desc">Sessions + 2FA</div>
+                    </div>
+                  </div>
+                  <div class="include-check"><i class="fa-solid fa-circle-check"></i></div>
+                </button>
+                <button class="include-option" id="brExpTypeSessions" data-kind="sessions">
+                  <div class="include-option-left">
+                    <div class="option-icon-wrap option-icon--sessions"><i class="fa-solid fa-cookie"></i></div>
+                    <div class="include-option-text">
+                      <div class="option-title">Sessions</div>
+                      <div class="option-desc">Cookies &amp; storage</div>
+                    </div>
+                  </div>
+                  <div class="include-check"><i class="fa-solid fa-circle-check"></i></div>
+                </button>
+                <button class="include-option" id="brExpTypeTwoFactor" data-kind="twoFactor">
+                  <div class="include-option-left">
+                    <div class="option-icon-wrap option-icon--2fa"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="include-option-text">
+                      <div class="option-title">2FA Entries</div>
+                      <div class="option-desc">TOTP secrets</div>
+                    </div>
+                  </div>
+                  <div class="include-check"><i class="fa-solid fa-circle-check"></i></div>
                 </button>
               </div>
               <div id="brExpPwdWrap" class="hidden">
@@ -100,15 +168,22 @@ export const Modal = {
                 <input type="password" id="brImpPassword" placeholder="Password for OWI" class="flex-1" />
                 <button id="brImpVerify" class="btn btn-primary px-4"><i class="fa-solid fa-check mr-1"></i>Verify</button>
               </div>
+              <div id="brImpRestoreOptions" class="br-restore-options hidden mt-3">
+                <div class="br-section-label"><i class="fa-solid fa-rotate-left mr-1"></i>Restore</div>
+                <label class="checkbox-label flex items-center gap-2 py-1 cursor-pointer">
+                  <input type="checkbox" id="brImpChkSessions" checked />
+                  <span>Sessions</span>
+                </label>
+                <label class="checkbox-label flex items-center gap-2 py-1 cursor-pointer">
+                  <input type="checkbox" id="brImpChkTwoFactor" checked />
+                  <span>2FA entries</span>
+                </label>
+              </div>
               <div class="modal-message" id="brImpMessage"></div>
               <div class="br-action">
                 <button class="btn btn-primary" id="brImpRestore"><i class="fa-solid fa-upload mr-1"></i>Restore</button>
               </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" id="brCancel">Close</button>
-          </div>
         </div>
       </div>
     `;
@@ -150,26 +225,68 @@ export const Modal = {
       modal.querySelector('#brExpJSON').classList.remove('selected');
     };
 
+    // Export dataset kind selector
+    const setExportKind = (kind) => {
+      modal._exportKind = kind;
+      modal.querySelectorAll('[data-kind]').forEach(el => {
+        el.classList.toggle('active', el.dataset.kind === kind);
+      });
+    };
+    modal.querySelector('#brExpTypeAll').onclick = () => setExportKind('all');
+    modal.querySelector('#brExpTypeSessions').onclick = () => setExportKind('sessions');
+    modal.querySelector('#brExpTypeTwoFactor').onclick = () => setExportKind('twoFactor');
+
     modal.querySelector('#brExpCreate').onclick = async () => {
       const format = modal._format || 'json';
-      const { data: sessions } = await SessionStorage.getAll();
-      
-      if (!sessions.length) {
-        expMsg.textContent = 'No sessions to export';
+      const kind = modal._exportKind || 'all';
+      const payloadRes = await Backup.createPayload(kind);
+
+      if (!payloadRes.success) {
+        expMsg.textContent = payloadRes.error;
         expMsg.className = 'modal-message error';
         return;
       }
-      
+
+      const payload = payloadRes.data;
+      const sessionCount = payload.data.sessions.length;
+      const twoFactorCount = payload.data.twoFactorEntries.length;
+
+      const emptyLabel = kind === 'sessions' ? 'No sessions to export'
+        : kind === 'twoFactor' ? 'No 2FA entries to export'
+        : 'No sessions or 2FA entries to export';
+      if (kind === 'all' && !sessionCount && !twoFactorCount) {
+        expMsg.textContent = emptyLabel;
+        expMsg.className = 'modal-message error';
+        return;
+      }
+      if (kind === 'sessions' && !sessionCount) {
+        expMsg.textContent = emptyLabel;
+        expMsg.className = 'modal-message error';
+        return;
+      }
+      if (kind === 'twoFactor' && !twoFactorCount) {
+        expMsg.textContent = emptyLabel;
+        expMsg.className = 'modal-message error';
+        return;
+      }
+
+      const label = kind === 'sessions' ? `${sessionCount} sessions`
+        : kind === 'twoFactor' ? `${twoFactorCount} 2FA entries`
+        : `${sessionCount} sessions and ${twoFactorCount} 2FA entries`;
+
       if (format === 'json') {
-        DOM.downloadFile(JSON.stringify(sessions, null, 2), 'sessions-backup.json', 'application/json');
-        expMsg.textContent = `Exported ${sessions.length} sessions`;
+        const filename = kind === 'sessions' ? 'sessions-backup.json'
+          : kind === 'twoFactor' ? 'twofactor-backup.json'
+          : 'sessions-backup.json';
+        DOM.downloadFile(Backup.exportJSON(payload), filename, 'application/json');
+        expMsg.textContent = `Exported ${label}`;
         expMsg.className = 'modal-message success';
       } else {
         const password = expPwdInput.value.trim();
         if (!password) { expMsg.textContent = 'Password required'; expMsg.className = 'modal-message error'; return; }
-        const res = await Crypto.exportOWI(sessions, password);
+        const res = await Crypto.exportOWI(payload, password);
         if (res.success) {
-          expMsg.textContent = `Exported ${sessions.length} sessions (encrypted)`;
+          expMsg.textContent = `Exported ${label} (encrypted)`;
           expMsg.className = 'modal-message success';
         } else {
           expMsg.textContent = res.error;
@@ -185,6 +302,7 @@ export const Modal = {
     const impPwdWrap = modal.querySelector('#brImpPwdWrap');
     const impMsg = modal.querySelector('#brImpMessage');
 
+    const restoreOptions = modal.querySelector('#brImpRestoreOptions');
     drop.onclick = () => fileInput.click();
     drop.ondragover = e => { e.preventDefault(); drop.classList.add('dragover'); };
     drop.ondragleave = () => drop.classList.remove('dragover');
@@ -200,9 +318,17 @@ export const Modal = {
     fileInput.onchange = async () => {
       const files = Array.from(fileInput.files || []);
       if (!files.length) return;
+      for (const file of files) {
+        if (!file.name.endsWith('.json') && !file.name.endsWith('.owi')) {
+          DOM.showToast('Please select a .json or .owi file');
+          return;
+        }
+      }
 
+      modal._parsedPayload = null;
       modal._parsedSessions = [];
       modal._fileType = null;
+      modal._owiFile = null;
       fileList.innerHTML = '';
       impMsg.textContent = '';
       impMsg.className = 'modal-message';
@@ -215,36 +341,69 @@ export const Modal = {
         modal._fileType = 'owi';
         modal._owiFile = file;
         impPwdWrap.classList.remove('hidden');
-        drop.querySelector('span').innerHTML = `<i class="fa-solid fa-lock mr-1"></i>${DOM.escapeHtml(file.name)}`;
+        const span = drop.querySelector('span');
+        span.textContent = '';
+        const icon = document.createElement('i');
+        icon.className = 'fa-solid fa-lock mr-1';
+        span.appendChild(icon);
+        span.appendChild(document.createTextNode(DOM.escapeHtml(file.name)));
         impMsg.textContent = 'Enter password to verify OWI file';
       } else if (jsonFiles.length > 0) {
         modal._fileType = 'json';
         impPwdWrap.classList.add('hidden');
-        drop.querySelector('span').innerHTML = `<i class="fa-solid fa-file-code mr-1"></i>${jsonFiles.length} file(s) selected`;
+        const span = drop.querySelector('span');
+        span.textContent = '';
+        const icon = document.createElement('i');
+        icon.className = 'fa-solid fa-file-code mr-1';
+        span.appendChild(icon);
+        span.appendChild(document.createTextNode(jsonFiles.length + ' file(s) selected'));
 
         let totalSessions = 0;
+        let totalTwoFactorEntries = 0;
+        const mergedPayload = { version: '2.0', kind: 'seswi-backup', createdAt: new Date().toISOString(), data: { sessions: [], twoFactorEntries: [] } };
         for (const file of jsonFiles) {
           try {
             const text = await file.text();
-            const data = JSON.parse(text);
-            const sessions = Normalize.importSessions(data);
-            modal._parsedSessions.push(...sessions);
-            totalSessions += sessions.length;
-            fileList.insertAdjacentHTML('beforeend',
-              `<div class="rm-file-item success"><i class="fa-solid fa-check"></i>${DOM.escapeHtml(file.name)} <span>(${sessions.length})</span></div>`
-            );
-          } catch {
-            fileList.insertAdjacentHTML('beforeend',
-              `<div class="rm-file-item error"><i class="fa-solid fa-xmark"></i>${DOM.escapeHtml(file.name)} <span>Invalid</span></div>`
-            );
+            const payload = Backup.parseJSON(text);
+            mergedPayload.data.sessions.push(...payload.data.sessions);
+            mergedPayload.data.twoFactorEntries.push(...payload.data.twoFactorEntries);
+            modal._parsedSessions.push(...payload.data.sessions);
+            totalSessions += payload.data.sessions.length;
+            totalTwoFactorEntries += payload.data.twoFactorEntries.length;
+            const item = document.createElement('div');
+            item.className = 'rm-file-item success';
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fa-solid fa-check';
+            item.appendChild(checkIcon);
+            item.appendChild(document.createTextNode(DOM.escapeHtml(file.name) + ' '));
+            const badge = document.createElement('span');
+            let detail = payload.data.sessions.length + ' sessions';
+            if (payload.data.twoFactorEntries.length) detail += ', ' + payload.data.twoFactorEntries.length + ' 2FA';
+            badge.textContent = '(' + detail + ')';
+            item.appendChild(badge);
+            fileList.appendChild(item);
+          }
+          catch {
+            const item = document.createElement('div');
+            item.className = 'rm-file-item error';
+            const xIcon = document.createElement('i');
+            xIcon.className = 'fa-solid fa-xmark';
+            item.appendChild(xIcon);
+            item.appendChild(document.createTextNode(DOM.escapeHtml(file.name) + ' '));
+            const badge = document.createElement('span');
+            badge.textContent = 'Invalid';
+            item.appendChild(badge);
+            fileList.appendChild(item);
           }
         }
 
-        if (totalSessions > 0) {
-          impMsg.textContent = `Found ${totalSessions} sessions`;
+        if (totalSessions || totalTwoFactorEntries) {
+          modal._parsedPayload = mergedPayload;
+          impMsg.textContent = `Found ${totalSessions} sessions and ${totalTwoFactorEntries} 2FA entries`;
           impMsg.className = 'modal-message success';
+          restoreOptions.classList.remove('hidden');
         } else {
-          impMsg.textContent = 'No valid sessions found';
+          impMsg.textContent = 'No valid backup data found';
           impMsg.className = 'modal-message error';
         }
       }
@@ -257,11 +416,13 @@ export const Modal = {
       
       try {
         const text = await file.text();
-        const res = await Crypto.importOWI(text, password);
+        const res = await Backup.parseOWI(text, password);
         if (res.success) {
-          modal._parsedSessions = res.data.sessions;
-          impMsg.textContent = `Verified! ${modal._parsedSessions.length} sessions`;
+          modal._parsedPayload = res.data;
+          modal._parsedSessions = res.data.data.sessions;
+          impMsg.textContent = `Verified! ${res.data.data.sessions.length} sessions and ${res.data.data.twoFactorEntries.length} 2FA entries`;
           impMsg.className = 'modal-message success';
+          restoreOptions.classList.remove('hidden');
         } else {
           impMsg.textContent = res.error;
           impMsg.className = 'modal-message error';
@@ -273,20 +434,32 @@ export const Modal = {
     };
 
     modal.querySelector('#brImpRestore').onclick = async () => {
-      const parsedSessions = modal._parsedSessions || [];
-      if (!parsedSessions.length) { impMsg.textContent = 'No sessions to restore'; impMsg.className = 'modal-message error'; return; }
-      
-      const { data: existing } = await SessionStorage.getAll();
-      const existingTs = new Set(existing.map(s => s.timestamp));
-      const toImport = parsedSessions.filter(s => !existingTs.has(s.timestamp));
-      
-      for (const session of toImport) {
-        await SessionStorage.save(session).catch(() => {});
+      const payload = modal._parsedPayload;
+      if (!payload) { impMsg.textContent = 'No backup data to restore'; impMsg.className = 'modal-message error'; return; }
+
+      const restoreSessions = modal.querySelector('#brImpChkSessions').checked;
+      const restoreTwoFactor = modal.querySelector('#brImpChkTwoFactor').checked;
+      if (!restoreSessions && !restoreTwoFactor) {
+        impMsg.textContent = 'Select at least one dataset to restore';
+        impMsg.className = 'modal-message error';
+        return;
       }
-      
-      impMsg.textContent = `Restored ${toImport.length} of ${parsedSessions.length} sessions`;
+
+      const restoreRes = await Backup.restorePayload(payload, { restoreSessions, restoreTwoFactor });
+      if (!restoreRes.success) {
+        impMsg.textContent = restoreRes.error;
+        impMsg.className = 'modal-message error';
+        return;
+      }
+
+      const data = restoreRes.data;
+      const parts = [];
+      if (restoreSessions) parts.push(`${data.restoredSessions} sessions`);
+      if (restoreTwoFactor) parts.push(`${data.restoredTwoFactorEntries} 2FA entries`);
+      impMsg.textContent = `Restored ${parts.join(' and ')}`;
       impMsg.className = 'modal-message success';
-      emitEvent(EVENTS.SESSIONS_RESTORED);
+      if (restoreSessions) emitEvent(EVENTS.SESSIONS_RESTORED);
+      if (restoreTwoFactor) emitEvent(EVENTS.TWO_FACTOR_UPDATED);
     };
   },
 
@@ -322,8 +495,10 @@ export const Modal = {
       // Fetch history for domain
       let historyItems = [];
       try {
+        if (domain.length > 253) return;
+
         if (chrome.history?.search) {
-          const results = await chrome.history.search({ text: domain, maxResults: 1000, startTime: 0 });
+          const results = await chrome.history.search({ text: domain, maxResults: 100, startTime: 0 });
           historyItems = results.filter(item => {
             try {
               const hostname = new URL(item.url).hostname;
@@ -331,7 +506,7 @@ export const Modal = {
             } catch { return false; }
           });
         }
-      } catch {}
+      } catch { console.warn('[SesWi] Failed to fetch history for clean tab'); }
 
       // Store data for preview
       this._cleanTabData = {
@@ -994,7 +1169,7 @@ export const Modal = {
     const nameInput = modal.querySelector('#esName');
     const msg = modal.querySelector('#esMessage');
 
-    DOM.wireModalClose(modal, { closeBtn: '#esTlClose', cancelBtn: '#esCancel' });
+    DOM.wireModalClose(modal, { closeBtn: '#esTlClose', cancelBtn: '#esCancel', onClose: () => { nameInput.value = ''; msg.textContent = ''; msg.className = 'modal-message'; } });
 
     modal.querySelector('#esSave').onclick = async () => {
       const newName = nameInput.value.trim();
@@ -1005,7 +1180,7 @@ export const Modal = {
       }
 
       if (newName === modal._session.name) {
-        close();
+        DOM.closeModal(modal);
         return;
       }
 
@@ -1105,7 +1280,7 @@ export const Modal = {
         msg.className = 'modal-message success';
         if (modal._onConfirm) modal._onConfirm();
         emitEvent(EVENTS.SESSION_DELETED);
-        setTimeout(close, 300);
+        setTimeout(() => DOM.closeModal(modal), 300);
       } else {
         msg.textContent = res.error || 'Failed to delete';
         msg.className = 'modal-message error';
@@ -1199,7 +1374,7 @@ export const Modal = {
         msg.className = 'modal-message success';
         if (modal._onConfirm) modal._onConfirm();
         emitEvent(EVENTS.SESSION_REPLACED);
-        setTimeout(close, TIMING.MODAL_CLOSE_DELAY);
+        setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_DELAY);
       } else {
         msg.textContent = res.error || 'Failed to replace';
         msg.className = 'modal-message error';
@@ -1381,7 +1556,7 @@ export const Modal = {
         msg.textContent = 'Exported!';
         msg.className = 'modal-message success';
         if (modal._onSuccess) modal._onSuccess();
-        setTimeout(close, 500);
+        setTimeout(() => DOM.closeModal(modal), 500);
       } else {
         msg.textContent = res.error || 'Failed to export';
         msg.className = 'modal-message error';
@@ -1473,24 +1648,23 @@ export const Modal = {
     const handleExport = async (format) => {
       const { ManageTab } = await import('./tabs.js');
       ManageTab.handleExportCurrent(format);
-      close();
+      DOM.closeModal(modal);
     };
 
     modal.querySelector('#qaCopyJSON').onclick = async () => {
-      const { TabInfo, BrowserStorage } = await import('../core/storage.js');
-      const { Cookies } = await import('../core/cookies.js');
-      const tabInfo = await TabInfo.getCurrent();
-      const cookieRes = await Cookies.getCurrentTab();
-      const tabId = tabInfo.data?.tabId;
-      const [localRes, sessionRes] = await Promise.all([
-        tabId ? BrowserStorage.getLocal(tabId) : Promise.resolve({ data: {} }),
-        tabId ? BrowserStorage.getSession(tabId) : Promise.resolve({ data: {} })
-      ]);
+      const exportRes = await CurrentTabExport.collect();
+      if (!exportRes.success) {
+        msg.textContent = exportRes.error;
+        msg.className = 'modal-message error';
+        return;
+      }
+
       const payload = {
-        cookies: cookieRes.data?.cookies || [],
-        localStorage: localRes.data || {},
-        sessionStorage: sessionRes.data || {}
+        cookies: exportRes.data.cookies || [],
+        localStorage: exportRes.data.localStorage || {},
+        sessionStorage: exportRes.data.sessionStorage || {}
       };
+
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
       msg.textContent = 'Copied to clipboard!';
       msg.className = 'modal-message success';
@@ -1556,5 +1730,277 @@ export const Modal = {
       if (modal._onConfirm) modal._onConfirm();
       close();
     };
+  },
+
+  _ensureTwoFactorModal() {
+    if (document.getElementById('twoFactorModal')) return;
+
+    const html = `
+      <div id="twoFactorModal" class="modal">
+        <div class="modal-content" style="width: 360px;">
+          <div class="modal-header">
+            <div class="traffic-lights">
+              <span class="tl-btn tl-close" id="tfmClose"></span>
+              <span class="tl-btn tl-minimize"></span>
+              <span class="tl-btn tl-maximize"></span>
+            </div>
+            <h3 id="tfmTitle">Add 2FA Entry</h3>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Issuer</label>
+              <input type="text" id="tfmIssuer" placeholder="GitHub">
+            </div>
+            <div class="form-group">
+              <label>Account</label>
+              <input type="text" id="tfmAccountName" placeholder="me@example.com">
+            </div>
+            <div class="form-group">
+              <label>Secret</label>
+              <input type="text" id="tfmSecret" placeholder="JBSWY3DPEHPK3PXP">
+            </div>
+            <div class="modal-row">
+              <div class="form-group flex-1">
+                <label>Digits</label>
+                <input type="text" id="tfmDigits" placeholder="6">
+              </div>
+              <div class="form-group flex-1">
+                <label>Period</label>
+                <input type="text" id="tfmPeriod" placeholder="30">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Algorithm</label>
+              <select id="tfmAlgorithm">
+                <option value="SHA1">SHA1</option>
+                <option value="SHA256">SHA256</option>
+                <option value="SHA512">SHA512</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Linked domains</label>
+              <input type="text" id="tfmDomains" placeholder="github.com, ghe.internal">
+            </div>
+            <div id="tfmMessage" class="modal-message"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" id="tfmCancel">Cancel</button>
+            <button class="btn btn-primary" id="tfmSave">Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    const modal = document.getElementById('twoFactorModal');
+    const close = DOM.wireModalClose(modal, { closeBtn: '#tfmClose', cancelBtn: '#tfmCancel' });
+    modal.querySelector('#tfmIssuer').setAttribute('autocomplete', 'off');
+
+    modal.querySelector('#tfmSave').onclick = async () => {
+      const message = modal.querySelector('#tfmMessage');
+      const payload = {
+        id: modal.dataset.entryId || undefined,
+        issuer: modal.querySelector('#tfmIssuer').value,
+        accountName: modal.querySelector('#tfmAccountName').value,
+        secret: modal.querySelector('#tfmSecret').value,
+        digits: Number(modal.querySelector('#tfmDigits').value || 6),
+        period: Number(modal.querySelector('#tfmPeriod').value || 30),
+        algorithm: modal.querySelector('#tfmAlgorithm').value,
+        linkedDomains: modal.querySelector('#tfmDomains').value.split(',').map((item) => item.trim()).filter(Boolean)
+      };
+
+      const result = modal.dataset.mode === 'edit'
+        ? await TwoFactorStorage.update(payload)
+        : await TwoFactorStorage.save(payload);
+
+      if (!result.success) {
+        message.textContent = result.error;
+        message.className = 'modal-message error';
+        return;
+      }
+
+      message.textContent = modal.dataset.mode === 'edit' ? '2FA entry updated' : '2FA entry saved';
+      message.className = 'modal-message success';
+      emitEvent(EVENTS.TWO_FACTOR_UPDATED);
+      setTimeout(() => close(), TIMING.MODAL_CLOSE_DELAY);
+    };
+  },
+
+  // ========== QR Scan Modal ==========
+
+  openTwoFactorScan() {
+    this._ensureTwoFactorScanModal()
+    const modal = document.getElementById('twoFactorScanModal')
+    modal.classList.remove('hidden')
+    DOM.showModal(modal)
+    // Reset state
+    modal.querySelector('#tfsImage').classList.add('hidden')
+    modal.querySelector('#tfsResult').classList.add('hidden')
+    modal.querySelector('#tfsMessage').textContent = ''
+    modal.querySelector('#tfsMessage').className = 'modal-message'
+    modal._scanData = null
+  },
+
+  _ensureTwoFactorScanModal() {
+    if (document.getElementById('twoFactorScanModal')) return
+
+    const html = `
+      <div id="twoFactorScanModal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+          <div class="modal-header">
+            <div class="traffic-lights">
+              <span class="tl-btn tl-close" id="tfsClose"></span>
+              <span class="tl-btn tl-minimize"></span>
+              <span class="tl-btn tl-maximize"></span>
+            </div>
+            <h3><i class="fa-solid fa-camera mr-2 text-blue-500"></i>Scan QR Code</h3>
+          </div>
+          <div class="modal-body">
+            <p class="text-sm text-slate-600 mb-3">Navigate to a page showing a QR code, then click <strong>Capture</strong>.</p>
+            <button class="btn btn-primary mb-3" id="tfsCapture"><i class="fa-solid fa-camera mr-1"></i>Capture Tab</button>
+            <div id="tfsImage" class="hidden mb-3">
+              <img id="tfsPreview" class="tfs-preview" alt="Captured tab preview" />
+            </div>
+            <canvas id="tfsCanvas" class="hidden" width="640" height="480"></canvas>
+            <div id="tfsResult" class="hidden mb-3">
+              <div class="br-section-label"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Detected Entry</div>
+              <div id="tfsResultDetails" class="tfs-result-details"></div>
+            </div>
+            <div id="tfsMessage" class="modal-message"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" id="tfsCancel">Cancel</button>
+            <button class="btn btn-primary hidden" id="tfsAddEntry"><i class="fa-solid fa-plus mr-1"></i>Add Entry</button>
+          </div>
+        </div>
+      </div>
+    `
+
+    document.body.insertAdjacentHTML('beforeend', html)
+    const modal = document.getElementById('twoFactorScanModal')
+    DOM.wireModalClose(modal, { closeBtn: '#tfsClose', cancelBtn: '#tfsCancel' })
+
+    const msg = modal.querySelector('#tfsMessage')
+    const img = modal.querySelector('#tfsPreview')
+    const imgWrap = modal.querySelector('#tfsImage')
+    const canvas = modal.querySelector('#tfsCanvas')
+    const resultDiv = modal.querySelector('#tfsResult')
+    const resultDetails = modal.querySelector('#tfsResultDetails')
+    const addBtn = modal.querySelector('#tfsAddEntry')
+
+    modal.querySelector('#tfsCapture').onclick = async () => {
+      msg.textContent = 'Capturing...'
+      msg.className = 'modal-message info'
+      addBtn.classList.add('hidden')
+      resultDiv.classList.add('hidden')
+      modal._scanData = null
+
+      try {
+        const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' })
+        img.src = dataUrl
+        imgWrap.classList.remove('hidden')
+
+        // Draw to canvas and decode
+        await new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+        })
+
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+
+        // Dynamically import jsQR
+        const jsQR = (await import('jsqr')).default
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const code = jsQR(imageData.data, imageData.width, imageData.height)
+
+        if (!code) {
+          msg.textContent = 'No QR code found in the captured tab. Try zooming in or positioning the code in the center.'
+          msg.className = 'modal-message error'
+          return
+        }
+
+        // Parse the QR code data as an otpauth URI
+        const { OTPAuth } = await import('../core/twofa.js')
+        const parseResult = OTPAuth.parseURI(code.data)
+
+        if (!parseResult.success) {
+          msg.textContent = 'QR code decoded, but: ' + parseResult.error
+          msg.className = 'modal-message error'
+          // Show raw data anyway
+          resultDetails.textContent = '';
+          const rawDiv = document.createElement('div');
+          rawDiv.className = 'text-xs text-slate-500 mt-1';
+          rawDiv.appendChild(document.createTextNode('Raw: '));
+          const rawCode = document.createElement('code');
+          rawCode.textContent = code.data.slice(0, 120);
+          rawDiv.appendChild(rawCode);
+          resultDetails.appendChild(rawDiv);
+          resultDiv.classList.remove('hidden')
+          return
+        }
+
+        modal._scanData = parseResult.data
+        resultDetails.textContent = '';
+
+        function addEntry(label, value, extraClass) {
+          const row = document.createElement('div');
+          row.className = 'tfs-entry-line';
+          const labelSpan = document.createElement('span');
+          labelSpan.className = 'tfs-label';
+          labelSpan.textContent = label + ':';
+          row.appendChild(labelSpan);
+          const valueSpan = document.createElement('span');
+          valueSpan.className = 'tfs-value' + (extraClass ? ' ' + extraClass : '');
+          valueSpan.textContent = value;
+          row.appendChild(valueSpan);
+          resultDetails.appendChild(row);
+        }
+
+        addEntry('Issuer', parseResult.data.issuer);
+        addEntry('Account', parseResult.data.accountName);
+        addEntry('Secret', parseResult.data.secret.slice(0, 8) + '\u2026', 'font-mono text-xs');
+        addEntry('Algorithm', parseResult.data.algorithm);
+        addEntry('Digits', String(parseResult.data.digits));
+        addEntry('Period', parseResult.data.period + 's');
+        resultDiv.classList.remove('hidden')
+        addBtn.classList.remove('hidden')
+        msg.textContent = 'QR code detected! Review and click Add Entry.'
+        msg.className = 'modal-message success'
+      } catch (e) {
+        msg.textContent = 'Capture failed: ' + (e.message || 'Unknown error')
+        msg.className = 'modal-message error'
+      }
+    }
+
+    modal.querySelector('#tfsAddEntry').onclick = async () => {
+      if (!modal._scanData) return
+
+      const entry = {
+        issuer: modal._scanData.issuer,
+        accountName: modal._scanData.accountName,
+        secret: modal._scanData.secret,
+        algorithm: modal._scanData.algorithm,
+        digits: modal._scanData.digits,
+        period: modal._scanData.period,
+        linkedDomains: modal._scanData.linkedDomains || []
+      }
+
+      const result = await TwoFactorStorage.save(entry)
+      if (!result.success) {
+        msg.textContent = result.error
+        msg.className = 'modal-message error'
+        return
+      }
+
+      msg.textContent = '2FA entry added!'
+      msg.className = 'modal-message success'
+      modal._scanData = null
+      addBtn.classList.add('hidden')
+      emitEvent(EVENTS.TWO_FACTOR_UPDATED)
+      setTimeout(() => DOM.closeModal(modal), TIMING.MODAL_CLOSE_DELAY)
+    }
   }
 };

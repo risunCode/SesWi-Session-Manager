@@ -3,7 +3,6 @@
 <head>
   <title>SesWi - Session Manager</title>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' data:; connect-src 'self';">
   <link rel="stylesheet" href="./styles/fontawesome.css">
   <link rel="stylesheet" href="./styles/main.css">
 </head>
@@ -31,6 +30,9 @@
       </button>
       <button class="tab-btn" data-tab="groupSessions" role="tab" aria-selected="false" aria-controls="groupSessions">
         <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i> Groups
+      </button>
+      <button class="tab-btn" data-tab="twoFactor" role="tab" aria-selected="false" aria-controls="twoFactor">
+        <i class="fa-solid fa-shield mr-1" aria-hidden="true"></i> 2FA
       </button>
       <button class="tab-btn" data-tab="manage" role="tab" aria-selected="false" aria-controls="manage">
         <i class="fa-solid fa-gear mr-1" aria-hidden="true"></i> Manage
@@ -70,6 +72,17 @@
         </div>
         <div id="groupSessionsContainer" class="groups-container"></div>
       </div>
+      <div class="tab-content" id="twoFactor" role="tabpanel" aria-labelledby="twoFactor">
+        <div class="search-bar" role="search">
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+          <input type="text" id="twoFactorSearchInput" placeholder="Search 2FA entries..." class="search-input" aria-label="Search 2FA entries">
+        </div>
+        <div class="twofa-toolbar">
+          <button class="btn btn-primary" id="twoFactorScanBtn"><i class="fa-solid fa-camera mr-1"></i>Scan QR</button>
+          <button class="btn btn-secondary" id="twoFactorAddBtn"><i class="fa-solid fa-plus mr-1"></i>Manual</button>
+        </div>
+        <div id="twoFactorContainer" class="twofa-container" role="list" aria-label="2FA entries list"></div>
+      </div>
 
       <div class="tab-content" id="manage" role="tabpanel" aria-labelledby="manage">
         <div class="manage-cards" role="menu" aria-label="Management options">
@@ -82,7 +95,7 @@
               <span class="card-icon card-icon--blue"><i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i></span>
               <div class="card-text">
                 <div class="card-title">Backup & Restore</div>
-                <div class="card-desc">Export or import sessions (JSON/OWI)</div>
+                <div class="card-desc">Export or import sessions and 2FA (JSON/OWI)</div>
               </div>
             </div>
             <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
@@ -139,6 +152,17 @@
               <span class="mp-badge hidden" id="mpBadge">ON</span>
               <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
             </div>
+          </button>
+
+          <button class="manage-card" id="resetAllData" role="menuitem" aria-label="Reset all data and configuration">
+            <div class="flex items-center">
+              <span class="card-icon card-icon--red"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></span>
+              <div class="card-text">
+                <div class="card-title">Reset All Data</div>
+                <div class="card-desc">Factory reset — clear all sessions & config</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400" aria-hidden="true"></i>
           </button>
 
         </div>
@@ -244,8 +268,7 @@
           <input type="file" id="addFileInput" accept=".json,.owi" class="hidden" multiple />
           <div id="addFileList" class="rm-file-list"></div>
           <div id="addFilePwdWrap" class="hidden flex gap-2 mt-3">
-            <input type="password" id="addFilePassword" placeholder="Password for OWI" class="flex-1" />
-            <button id="addFileVerify" class="btn btn-primary px-4"><i class="fa-solid fa-check mr-1"></i>Verify</button>
+            <input type="password" id="addFilePassword" placeholder="Password for OWI" class="flex-1" autocomplete="new-password" />
           </div>
         </div>
 
@@ -326,8 +349,7 @@
           <div class="form-group">
             <label>Current Password (to change or remove)</label>
             <div class="input-pwd-wrap">
-              <input type="password" id="mpCurrentPassword" placeholder="Enter current password" autocomplete="current-password" />
-              <button type="button" class="pwd-toggle" data-target="mpCurrentPassword"><i class="fa-solid fa-eye"></i></button>
+              <input type="password" id="mpCurrentPassword" placeholder="Enter current password" autocomplete="new-password" />
             </div>
           </div>
           <div class="form-group">
@@ -357,8 +379,7 @@
       <h2>SesWi is Locked</h2>
       <p>Enter your master password to unlock</p>
       <div class="lock-pwd-wrap">
-        <input type="password" id="lockPassword" placeholder="Master password" autocomplete="current-password" />
-        <button type="button" class="pwd-toggle-lock" id="lockPwdToggle"><i class="fa-solid fa-eye"></i></button>
+        <input type="password" id="lockPassword" placeholder="Master password" autocomplete="new-password" />
       </div>
       <label class="lock-remember">
         <input type="checkbox" id="lockRemember" />

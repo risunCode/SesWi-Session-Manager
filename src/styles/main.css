@@ -1107,20 +1107,105 @@ input, button, textarea, select {
 .modal-message.success { color: #065f46; background: #ecfdf5; border-color: var(--clr-success); }
 .modal-message.error { color: #991b1b; background: #fef2f2; border-color: var(--clr-danger); }
 
-/* ========== Modal Options (Backup Format) ========== */
+/* ========== Include Card (Backup Export) ========== */
+.include-card {
+  border: 1.5px solid var(--clr-border);
+  border-radius: 10px;
+  background: var(--clr-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.include-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--clr-border);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  font: inherit;
+}
+
+.include-option:last-child {
+  border-bottom: none;
+}
+
+.include-option:hover {
+  background: #f9fafb;
+}
+
+.include-option.active {
+  background: #ecfdf5;
+}
+
+.include-option-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.option-icon-wrap {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.option-icon--all    { background: #dbeafe; color: var(--clr-primary-hover); }
+.option-icon--sessions { background: #fef3c7; color: #d97706; }
+.option-icon--2fa    { background: #d1fae5; color: #059669; }
+
+.include-option-text {
+  min-width: 0;
+}
+
+.include-option-text .option-title {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--clr-text);
+}
+
+.include-option-text .option-desc {
+  font-size: var(--fs-xs);
+  color: #6b7280;
+}
+
+.include-check {
+  color: transparent;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.include-option.active .include-check {
+  color: var(--clr-success);
+}
+
+
+/* ========== Format Options (Backup Export - JSON/OWI) ========== */
 .modal-options {
   display: flex;
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.option-card {
+.modal-options .option-card {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 16px;
+  padding: 14px 16px;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   background: var(--clr-surface);
@@ -1128,17 +1213,16 @@ input, button, textarea, select {
   transition: all 0.2s ease;
 }
 
-.option-card:hover { background: #f9fafb; }
-.option-card.active,
-.option-card.selected {
+.modal-options .option-card:hover { background: #f9fafb; }
+.modal-options .option-card.active,
+.modal-options .option-card.selected {
   border-color: var(--clr-success);
   background: #ecfdf5;
   box-shadow: 0 0 0 2px rgba(16,185,129,0.15) inset;
 }
 
-.option-icon { font-size: 24px; }
-.option-title { font-weight: 600; font-size: var(--fs-md); color: #111827; }
-.option-desc { font-size: var(--fs-sm); color: var(--clr-text-muted); }
+.modal-options .option-title { font-weight: 600; font-size: var(--fs-md); color: #111827; }
+.modal-options .option-desc { font-size: var(--fs-sm); color: var(--clr-text-muted); }
 
 /* ========== Modal Tabs (Backup/Restore & Session Manager) ========== */
 .br-tabs, .sm-tabs {
@@ -3335,3 +3419,279 @@ input, button, textarea, select {
 
 .pwd-toggle-lock:hover { color: rgba(255,255,255,0.9); }
 
+
+.twofa-toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: stretch;
+  margin: 2px 10px 8px;
+}
+
+.twofa-toolbar .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  justify-content: center;
+}
+
+.twofa-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+
+/* ========== 2FA Tab ========== */
+.twofa-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.twofa-group-heading {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--clr-text-light);
+  padding: 0 2px;
+}
+
+.twofa-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.twofa-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.twofa-card-body {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.twofa-card-body:hover {
+  background: #fafafa;
+}
+
+.twofa-card-copied {
+  border-color: var(--clr-success) !important;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.15);
+}
+
+.twofa-card-copied .twofa-card-body {
+  background: #f0fdf4;
+}
+
+.twofa-card-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.twofa-card-issuer {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--clr-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.twofa-card-account {
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.twofa-card-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.twofa-card-code {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--clr-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.twofa-card-timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.twofa-timer-track {
+  width: 40px;
+  height: 4px;
+  background: var(--clr-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.twofa-timer-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s linear, background 1s linear;
+}
+
+.twofa-timer-text {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  min-width: 20px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.twofa-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--clr-background-alt);
+  background: var(--clr-background);
+}
+
+.twofa-card-actions .twofa-copy {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  color: var(--clr-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.twofa-card-actions .twofa-copy:hover {
+  background: #ecfdf5;
+  border-color: var(--clr-success);
+  color: #059669;
+}
+
+.twofa-card-actions .twofa-edit {
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  color: #92400e;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.twofa-card-actions .twofa-edit:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.twofa-card-actions .twofa-delete {
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.twofa-card-actions .twofa-delete:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.twofa-copy.twofa-copied {
+  background: #ecfdf5 !important;
+  border-color: var(--clr-success) !important;
+  color: #059669 !important;
+}
+
+/* Unified toast notification */
+.app-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--clr-text);
+  color: var(--clr-surface);
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.app-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.app-toast.success { background: #059669; color: white; }
+.app-toast.error   { background: #dc2626; color: white; }
+.app-toast.info    { background: var(--clr-text); color: var(--clr-surface); }
+
+.tfs-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.tfs-result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--clr-bg-secondary);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 6px;
+}
+
+.tfs-entry-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-sm);
+}
+
+.tfs-label {
+  font-weight: 600;
+  color: var(--clr-text-light);
+}
+
+.tfs-value {
+  color: var(--clr-text);
+}
+
+.modal-message.info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}

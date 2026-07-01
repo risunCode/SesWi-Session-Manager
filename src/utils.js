@@ -237,6 +237,25 @@ export const DOM = {
       if (btn) btn.onclick = close;
     }
     return close;
+  },
+
+  /**
+   * Show a global toast notification
+   * @param {string} msg - Text message
+   * @param {'info'|'success'|'error'} [type='info'] - Style variant
+   * @param {number} [duration=2000] - Display duration in ms
+   */
+  showToast(msg, type = 'info', duration = 2000) {
+    document.querySelectorAll('.app-toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `app-toast ${type}`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    }, duration);
   }
 };
 

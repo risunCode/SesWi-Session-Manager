@@ -118,6 +118,8 @@ const WebCrypto = {
     const iv = combined.slice(16, 28);
     const ciphertext = combined.slice(28);
     
+    if (iv.byteLength !== 12) return Response.error('Invalid IV');
+
     const key = await this.deriveKey(password, salt);
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv },
@@ -215,6 +217,27 @@ export const SessionToken = {
   }
 };
 
+const toProtectedPayload = (data) => {
+  if (Array.isArray(data)) {
+    return { version: '2.0', sessions: data, twoFactorEntries: [] }
+  }
+  if (data && Array.isArray(data.sessions)) {
+    return {
+      version: data.version || '2.0',
+      sessions: data.sessions,
+      twoFactorEntries: Array.isArray(data.twoFactorEntries) ? data.twoFactorEntries : []
+    }
+  }
+  if (data?.data && Array.isArray(data.data.sessions)) {
+    return {
+      version: data.version || '2.0',
+      sessions: data.data.sessions,
+      twoFactorEntries: Array.isArray(data.data.twoFactorEntries) ? data.data.twoFactorEntries : []
+    }
+  }
+  return { version: '2.0', sessions: Normalize.importSessions(data), twoFactorEntries: [] }
+}
+
 export const Crypto = {
   /** Encrypt data with AES-256-GCM */
   async encrypt(data, password) {
@@ -226,13 +249,12 @@ export const Crypto = {
     return WebCrypto.decrypt(encrypted, password);
   },
 
-  async exportOWI(sessions, password, filename = 'sessions-backup') {
+  async exportOWI(payload, password, filename = 'sessions-backup') {
     try {
       if (!password?.trim()) return Response.error('Password required');
-      
-      const payload = { version: '1.0', exportDate: new Date().toISOString(), sessions };
+
       const encrypted = await this.encrypt(payload, password);
-      
+
       const owiData = {
         version: '2.0',
         format: 'OWI',
@@ -240,7 +262,7 @@ export const Crypto = {
         type: 'multi',
         encryptedData: encrypted
       };
-      
+
       DOM.downloadFile(JSON.stringify(owiData, null, 2), `${filename}.owi`, 'application/octet-stream');
       return Response.success(null, 'OWI created');
     } catch (e) {
@@ -255,11 +277,11 @@ export const Crypto = {
       if (parsed.format !== 'OWI' || !parsed.encryptedData) {
         return Response.error('Invalid OWI file');
       }
-      
+
       const data = await this.decrypt(parsed.encryptedData, password);
-      const sessions = Normalize.importSessions(data);
-      if (!sessions.length) return Response.error('No sessions found in OWI file');
-      return Response.success({ sessions });
+      const payload = toProtectedPayload(data)
+      if (!payload.sessions.length && !payload.twoFactorEntries.length) return Response.error('No restorable data found in OWI file');
+      return Response.success({ payload, sessions: payload.sessions, twoFactorEntries: payload.twoFactorEntries });
     } catch (e) {
       Logger.error('importOWI failed:', e);
       return Response.error(e, 'Crypto.importOWI');
@@ -284,11 +306,12 @@ export const MasterPassword = {
       const salt = generateSalt();
       const hash = await hashPassword(password, salt);
 
-      // Get existing sessions to encrypt
+      // Get existing protected datasets to encrypt
       const { Storage } = await import('./storage.js');
       const sessions = await Storage.getAllSessions();
+      const twoFactorEntries = await Storage.getAllTwoFactorEntries();
 
-      const encrypted = await Crypto.encrypt(sessions, password);
+      const encrypted = await Crypto.encrypt({ version: '2.0', sessions, twoFactorEntries }, password);
 
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_ENABLED]: true,
@@ -297,8 +320,9 @@ export const MasterPassword = {
         [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted
       });
 
-      // Clear unencrypted sessions
+      // Clear unencrypted datasets
       await Storage.clearAllSessions();
+      await Storage.clearAllTwoFactorEntries();
 
       return Response.success(null, 'Master password enabled');
     } catch (e) {
@@ -350,27 +374,33 @@ export const MasterPassword = {
     }
   },
 
-  /** Decrypt and return sessions (call after verify) */
-  async decryptSessions(password) {
+  /** Decrypt and return protected payload (call after verify) */
+  async decryptProtectedData(password) {
     try {
       const { [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted } = await chrome.storage.local.get(STORAGE_KEYS.ENCRYPTED_SESSIONS);
-      if (!encrypted) return Response.success([]);
+      if (!encrypted) return Response.success({ version: '2.0', sessions: [], twoFactorEntries: [] });
 
-      const sessions = await Crypto.decrypt(encrypted, password);
-      return Response.success(sessions);
+      const decrypted = await Crypto.decrypt(encrypted, password);
+      return Response.success(toProtectedPayload(decrypted));
     } catch (e) {
-      return Response.error(e, 'MasterPassword.decryptSessions');
+      return Response.error(e, 'MasterPassword.decryptProtectedData');
     }
   },
 
-  /** Re-encrypt sessions */
-  async encryptSessions(sessions, password) {
+  /** Backward-compatible sessions view */
+  async decryptSessions(password) {
+    const result = await this.decryptProtectedData(password)
+    if (!result.success) return result
+    return Response.success(result.data.sessions)
+  },
+
+  async encryptProtectedData(payload, password) {
     try {
-      const encrypted = await Crypto.encrypt(sessions, password);
+      const encrypted = await Crypto.encrypt({ version: '2.0', ...toProtectedPayload(payload) }, password);
       await chrome.storage.local.set({ [STORAGE_KEYS.ENCRYPTED_SESSIONS]: encrypted });
       return Response.success(null);
     } catch (e) {
-      return Response.error(e, 'MasterPassword.encryptSessions');
+      return Response.error(e, 'MasterPassword.encryptProtectedData');
     }
   },
 
@@ -383,12 +413,12 @@ export const MasterPassword = {
       const verifyResult = await this.verify(currentPassword);
       if (!verifyResult.success) return verifyResult;
 
-      const sessionsResult = await this.decryptSessions(currentPassword);
-      if (!sessionsResult.success) return sessionsResult;
+      const payloadResult = await this.decryptProtectedData(currentPassword);
+      if (!payloadResult.success) return payloadResult;
 
       const salt = generateSalt();
       const hash = await hashPassword(newPassword, salt);
-      const encrypted = await Crypto.encrypt(sessionsResult.data, newPassword);
+      const encrypted = await Crypto.encrypt({ version: '2.0', ...payloadResult.data }, newPassword);
 
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_SALT]: salt,
@@ -408,13 +438,14 @@ export const MasterPassword = {
       const verifyResult = await this.verify(password);
       if (!verifyResult.success) return verifyResult;
 
-      const sessionsResult = await this.decryptSessions(password);
-      if (!sessionsResult.success) return sessionsResult;
+      const payloadResult = await this.decryptProtectedData(password);
+      if (!payloadResult.success) return payloadResult;
 
       const { Storage } = await import('./storage.js');
-      for (const session of sessionsResult.data) {
+      for (const session of payloadResult.data.sessions) {
         await Storage.saveSession(session);
       }
+      await Storage.saveAllTwoFactorEntries(payloadResult.data.twoFactorEntries || [])
 
       await chrome.storage.local.remove([
         STORAGE_KEYS.MP_ENABLED,
@@ -528,7 +559,7 @@ export const MasterPassword = {
       await chrome.storage.local.set({
         [STORAGE_KEYS.MP_SALT]: salt,
         [STORAGE_KEYS.MP_VERIFY]: hash,
-        [STORAGE_KEYS.ENCRYPTED_SESSIONS]: await Crypto.encrypt([], newPassword)
+        [STORAGE_KEYS.ENCRYPTED_SESSIONS]: await Crypto.encrypt({ version: '2.0', sessions: [], twoFactorEntries: [] }, newPassword)
       });
 
       await chrome.storage.local.remove([STORAGE_KEYS.MP_ATTEMPTS, STORAGE_KEYS.MP_LOCKOUT]);

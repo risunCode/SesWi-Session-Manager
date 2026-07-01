@@ -5,10 +5,11 @@
 import { TabInfo, BrowserStorage, SessionStorage, setMPState } from './core/storage.js';
 import { Cookies } from './core/cookies.js';
 import { tabIcons } from './core/icons.js';
-import { CurrentTab, GroupTab, ManageTab } from './ui/tabs.js';
+import { CurrentTab, GroupTab, TwoFATab, ManageTab } from './ui/tabs.js';
 import { Domain, DOM, Normalize } from './utils.js';
-import { EVENTS, TIMING, emitEvent } from './constants.js';
+import { EVENTS, TIMING, STORAGE_KEYS, emitEvent } from './constants.js';
 import { checkForUpdate } from './core/updater.js';
+import { Backup } from './core/backup.js';
 
 // Master Password state (in-memory only, cleared on popup close)
 let _mpUnlocked = false;
@@ -103,17 +104,18 @@ async function initializeApp() {
   initSearchHandlers();
 
   // Initial render + modal setup in parallel
-  await Promise.all([CurrentTab.render(), GroupTab.render()]);
+  await Promise.all([CurrentTab.render(), GroupTab.render(), TwoFATab.render()]);
+  TwoFATab.init();
   ManageTab.init();
   initAddSessionModal();
 
-  // Listen for session changes
-  const refresh = () => { CurrentTab.render(); GroupTab.render(); };
+  const refresh = () => { CurrentTab.render(); GroupTab.render(); TwoFATab.render(); };
   document.addEventListener(EVENTS.SESSION_UPDATED, refresh);
   document.addEventListener(EVENTS.SESSION_DELETED, refresh);
   document.addEventListener(EVENTS.SESSION_REPLACED, refresh);
   document.addEventListener(EVENTS.SESSIONS_RESTORED, refresh);
   document.addEventListener(EVENTS.SESSIONS_DELETED, refresh);
+  document.addEventListener(EVENTS.TWO_FACTOR_UPDATED, refresh);
 
   // Listen for context menu trigger
   chrome.runtime.onMessage.addListener((msg) => {
@@ -130,10 +132,11 @@ function initTabs() {
       const tabId = btn.dataset.tab;
       tabBtns.forEach(b => b.classList.toggle('active', b === btn));
       tabContents.forEach(c => c.classList.toggle('active', c.id === tabId));
-      
-      // Refresh content on tab switch
+
+      TwoFATab.stopTicker();
       if (tabId === 'currentSession') CurrentTab.render();
       if (tabId === 'groupSessions') GroupTab.render();
+      if (tabId === 'twoFactor') { TwoFATab.render(); TwoFATab.startTicker(); }
     };
   });
 }
@@ -148,6 +151,11 @@ function initSearchHandlers() {
   DOM.debounceInput(document.getElementById('groupSearchInput'), (value) => {
     GroupTab.searchQuery = value;
     GroupTab.render();
+  });
+
+  DOM.debounceInput(document.getElementById('twoFactorSearchInput'), (value) => {
+    TwoFATab.searchQuery = value;
+    TwoFATab.render();
   });
 }
 
@@ -189,6 +197,7 @@ function initAddSessionModal() {
   const addFileList = document.getElementById('addFileList');
   const addFilePwdWrap = document.getElementById('addFilePwdWrap');
   let _fileParsedSessions = [];
+  let _fileParsedPayload = null;
   let _fileOwiFile = null;
 
   addFileDrop.onclick = () => addFileInput.click();
@@ -203,7 +212,7 @@ function initAddSessionModal() {
   addFileInput.onchange = async () => {
     const files = Array.from(addFileInput.files || []);
     if (!files.length) return;
-    _fileParsedSessions = []; _fileOwiFile = null;
+    _fileParsedSessions = []; _fileParsedPayload = null; _fileOwiFile = null;
     addFileList.innerHTML = '';
     msg.textContent = ''; msg.style.display = 'none';
 
@@ -217,18 +226,22 @@ function initAddSessionModal() {
     } else if (jsonFiles.length > 0) {
       addFilePwdWrap.classList.add('hidden');
       addFileDrop.querySelector('span').innerHTML = `<i class="fa-solid fa-file-code mr-1"></i>${jsonFiles.length} file(s) selected`;
+      const mergedPayload = { version: '2.0', kind: 'seswi-backup', createdAt: new Date().toISOString(), data: { sessions: [], twoFactorEntries: [] } };
       for (const file of jsonFiles) {
         try {
-          const data = JSON.parse(await file.text());
-          const sessions = Normalize.importSessions(data);
+          const payload = Backup.parseJSON(await file.text());
+          const sessions = payload.data.sessions;
+          mergedPayload.data.sessions.push(...sessions);
+          mergedPayload.data.twoFactorEntries.push(...payload.data.twoFactorEntries);
           _fileParsedSessions.push(...sessions);
           addFileList.insertAdjacentHTML('beforeend',
-            `<div class="rm-file-item success"><i class="fa-solid fa-check"></i>${DOM.escapeHtml(file.name)} <span>(${sessions.length})</span></div>`);
+            `<div class="rm-file-item success"><i class="fa-solid fa-check"></i>${DOM.escapeHtml(file.name)} <span>(${sessions.length} sessions${payload.data.twoFactorEntries.length ? `, ${payload.data.twoFactorEntries.length} 2FA` : ''})</span></div>`);
         } catch {
           addFileList.insertAdjacentHTML('beforeend',
             `<div class="rm-file-item error"><i class="fa-solid fa-xmark"></i>${DOM.escapeHtml(file.name)} <span>Invalid</span></div>`);
         }
       }
+      _fileParsedPayload = (mergedPayload.data.sessions.length || mergedPayload.data.twoFactorEntries.length) ? mergedPayload : null;
     }
   };
 
@@ -239,10 +252,11 @@ function initAddSessionModal() {
     if (!_fileOwiFile || !password) { msg.textContent = 'Select file and enter password'; msg.style.display = 'block'; return; }
     btn.disabled = true;
     try {
-      const res = await Crypto.importOWI(await _fileOwiFile.text(), password);
+      const res = await Backup.parseOWI(await _fileOwiFile.text(), password);
       if (res.success) {
-        _fileParsedSessions = res.data.sessions;
-        msg.textContent = `Verified! ${_fileParsedSessions.length} sessions ready`;
+        _fileParsedPayload = res.data;
+        _fileParsedSessions = res.data.data.sessions;
+        msg.textContent = `Verified! ${_fileParsedSessions.length} sessions and ${res.data.data.twoFactorEntries.length} 2FA entries ready`;
         msg.className = 'modal-message success'; msg.style.display = 'block';
       } else {
         msg.textContent = res.error; msg.className = 'modal-message error'; msg.style.display = 'block';
@@ -407,18 +421,21 @@ function initAddSessionModal() {
     }
 
     if (currentMode === 'file') {
-      if (!_fileParsedSessions.length) {
-        msg.textContent = 'No sessions loaded — select a file first';
+      if (!_fileParsedPayload) {
+        msg.textContent = 'No backup data loaded — select a file first';
         msg.className = 'modal-message error';
         return;
       }
-      const { data: existing } = await SessionStorage.getAll();
-      const existingTs = new Set(existing.map(s => s.timestamp));
-      const toImport = _fileParsedSessions.filter(s => !existingTs.has(s.timestamp));
-      for (const session of toImport) await SessionStorage.save(session).catch(() => {});
-      msg.textContent = `Imported ${toImport.length} of ${_fileParsedSessions.length} sessions`;
+      const restoreRes = await Backup.restorePayload(_fileParsedPayload);
+      if (!restoreRes.success) {
+        msg.textContent = restoreRes.error;
+        msg.className = 'modal-message error';
+        return;
+      }
+      msg.textContent = `Imported ${restoreRes.data.restoredSessions} sessions and ${restoreRes.data.restoredTwoFactorEntries} 2FA entries`;
       msg.className = 'modal-message success';
       emitEvent(EVENTS.SESSIONS_RESTORED);
+      emitEvent(EVENTS.TWO_FACTOR_UPDATED);
       setTimeout(closeModal, 900);
       return;
     }
@@ -537,10 +554,9 @@ async function initLockScreen() {
         await chrome.storage.session.remove(['mpUnlockTime', 'mpToken', 'mpEncPwd', 'mpPwdLen']);
       }
       
-      // Decrypt sessions and set MP state in storage module
-      const sessionsResult = await MasterPassword.decryptSessions(password);
-      const sessions = sessionsResult.success ? sessionsResult.data : [];
-      setMPState(true, password, sessions);
+      const payloadResult = await MasterPassword.decryptProtectedData(password);
+      const payload = payloadResult.success ? payloadResult.data : { sessions: [], twoFactorEntries: [] };
+      setMPState(true, password, payload.sessions, payload.twoFactorEntries);
       
       lockScreen.classList.add('hidden');
       await initializeApp();
@@ -692,9 +708,9 @@ async function initLockScreen() {
       setTimeout(async () => {
         _mpUnlocked = true;
         _mpPassword = newPwd;
-        const sessionsResult = await MasterPassword.decryptSessions(newPwd);
-        const sessions = sessionsResult.success ? sessionsResult.data : [];
-        setMPState(true, newPwd, sessions);
+        const payloadResult = await MasterPassword.decryptProtectedData(newPwd);
+        const payload = payloadResult.success ? payloadResult.data : { sessions: [], twoFactorEntries: [] };
+        setMPState(true, newPwd, payload.sessions, payload.twoFactorEntries);
         lockScreen.classList.add('hidden');
         await initializeApp();
         initMasterPasswordUI(true);
@@ -852,9 +868,9 @@ function initMasterPasswordUI(mpEnabled) {
       }
       
       // Decrypt sessions and set MP state (no session save on first setup)
-      const sessionsResult = await MasterPassword.decryptSessions(password);
-      const sessions = sessionsResult.success ? sessionsResult.data : [];
-      setMPState(true, password, sessions);
+      const payloadResult = await MasterPassword.decryptProtectedData(password);
+      const payload = payloadResult.success ? payloadResult.data : { sessions: [], twoFactorEntries: [] };
+      setMPState(true, password, payload.sessions, payload.twoFactorEntries);
       
       msg.textContent = 'Master password enabled!';
       msg.className = 'modal-message success';
@@ -934,17 +950,17 @@ function initMasterPasswordUI(mpEnabled) {
     if (result.success) {
       _mpUnlocked = false;
       _mpPassword = null;
-      setMPState(false, null, null);
+      setMPState(false, null, null, null);
       await chrome.storage.session.remove(['mpUnlockTime', 'mpToken', 'mpEncPwd', 'mpPwdLen']);
+      await chrome.storage.local.remove(STORAGE_KEYS.MP_REMEMBER);
       
       msg.textContent = 'Master password removed!';
       msg.className = 'modal-message success';
       msg.style.display = 'block';
       mpBadge?.classList.add('hidden');
-      if (mpStatus) mpStatus.textContent = 'Encrypt sessions at rest (advanced)';
-      // Refresh UI
       CurrentTab.render();
       GroupTab.render();
+      TwoFATab.render();
       setTimeout(() => DOM.closeModal(modal), 1500);
     } else {
       msg.textContent = result.error;
