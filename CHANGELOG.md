@@ -1,5 +1,70 @@
 # Changelog
 
+## v4.0.0 (2026-07-13)
+
+### Breaking Changes
+- **Manifest V3 everywhere** — Chrome and Firefox now both ship as MV3 builds. Firefox packages are produced in `.output/firefox-mv3`.
+- **Browser commands simplified** — Alt+Q is the single browser-level command; window cleanup is an explicit Current Tab → Window action.
+
+### New Features
+- **Authenticator intake** — Add 2FA manually, scan QR codes, or import encrypted/plain Aegis JSON, Google Authenticator migration URIs, and standard OTPAuth URI lists.
+- **2FA management** — Dedicated 2FA Manager supports batch deletion; 2FA cards have deterministic initials, explicit actions, and one shared expiry indicator.
+- **Session domain cleanup** — Session Manager can delete every saved session for a domain after confirmation.
+
+### Security and Data Integrity
+- **Audited restore pipeline** — Ready cookie-batch files now merge into the final restore payload instead of reporting a false-success zero restore.
+- **Atomic 2FA changes** — Batch deletion uses a single storage write; edits validate Base32 secrets before persistence.
+- **Safe importer boundaries** — Aegis import limits scrypt work, skips unsupported credential slots, validates password-protected vaults before preview, and ignores stale async file/decrypt results.
+- **Approved-tab bridge scope** — Userscript actions now operate only on the exact tab and URL that requested approval.
+- **Master Password lifetime** — Remembered plaintext cache is proactively purged at expiry; Master Password and recovery setup validate together before source data is cleared.
+
+### Fixes
+- **Uninstall release status** — The uninstall feedback page checks GitHub Releases at open and shows the latest available SesWi version with a direct release link.
+- **2FA OTPAuth batch intake** — Plain-text `.txt` files containing OTPAuth URI lists are recognized as 2FA batches rather than incorrectly falling through to cookie/session import.
+- **Firefox import picker reliability** — File selection now persists picker intent before opening Firefox’s focusable background picker, eliminating intermittent Add Session and Backup & Restore clicks.
+- **Page-storage null handling** — Restore normalizes Firefox-serialized null storage payloads, avoiding `can't convert null to object` after a successful login restore.
+- **Current Tab pagination** — Current Tab shows five saved sessions per page.
+- **Subdomain authentication capture** — Session and Netscape exports now collect cookies for the active base domain and its subdomains in the active browser cookie store, retaining host-only authentication cookies such as Railway’s `backboard.railway.com` session.
+- **Page-storage restore sequencing** — Restore now reloads after cookie installation before writing local/session storage, then reloads again so authenticated page state can initialize from the restored cookies in both Chrome and Firefox. Storage writes remain verified and failures are surfaced.
+- **Current-tab active badge** — Newly saved and replaced sessions for the open tab now show the `ACTIVE` badge before the cookie count, below their validity status.
+- **Restore ordering** — Restored sessions retain their original saved date while separate restore-order metadata places them at the top of the current and grouped session lists.
+- **Firefox restore cookie store** — Restored cookies now target the active tab's Firefox cookie store instead of reusing a source browser `storeId`; failed cookie writes are surfaced instead of reported as success.
+- **Replace Session freshness** — Replaced sessions receive a fresh timestamp and update by stable session ID, so Session Actions and Session Manager immediately show `just now` / `1m ago`.
+- **Backup & Restore count** — The modal loads session and 2FA counts on its initial mount.
+- **Current-tab cleanup scope** — Current Tab no longer exposes a browser-global cache deletion; cleanup remains scoped to selected site data and history.
+- **Alt+Q compatibility** — Chrome manifest declares the Chrome 127 baseline required by `action.openPopup()`.
+- **Firefox popup layout** — Popup shell height matches the Firefox viewport, keeping the footer visible.
+
+---
+
+## v3.5.0 (2026-07-13)
+
+### Bug Fixes
+- **Alt+W window clear** — Fixed window clear to use native browser blank page (`about:blank`) instead of extension page, ensuring browser window stays open
+- **Alt+W confirm modal** — Modal now auto-closes after clear operation completes (both via second press and button click)
+- **Alt+Q popup** — Fixed Alt+Q to reliably open SesWi popup with proper error logging
+- **Preload warnings** — Disabled modulePreload in WXT config to fix cross-world extension resource mismatch warnings in popup.html
+- **Runtime command check** — Added startup check for Alt+W shortcut assignment; warns to console if not configured and directs to chrome://extensions/shortcuts
+- **Window clear approach** — Changed from creating new tab to navigating existing active tab to about:blank, then removing other tabs (prevents browser closure)
+
+### Changes
+- **Alt+W behavior** — First press opens SesWi popup and shows confirm modal "Clear This Window?"; second press within 2 seconds or clicking "Clear Window" executes clear
+- **Survivor tab** — Uses native browser `about:blank` instead of extension `/blank.html` for clearer user expectation
+
+---
+
+## v3.5.0 (2026-07-02)
+
+### Hotfixes
+- **Updater reliability** — Added forced manual update checks from Manage tab and invalidated stale cached update results when extension version changes
+- **Updater feedback** — GitHub API failures now surface as user-visible toast errors instead of silently looking like “no update”
+- **Build cleanup** — Removed stale SJCL bundler copy/injection steps so production builds succeed after the Web Crypto migration
+- **Add Session modal wiring** — Restored the missing OWI verify control so the Add Session button initializes and opens correctly again
+- **Netscape text import** — File import now accepts `.txt` Netscape cookie backups in both Add Session and Backup/Restore flows
+
+
+---
+
 ## v3.4.1 (2026-07-01)
 
 ### New Features

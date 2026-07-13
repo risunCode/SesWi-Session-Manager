@@ -1,0 +1,67 @@
+@font-face {
+  font-family: 'Cause';
+  src: url('/font/Cause-ExtraBold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --popup-width: 380px;
+  --popup-min-height: 540px;
+  --popup-max-height: 570px;
+
+  --clr-primary: #3b82f6;
+  --clr-primary-hover: #2563eb;
+  --clr-teal: #0d9488;
+  --clr-teal-soft: #14b8a6;
+  --clr-teal-bright: #2dd4bf;
+  --clr-secondary: #64748b;
+  --clr-danger: #ef4444;
+  --clr-danger-hover: #dc2626;
+  --clr-success: #10b981;
+  --clr-warning: #f59e0b;
+  --clr-amber: #f59e0b;
+  --clr-violet: #8b5cf6;
+  --clr-indigo: #6366f1;
+  --clr-surface: #ffffff;
+  --clr-background: #f8fafc;
+  --clr-background-alt: #f1f5f9;
+  --clr-border: #e2e8f0;
+  --clr-border-light: #f1f5f9;
+  --clr-text: #1e293b;
+  --clr-text-secondary: #475569;
+  --clr-text-muted: #64748b;
+  --clr-text-light: #94a3b8;
+
+  --gradient-shell: linear-gradient(135deg, #bfdbfe, #fef3c7);
+  --gradient-header: linear-gradient(135deg, #0d9488, #2dd4bf);
+  --gradient-tab-active: linear-gradient(135deg, #fde68a, #93c5fd);
+  --gradient-add: linear-gradient(135deg, #fbbf24, #f59e0b);
+
+  --space-xs: 2px;
+  --space-sm: 4px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-pill: 999px;
+
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-header: 0 2px 10px rgba(13, 148, 136, 0.25);
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 16px;
+
+  --z-modal: 1000;
+  --z-toast: 1100;
+}

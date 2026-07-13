@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./app/*"],
+      "@app/*": ["./app/*"],
+      "@features/*": ["./app/features/*"],
+      "@platform/*": ["./app/platform/*"],
+      "@shared/*": ["./app/shared/*"],
+      "@styles/*": ["./app/styles/*"]
+    }
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx", "app/**/*.vue", "env.d.ts", "wxt.config.ts", "vitest.config.ts", "eslint.config.js"],
+  "exclude": ["node_modules", "dist", ".wxt", ".output", "old_3.5"]
+}

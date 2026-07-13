@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fc">
+  <meta name="description" content="SesWi uninstall feedback page.">
+  <title>Thanks for Trying SesWi</title>
+  <link rel="icon" href="icon.png">
+  <style>
+    @font-face{font-family:Cause;src:url('app/public/font/Cause-ExtraBold.ttf') format('truetype');font-display:swap;font-weight:800}
+    :root{color-scheme:light;--bg:#f7f8fc;--surface:rgba(255,255,255,.86);--surface-solid:#fff;--surface-2:#f0f3f9;--ink:#101526;--muted:#606a7f;--line:#dfe4ee;--brand:#5d5cf5;--brand-2:#8878ff;--mint:#18b89a;--danger:#e55764;--shadow:0 28px 80px rgba(27,35,70,.12);--radius:22px}
+    [data-theme="dark"]{color-scheme:dark;--bg:#0d1020;--surface:rgba(21,25,43,.83);--surface-solid:#15192b;--surface-2:#1c2137;--ink:#f5f7ff;--muted:#a7afc3;--line:#2c334d;--brand:#9994ff;--brand-2:#6f74ff;--mint:#46d9bd;--danger:#ff7985;--shadow:0 28px 80px rgba(0,0,0,.35)}
+    *,*::before,*::after{box-sizing:border-box}html{min-height:100%;scroll-behavior:smooth}body{display:grid;min-height:100vh;margin:0;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}body::before{content:"";position:fixed;inset:0;z-index:-2;background-image:linear-gradient(rgba(93,92,245,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(93,92,245,.035) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,#000,transparent 72%)}a{color:inherit;text-decoration:none}button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 65%,white);outline-offset:3px}.wrap{width:min(100% - 40px,1080px);margin-inline:auto}.skip{position:fixed;left:16px;top:-80px;z-index:999;padding:12px 16px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:850}.skip:focus{top:16px}
+    .scene-shell{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}.scene-shell::before{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(circle at 24% 38%,transparent 0 15%,var(--bg) 63%),linear-gradient(90deg,color-mix(in srgb,var(--bg) 78%,transparent),transparent 56%,color-mix(in srgb,var(--bg) 20%,transparent))}.scene-shell::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(to bottom,var(--bg),transparent 25%,transparent 73%,var(--bg))}#vaultScene{display:block;width:100%;height:100%;opacity:.88;transition:opacity .4s ease}
+    header{padding:18px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}.nav{display:flex;align-items:center;justify-content:space-between;min-height:60px;padding:8px 10px 8px 16px;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-radius:18px;background:color-mix(in srgb,var(--surface) 86%,transparent);box-shadow:0 8px 30px rgba(30,36,70,.07);backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:11px;font-family:Cause,system-ui;font-size:20px;letter-spacing:-.03em}.brand img{width:36px;height:36px;border-radius:10px;box-shadow:0 8px 20px rgba(93,92,245,.2)}.nav-actions{display:flex;align-items:center;gap:8px}.icon-btn{display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:var(--surface-solid);transition:transform .2s ease,border-color .2s ease}.icon-btn:hover{transform:translateY(-2px);border-color:var(--brand);background:var(--surface-2)}.back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:var(--surface-solid);font-size:14px;font-weight:850;transition:transform .2s ease,border-color .2s ease}.back:hover{transform:translateY(-2px);border-color:var(--brand);background:var(--surface-2)}
+    main{display:grid;align-content:center;padding:76px 0}.grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:30px;align-items:stretch}.intro{position:relative;padding:48px 12px}.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid color-mix(in srgb,var(--brand) 25%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--brand) 7%,var(--surface-solid));color:var(--brand);font-size:12px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 5px color-mix(in srgb,var(--mint) 14%,transparent);animation:pulse 2.4s ease-in-out infinite}h1{margin:20px 0 18px;font-family:Cause,system-ui;font-size:clamp(48px,6vw,72px);line-height:.96;letter-spacing:-.05em;text-wrap:balance}.intro p{max-width:48ch;color:var(--muted);font-size:17px;text-wrap:pretty}.release-status{display:inline-flex;align-items:center;min-height:34px;margin:6px 0 0;padding:7px 11px;border:1px solid color-mix(in srgb,var(--mint) 34%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--mint) 8%,var(--surface-solid));color:var(--muted);font-size:13px;font-weight:700}.release-status a{color:var(--brand);text-decoration:underline;text-underline-offset:3px}.mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:34px}.mini-stat{padding:15px;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface) 75%,transparent);backdrop-filter:blur(10px);transition:transform .25s ease,border-color .25s ease}.mini-stat:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--brand) 46%,var(--line))}.mini-stat strong{display:block;font-size:13px}.mini-stat span{display:block;margin-top:3px;color:var(--muted);font-size:12px}
+    .feedback{padding:30px;border:1px solid var(--line);border-radius:28px;background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(22px)}.feedback h2{margin:0;font-family:Cause,system-ui;font-size:30px;letter-spacing:-.04em}.feedback>p{margin:8px 0 21px;color:var(--muted);font-size:14px}.reason-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reason{min-height:86px;padding:15px;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface-solid) 92%,transparent);text-align:left;transition:transform .18s ease,border-color .18s ease,background-color .18s ease,box-shadow .18s ease}.reason:hover{transform:translateY(-3px);border-color:var(--brand);background:color-mix(in srgb,var(--brand) 5%,var(--surface-solid));box-shadow:0 12px 22px rgba(45,47,100,.08)}.reason[aria-pressed="true"]{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 10%,var(--surface-solid));box-shadow:inset 0 0 0 1px var(--brand),0 10px 24px rgba(93,92,245,.12)}.reason b{display:block;font-size:14px}.reason span{display:block;margin-top:3px;color:var(--muted);font-size:12px}.reason i{display:grid;place-items:center;width:32px;height:32px;margin-bottom:9px;border-radius:10px;background:var(--surface-2);font-style:normal}.reason-selected{min-height:26px;margin:14px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:1px solid transparent;border-radius:13px;font-weight:850;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;box-shadow:0 12px 30px rgba(93,92,245,.25)}.primary:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(93,92,245,.34)}.secondary{border-color:var(--line);background:var(--surface-solid)}.secondary:hover{transform:translateY(-3px);border-color:var(--brand)}.privacy{margin:20px 0 0;padding:12px 14px;border-radius:13px;background:var(--surface-2);color:var(--muted);font-size:12px}.privacy b{color:var(--ink)}
+    footer{padding:24px max(20px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));border-top:1px solid var(--line)}.foot{display:flex;align-items:center;justify-content:space-between;gap:18px;color:var(--muted);font-size:13px}.foot nav{display:flex;gap:18px}.foot a:hover{color:var(--ink)}
+    @keyframes pulse{50%{transform:scale(1.16);box-shadow:0 0 0 8px color-mix(in srgb,var(--mint) 0%,transparent)}}
+    @media(max-width:780px){.scene-shell::before{background:radial-gradient(circle at 50% 20%,transparent,rgba(247,248,252,.76) 66%)}[data-theme="dark"] .scene-shell::before{background:radial-gradient(circle at 50% 20%,transparent,rgba(13,16,32,.76) 66%)}main{padding:44px 0}.grid{grid-template-columns:1fr}.intro{padding:20px 0}.feedback{padding:22px}}@media(max-width:480px){.wrap{width:min(100% - 28px,1080px)}header{padding-inline:10px}.back{padding-inline:12px;font-size:13px}.intro{padding-top:10px}h1{font-size:clamp(43px,14vw,60px)}.reason-grid{grid-template-columns:1fr}.feedback{border-radius:22px}.actions>*{width:100%}.foot{align-items:flex-start;flex-direction:column}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}#vaultScene{opacity:.42}}
+  </style>
+</head>
+<body>
+  <div class="scene-shell" aria-hidden="true"><canvas id="vaultScene"></canvas></div>
+  <a class="skip" href="#main">Skip to Content</a>
+  <header><div class="nav wrap"><a class="brand" href="index.html" aria-label="Return to SesWi home"><img src="icon.png" width="36" height="36" alt=""><span translate="no">SesWi</span></a><div class="nav-actions"><button class="icon-btn" id="themeToggle" type="button" aria-label="Switch to Dark Theme"><span aria-hidden="true">◐</span></button><a class="back" href="index.html">← Back to SesWi</a></div></div></header>
+  <main id="main"><div class="grid wrap"><section class="intro"><span class="eyebrow">Uninstall Feedback</span><h1>Sorry to See You Go.</h1><p>Thank you for trying SesWi. A small amount of context helps make the next release clearer, safer, and more useful.</p><p class="release-status" id="releaseStatus" aria-live="polite">Checking the latest SesWi release…</p><div class="mini-stats" aria-label="SesWi principles"><div class="mini-stat"><strong>Local-First</strong><span>Your feedback stays in your control until you choose to send it.</span></div><div class="mini-stat"><strong>Open Source</strong><span>Every reported problem can improve the project for everyone.</span></div></div></section>
+    <section class="feedback" aria-labelledby="feedback-title"><h2 id="feedback-title">What changed your mind?</h2><p>Choose the closest reason. You can add details in the GitHub issue that opens next.</p><div class="reason-grid" role="group" aria-label="Uninstall reason"><button class="reason" type="button" data-reason="Something did not work" aria-pressed="false"><i aria-hidden="true">⚠</i><b>Something Did Not Work</b><span>Unexpected behavior, errors, or missing results.</span></button><button class="reason" type="button" data-reason="The interface was confusing" aria-pressed="false"><i aria-hidden="true">◫</i><b>The Interface Was Confusing</b><span>Labels, flow, or navigation felt unclear.</span></button><button class="reason" type="button" data-reason="I no longer need session saving" aria-pressed="false"><i aria-hidden="true">⌁</i><b>I No Longer Need It</b><span>Your workflow has changed.</span></button><button class="reason" type="button" data-reason="A feature or browser was missing" aria-pressed="false"><i aria-hidden="true">＋</i><b>A Feature Was Missing</b><span>Tell us what would have made SesWi useful.</span></button></div><p class="reason-selected" id="reasonSelected" aria-live="polite">No reason selected yet.</p><div class="actions"><a class="primary" id="feedbackLink" href="https://github.com/risunCode/SesWi-Session-Manager/issues/new?title=SesWi%20Uninstall%20Feedback" target="_blank" rel="noreferrer">Leave Feedback on GitHub ↗</a><a class="secondary" href="https://github.com/risunCode/SesWi-Session-Manager/releases" target="_blank" rel="noreferrer">Check Latest Release</a></div><p class="privacy"><b>No tracking is performed here.</b> The selected reason only becomes visible to the project if you open and submit the GitHub feedback form.</p></section></div></main>
+  <footer><div class="foot wrap"><span>SesWi · Browser Session Manager</span><nav aria-label="Footer navigation"><a href="index.html">Home</a><a href="https://github.com/risunCode/SesWi-Session-Manager/issues" target="_blank" rel="noreferrer">Issues</a><a href="https://github.com/risunCode/SesWi-Session-Manager" target="_blank" rel="noreferrer">Source</a></nav></div></footer>
+  <script>
+    const root = document.documentElement;
+    const toggle = document.querySelector('#themeToggle');
+    const selected = document.querySelector('#reasonSelected');
+    const feedbackLink = document.querySelector('#feedbackLink');
+    const updateTheme = () => { const isDark = root.dataset.theme === 'dark'; toggle.setAttribute('aria-label', isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'); document.querySelector('meta[name="theme-color"]').content = isDark ? '#0d1020' : '#f7f8fc'; window.dispatchEvent(new Event('seswi-theme-change')); };
+    updateTheme();
+    const releaseStatus = document.querySelector('#releaseStatus');
+    fetch('https://api.github.com/repos/risunCode/SesWi-Session-Manager/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Release lookup failed: ${response.status}`)))
+      .then((release) => {
+        const version = typeof release.tag_name === 'string' ? release.tag_name : 'the latest release';
+        const url = typeof release.html_url === 'string' ? release.html_url : 'https://github.com/risunCode/SesWi-Session-Manager/releases';
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.textContent = version;
+        releaseStatus.replaceChildren('Latest available: ', link);
+      })
+      .catch(() => { releaseStatus.textContent = 'Could not check the latest release. Visit Releases when you are online.'; });
+    toggle.addEventListener('click', () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('seswi-site-theme', root.dataset.theme); } catch {} updateTheme(); });
+    document.querySelectorAll('[data-reason]').forEach((button) => button.addEventListener('click', () => { const reason = button.dataset.reason; document.querySelectorAll('[data-reason]').forEach((item) => item.setAttribute('aria-pressed', String(item === button))); selected.textContent = `Selected: ${reason}.`; const title = encodeURIComponent(`SesWi Uninstall Feedback: ${reason}`); const body = encodeURIComponent(`Reason: ${reason}\n\nWhat happened?\n\nWhat would make SesWi better?\n`); feedbackLink.href = `https://github.com/risunCode/SesWi-Session-Manager/issues/new?title=${title}&body=${body}`; }));
+  </script>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+    const canvas = document.querySelector('#vaultScene');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
+    camera.position.set(0, .25, 11.5);
+    const vault = new THREE.Group();
+    const orbit = new THREE.Group();
+    scene.add(vault, orbit);
+    const pointer = new THREE.Vector2();
+    const clock = new THREE.Clock();
+    const colors = { brand: new THREE.Color(), accent: new THREE.Color(), mint: new THREE.Color(), ink: new THREE.Color() };
+
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.18, 2), new THREE.MeshPhysicalMaterial({ color: 0x5d5cf5, emissive: 0x29255f, emissiveIntensity: .55, metalness: .18, roughness: .25, transparent: true, opacity: .86, transmission: .08, clearcoat: .8 }));
+    vault.add(core);
+    const inner = new THREE.Mesh(new THREE.IcosahedronGeometry(.68, 1), new THREE.MeshBasicMaterial({ color: 0xcac7ff, transparent: true, opacity: .38, wireframe: true }));
+    vault.add(inner);
+    const torusMaterial = new THREE.MeshBasicMaterial({ color: 0x8878ff, transparent: true, opacity: .55 });
+    const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.76, .018, 12, 96), torusMaterial);
+    ringA.rotation.set(.72, .26, .15);
+    const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.18, .012, 12, 96), torusMaterial.clone());
+    ringB.rotation.set(1.32, -.54, .65);
+    vault.add(ringA, ringB);
+
+    const cardMaterial = new THREE.MeshPhysicalMaterial({ color: 0xdddafe, emissive: 0x4e4a9e, emissiveIntensity: .28, metalness: .12, roughness: .25, transparent: true, opacity: .62, clearcoat: .8 });
+    const cards = [];
+    [[-3.35, 1.25, -.35, .42], [3.25, .5, -.8, -.34], [-2.55, -2.05, -.9, -.48], [2.15, -2.25, -.25, .24]].forEach(([x, y, z, rotation], index) => {
+      const card = new THREE.Mesh(new THREE.BoxGeometry(1.34, .82, .08), cardMaterial.clone());
+      card.position.set(x, y, z);
+      card.rotation.set(.12 * index, rotation, .08 * index);
+      card.userData = { phase: index * 1.6, baseY: y, speed: .46 + index * .08 };
+      orbit.add(card);
+      const line = new THREE.Mesh(new THREE.BoxGeometry(.82, .045, .02), new THREE.MeshBasicMaterial({ color: index % 2 ? 0x46d9bd : 0xffffff, transparent: true, opacity: .8 }));
+      line.position.set(0, .15, .06);
+      card.add(line);
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(.07, 18), new THREE.MeshBasicMaterial({ color: 0x46d9bd }));
+      dot.position.set(-.49, -.18, .06);
+      card.add(dot);
+      cards.push(card);
+    });
+
+    const lock = new THREE.Group();
+    const lockBody = new THREE.Mesh(new THREE.BoxGeometry(.48, .4, .18), new THREE.MeshPhysicalMaterial({ color: 0x46d9bd, emissive: 0x116456, emissiveIntensity: .55, metalness: .25, roughness: .28 }));
+    const shackle = new THREE.Mesh(new THREE.TorusGeometry(.19, .042, 10, 32, Math.PI), new THREE.MeshBasicMaterial({ color: 0x88f0dc }));
+    shackle.rotation.z = Math.PI;
+    shackle.position.y = .18;
+    lock.add(lockBody, shackle);
+    lock.position.set(2.95, 2.1, .2);
+    orbit.add(lock);
+
+    const particleCount = 260;
+    const positions = new Float32Array(particleCount * 3);
+    for (let index = 0; index < particleCount; index += 1) {
+      const radius = 2.6 + Math.random() * 4.8;
+      const theta = Math.random() * Math.PI * 2;
+      const height = (Math.random() - .5) * 6.6;
+      positions[index * 3] = Math.cos(theta) * radius;
+      positions[index * 3 + 1] = height;
+      positions[index * 3 + 2] = Math.sin(theta) * radius - 1.8;
+    }
+    const particlesGeometry = new THREE.BufferGeometry();
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particles = new THREE.Points(particlesGeometry, new THREE.PointsMaterial({ color: 0x8878ff, size: .035, transparent: true, opacity: .68, depthWrite: false }));
+    scene.add(particles);
+
+    scene.add(new THREE.HemisphereLight(0xd8d5ff, 0x101526, 1.55));
+    const keyLight = new THREE.PointLight(0x8878ff, 18, 16, 2);
+    keyLight.position.set(-3.5, 3.2, 4.5);
+    scene.add(keyLight);
+    const mintLight = new THREE.PointLight(0x46d9bd, 8, 10, 2);
+    mintLight.position.set(3, -1, 3);
+    scene.add(mintLight);
+
+    const updatePalette = () => {
+      const dark = document.documentElement.dataset.theme === 'dark';
+      colors.brand.set(dark ? 0x9994ff : 0x5d5cf5);
+      colors.accent.set(dark ? 0x6f74ff : 0x8878ff);
+      colors.mint.set(dark ? 0x46d9bd : 0x18b89a);
+      colors.ink.set(dark ? 0x0d1020 : 0xf7f8fc);
+      core.material.color.copy(colors.brand);
+      core.material.emissive.copy(colors.brand).multiplyScalar(.3);
+      inner.material.color.copy(colors.accent);
+      ringA.material.color.copy(colors.accent);
+      ringB.material.color.copy(colors.mint);
+      particles.material.color.copy(colors.accent);
+      keyLight.color.copy(colors.accent);
+      mintLight.color.copy(colors.mint);
+      cards.forEach((card) => card.material.color.copy(colors.accent).lerp(colors.ink, .1));
+      renderer.setClearColor(0x000000, 0);
+    };
+
+    const resize = () => {
+      const { innerWidth: width, innerHeight: height } = window;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.position.z = width < 781 ? 13 : 11.5;
+      camera.updateProjectionMatrix();
+    };
+    const onPointerMove = (event) => pointer.set((event.clientX / window.innerWidth - .5) * 2, (event.clientY / window.innerHeight - .5) * 2);
+    const render = () => {
+      const elapsed = clock.getElapsedTime();
+      vault.rotation.y = elapsed * .22 + pointer.x * .18;
+      vault.rotation.x = Math.sin(elapsed * .32) * .11 - pointer.y * .12;
+      vault.position.set(pointer.x * .24, Math.sin(elapsed * .7) * .14 - pointer.y * .14, 0);
+      ringA.rotation.z = elapsed * .22;
+      ringB.rotation.z = -elapsed * .16;
+      inner.rotation.y = -elapsed * .58;
+      orbit.rotation.y = -elapsed * .09 - pointer.x * .08;
+      cards.forEach((card) => { card.position.y = card.userData.baseY + Math.sin(elapsed * card.userData.speed + card.userData.phase) * .17; card.rotation.z += .0007; });
+      lock.rotation.y = elapsed * .7;
+      particles.rotation.y = elapsed * .025;
+      renderer.render(scene, camera);
+      if (!reduceMotion) requestAnimationFrame(render);
+    };
+
+    try {
+      updatePalette();
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      window.addEventListener('seswi-theme-change', updatePalette);
+      render();
+    } catch {
+      canvas.style.display = 'none';
+    }
+  </script>
+</body>
+</html>

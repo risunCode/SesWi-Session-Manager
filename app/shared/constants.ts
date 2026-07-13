@@ -1,0 +1,61 @@
+export const TIMING = {
+  MODAL_CLOSE_DELAY: 500,
+  MESSAGE_DISPLAY: 1500,
+  DEBOUNCE_INPUT: 300,
+  SHIMMER_MIN: 400,
+  TAB_CACHE: 400,
+  ICON_CACHE: 60_000,
+  ICON_ENTRY_TTL: 24 * 60 * 60 * 1000,
+  NAV_TIMEOUT: 5_000,
+} as const;
+
+export const STORAGE_KEYS = {
+  META: '_seswi_meta',
+  OLD_SESSIONS: 'seswi-sessions-blyat',
+  RESTORED: '_seswi_restored',
+  ICONS_CACHE: 'tabIconsCacheV1',
+  DEBUG: '__SES_DEBUG__',
+  MP_ENABLED: '_seswi_mp_enabled',
+  MP_VERIFY: '_seswi_mp_verify',
+  MP_SALT: '_seswi_mp_salt',
+  MP_REMEMBER: '_seswi_mp_remember',
+  MP_ATTEMPTS: '_seswi_mp_attempts',
+  MP_LOCKOUT: '_seswi_mp_lockout',
+  MP_RECOVERY_Q: '_seswi_mp_recovery_q',
+  MP_RECOVERY_A: '_seswi_mp_recovery_a',
+  MP_RECOVERY_SALT: '_seswi_mp_recovery_salt',
+  MP_RECOVERY_ATTEMPTS: '_seswi_mp_recovery_attempts',
+  MP_RECOVERY_LOCKOUT: '_seswi_mp_recovery_lockout',
+  ENCRYPTED_SESSIONS: '_seswi_encrypted',
+  TWO_FACTOR: '_seswi_2fa',
+} as const;
+
+export const EVENTS = {
+  SESSION_UPDATED: 'seswi:session-updated',
+  SESSION_DELETED: 'seswi:session-deleted',
+  SESSION_REPLACED: 'seswi:session-replaced',
+  SESSIONS_RESTORED: 'seswi:sessions-restored',
+  SESSIONS_DELETED: 'seswi:sessions-deleted',
+  TWO_FACTOR_UPDATED: 'seswi:two-factor-updated',
+} as const;
+
+export const PAGINATION = {
+  CURRENT_TAB: 6,
+  GROUP_TAB: 4,
+} as const;
+
+export const LIMITS = {
+  SESSION_NAME_MAX: 50,
+  PASSWORD_MIN: 8,
+  PASSWORD_MAX: 128,
+  RECOVERY_ANSWER_MIN: 2,
+  COOKIE_CHUNK_SIZE: 100,
+  COOKIE_VALUE_MAX: 4096,
+  HISTORY_CHUNK_SIZE: 50,
+  HISTORY_MAX_RESULTS: 1000,
+  MAX_ICON_ENTRIES: 300,
+} as const;
+
+export function emitEvent(eventName: string): void {
+  document.dispatchEvent(new CustomEvent(eventName));
+}

@@ -1,89 +1,143 @@
 # SesWi — Session Manager
 
-Chrome extension for saving and restoring login sessions. Captures cookies, localStorage, sessionStorage, and TOTP 2FA secrets per domain.
+SesWi is a Chrome and Firefox extension for saving, restoring, and organizing browser login sessions. A session captures cookies, `localStorage`, and `sessionStorage` for a domain; SesWi also includes a TOTP 2FA vault, encrypted OWI backups, tab cleanup, and Master Password protection.
+
+Built with **WXT, Vue 3, and TypeScript**.
 
 ## Features
 
-- **Save & Restore** — Save complete login sessions and restore them later
-- **2FA Manager** — Store TOTP secrets with auto-updating codes, QR scan, manual entry, issuer grouping
-- **Smart Expiration** — Tracks cookie expiration based on longest-lasting cookie *(experimental)*
-- **Domain Groups** — Auto-groups sessions by domain for easy management
-- **Backup/Export** — JSON, Netscape, Cookie Editor, or OWI (AES-256-GCM encrypted) formats; per-type (sessions/2FA)
-- **Batch Operations** — Bulk backup, delete expired, or manage by domain
-- **Import Cookies** — Paste raw cookie JSON (Cookie Editor format) or import from file
-- **Clean Tab** — Selectively clear cookies, storage, history, and cache
-- **Randomized Storage** — Session data stored under a unique random key per installation
-- **Native Encryption** — Web Crypto API (AES-256-GCM) with PBKDF2 key derivation
+- Save and restore sessions for the active domain.
+- Capture cookies, `localStorage`, and `sessionStorage` together.
+- Browse sessions by domain and manage them in bulk.
+- Store TOTP 2FA secrets, generate live codes, and add entries from QR scans.
+- Import cookies and sessions from JSON, Netscape, Cookie header, key-value text, and OWI files.
+- Create encrypted **OWI** backups or raw JSON backups.
+- Protect local SesWi data with a Master Password, five-minute remembered unlock, fast lock, and recovery flow.
+- Clean cookies and browser storage for the current tab.
+- Export current-tab data without saving a session.
+- Use a Tampermonkey or Violentmonkey helper to request confirmed SesWi actions.
+
+## v4.0.0 Highlights
+
+- **One modern manifest target:** Chrome and Firefox now ship as Manifest V3 builds. Firefox uses `.output/firefox-mv3`, the MV3 `action` API, and its persistent MV3 background page.
+- **Faster, safer popup startup:** the popup has a loading shell, defers non-critical update checks, and lazy-loads heavyweight modal chunks without exposing protected content while locked.
+- **Clear Current Tab with intent:** Site Data groups cookies, local/session storage, history, and cache; Window provides a separate, confirmed **Clear Other Tabs** action that keeps the active tab open.
+- **Focused session and security flows:** saved session data opens in a dedicated detail modal, grouped views stay compact until expanded, and long Groups/2FA lists scroll instead of clipping data.
+- **Portable 2FA intake:** add a Base32 secret manually, scan an OTPAuth QR code, or import Aegis JSON (including password-protected exports), Google Authenticator account-transfer migration URIs, and standard OTPAuth URI lists from tools such as Bitwarden and Ente.
+- **Reliable local protection:** OWI imports, encrypted writes, current-tab cleanup, and Firefox cookie handling report real failures rather than false success.
 
 ## Showcase
 
-| Current Tab | Groups Tab | 2FA Tab | Manage Tab |
-|:-----------:|:----------:|:-------:|:----------:|
-| <img width="200" alt="Current Tab" src="https://github.com/user-attachments/assets/82415046-8903-4e6b-bd63-ef8a35a7eac3" /> | <img width="200" alt="Groups Tab" src="https://github.com/user-attachments/assets/648ba543-bb21-4159-a436-7114e65ef0d7" /> | *Screenshot pending* | <img width="200" alt="Manage Tab" src="https://github.com/user-attachments/assets/900dff33-7de2-4a6d-b4ff-5f9b5e82de90" /> |
+| Add Session | Current Tab | Groups |
+| --- | --- | --- |
+| <img src="seswi-screenshot/1-add-session.png" alt="Add Session modal capturing cookies and browser storage" width="280"> | <img src="seswi-screenshot/2-current-session.png" alt="Current tab session tools and active saved session" width="280"> | <img src="seswi-screenshot/3-groups-session.png" alt="Groups tab showing saved sessions by domain" width="280"> |
+| **Capture complete tab state** | **Manage the active domain** | **Browse sessions by domain** |
 
-## Installation
+| QR Scan | Two-Factor Vault | Manage |
+| --- | --- | --- |
+| <img src="seswi-screenshot/4-twofa-test.png" alt="QR scan confirmation for a two-factor entry" width="280"> | <img src="seswi-screenshot/5-twofa-demo.png" alt="Two-factor vault with live verification code" width="280"> | <img src="seswi-screenshot/6-manage-tabs.png" alt="Manage tab with session, security, and extension controls" width="280"> |
+| **Add TOTP from a QR code** | **Generate live TOTP codes** | **Control data and security** |
 
-1. Clone/download this repository
-2. Run `npm install && npm run build`
-3. Open `chrome://extensions` → Enable Developer mode
-4. Click "Load unpacked" → Select the `dist` folder
+## Keyboard Shortcuts
 
-## Usage
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+N` | Open Add Session |
+| `Ctrl+X` | Open Clean Current Tab |
+| Double `Ctrl+X` | Fast clean the current tab |
+| `Ctrl+D` | Fast lock SesWi when Master Password is enabled |
+| `Alt+Q` | Open SesWi from anywhere; press again while the popup is focused to close it |
 
-- **Current tab** — Sessions for active domain
-- **Groups tab** — All sessions grouped by domain
-- **2FA tab** — TOTP secrets with auto-updating codes, QR scan, manual entry
-- **Manage tab** — Backup, restore, manage by domain, delete expired, clean tab, export tab data
+Use **Current → Clean Current Tab → Clear Other Tabs** to close every other tab in the current window while keeping the active tab open.
 
-### Add Session Modes
-| Mode | Description |
-|------|-------------|
-| Capture Tab | Capture cookies + localStorage + sessionStorage from active tab |
-| Import Cookies | Paste raw cookie JSON array (Cookie Editor format) |
-| Import File | Import from `.json` or `.owi` backup file |
+## Userscript Bridge Workaround
 
-### 2FA Add Modes
-| Mode | Description |
-|------|-------------|
-| Scan QR | Capture visible tab → jsQR decode → preview → save |
-| Manual | Enter issuer, account, secret, and algorithm manually |
+The bridge is an optional workaround rather than a popup feature. Install [`app/public/userscripts/seswi-bridge-helper.user.js`](app/public/userscripts/seswi-bridge-helper.user.js) in Tampermonkey or Violentmonkey while SesWi is installed.
 
-### Export Formats
-| Format | Contents |
-|--------|----------|
-| JSON | `{ cookies, localStorage, sessionStorage }` |
-| Cookie Editor | Cookie array compatible with Cookie Editor extension |
-| Netscape | Browser-compatible cookie file (curl/wget) |
-| OWI | AES-256-GCM encrypted JSON backup |
+The helper exposes:
 
-## Permissions
+```js
+window.SesWiBridge.saveCurrentDomain();
+window.SesWiBridge.restoreLatestSession();
+window.SesWiBridge.cleanCurrentTab();
+```
 
-| Permission | Purpose |
-|------------|---------|
-| `cookies` | Read/write cookies |
-| `storage` | Store sessions locally |
-| `scripting` | Access localStorage/sessionStorage |
-| `tabs` | Get active tab info |
-| `activeTab` | Capture visible tab for QR scan |
-| `history` | Clean browsing history |
-| `browsingData` | Clear cache |
+It also registers matching userscript menu commands.
+
+### Boundaries
+
+- SesWi performs the actual cookie and storage work; the helper is a request bridge, not a replacement session engine.
+- Every request requires an explicit confirmation in the SesWi popup.
+- When Master Password is enabled, SesWi must be unlocked before an action can be approved.
+- Restore uses the latest saved session for the current domain.
+- The bridge does not read or write Tampermonkey or Violentmonkey internal storage.
+- Complex SSO and auth-heavy sites can still require a refresh or manual retry after restore.
+
+## Install
+
+```bash
+npm install
+npm run build:chrome
+```
+
+Open `chrome://extensions`, enable **Developer mode**, then load:
+
+```txt
+.output/chrome-mv3
+```
+
+For Firefox:
+
+```bash
+npm run build:firefox
+```
+
+Load:
+
+```txt
+.output/firefox-mv3
+```
 
 ## Development
 
 ```bash
-npm install
-npm run dev      # Development with watch
-npm run build    # Production build
-npm test         # Run Vitest suite
+npm run dev          # Chrome development mode
+npm run dev:firefox  # Firefox development mode
+npm test             # Vitest suite
+npm run lint         # ESLint
+npm run type-check   # TypeScript check
+npm run build:chrome # Chrome production build
+npm run build:firefox # Firefox production build
 ```
 
-## License
+## Project Layout
 
-MIT License - See LICENSE file for details.
+```txt
+app/
+├── entrypoints/       # WXT bridges: popup, background, recovery, offscreen, userscript
+├── background/        # Runtime coordination and browser commands
+├── popup/             # Vue popup, tabs, modals, controls, and UI tests
+├── forgot-password/   # Full-page Master Password recovery
+├── features/          # Sessions, security, backup, import, 2FA, updates, userscript actions
+├── platform/          # Browser adapters
+├── shared/            # Shared contracts, normalization, validation, and helpers
+├── styles/            # Global design primitives
+└── public/            # Static extension assets
+```
+
+For contributor conventions, see [AGENTS.md](AGENTS.md).
+
+## Roadmap
+
+- **Cloud Backup & Restore** — optional sync/storage provider support.
+- **UI Polishing** — continued work on spacing, states, animations, and consistency.
+- **i18n Localization** — prepare UI copy for multiple languages.
 
 ## Credits
 
-- [Netscape Cookies Exporter](https://github.com/osiro/netscape-cookies-exporter) for Netscape format reference
-- [jsQR](https://github.com/cozmo/jsQR) for QR code scanning
-- [FontAwesome](https://fontawesome.com/) for icons
-- Built by [risunCode](https://github.com/risunCode)
+- [WXT](https://wxt.dev/)
+- [Vue](https://vuejs.org/)
+- [jsQR](https://github.com/cozmo/jsQR)
+- [Font Awesome](https://fontawesome.com/)
+
+Built by [risunCode](https://github.com/risunCode). MIT licensed.
