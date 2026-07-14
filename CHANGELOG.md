@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.0.2 (2026-07-15)
+
+### Improvements
+- **Capture raw inspector** — Add New Session can display and copy the exact captured cookies, localStorage, and sessionStorage before saving.
+- **Active session refresh** — Current Tab invalidates cached tab data after add, replace, or restore changes so the active marker refreshes immediately, including while navigating within the captured website origin.
+- **Firefox popup shortcut** — The Add Session shortcut is now `Alt + N`; popup capture-phase handling prevents Firefox from opening a new tab instead.
+- **Versioning** — Published application metadata and visible update labels now report v4.0.2.
+
 ## v4.0.0 (2026-07-13)
 
 ### Breaking Changes

@@ -95,6 +95,11 @@ function isInternalUrl(url: string): boolean {
 }
 
 export const TabInfo = {
+  invalidate(): void {
+    tabCache = null;
+    tabCacheTime = 0;
+  },
+
   async getCurrent(): Promise<Result<TabInfoData>> {
     if (tabCache && Date.now() - tabCacheTime < TIMING.TAB_CACHE) return tabCache;
     try {
@@ -151,7 +156,7 @@ export const TabInfo = {
       }
       if (shouldReloadWithBypass) await browser.tabs.reload(tabId, { bypassCache: true });
       else await browser.tabs.reload(tabId);
-      tabCache = null;
+      this.invalidate();
       return Response.success(null, 'Tab data cleared');
     } catch (error) {
       Logger.error('TabInfo.cleanCurrentTab failed:', error);

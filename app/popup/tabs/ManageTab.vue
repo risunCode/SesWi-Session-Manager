@@ -91,7 +91,7 @@ import ManageCard from '../manage/ManageCard.vue';
 import ManageSection from '../manage/ManageSection.vue';
 
 withDefaults(defineProps<{ updateBadge?: string }>(), {
-  updateBadge: 'v4.0.0',
+  updateBadge: 'v4.0.2',
 });
 defineEmits<{ 'open-modal': [modal: Exclude<ModalKey, null>]; 'check-updates': []; 'reset-data': [] }>();
 </script>

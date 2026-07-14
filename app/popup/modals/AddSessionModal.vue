@@ -57,6 +57,12 @@
       </div>
     </template>
 
+    <SavedDataModal
+      :open="showCapturedData"
+      :session="capturedDataSession"
+      @close="showCapturedData = false"
+    />
+
     <div class="modal-body">
       <div
         v-show="activeTab === 'capture'"
@@ -125,6 +131,7 @@
             >
               <i class="fa-solid fa-circle-question" />
             </button>
+
           </div>
         </div>
 
@@ -198,6 +205,14 @@
             Clears cookies, localStorage & sessionStorage after saving. Useful for storing multiple accounts cleanly.
           </div>
         </div>
+        <button
+          type="button"
+          class="sw-btn sw-btn--secondary sw-btn--sm inspect-captured-data-btn"
+          :disabled="loadingCapture || !captureInfo"
+          @click="showCapturedData = true"
+        >
+          <i class="fa-solid fa-code" /> Inspect Data
+        </button>
       </div>
 
       <div
@@ -364,13 +379,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { Backup } from '@features/backup/backup';
 import { createImportSourcesFromFiles, importPayloadSummary, isAegisImport, isOwiImport, mergeImportPayloads, parseAegisImportText, parseCookieImportText, parseImportSources, parseOwiImportText, parsePlainImportText, summarizeBatchResult } from '@features/backup/import';
 import type { BatchParseResult, ParsedImportItem, ImportSourceItem } from '@features/import/import.types';
 import { useActionFeedback } from '../composables/useActionFeedback';
 import { useFirefoxFilePicker } from '../composables/useFirefoxFilePicker';
 import ModalBase from './ModalBase.vue';
+const SavedDataModal = defineAsyncComponent(() => import('./SavedDataModal.vue'));
 import { useModalMessage } from '../composables/useModalMessage';
 import { CurrentTabSnapshot } from '@features/sessions/currentTabSnapshot';
 import { SessionStorage, TabInfo, uniqueTimestamp } from '@features/sessions/sessionStorage';
@@ -406,6 +422,7 @@ const captureInfo = ref<CaptureInfo | null>(null);
 const captureIconUrl = ref<string | null>(null);
 const loadingCapture = ref(false);
 const showStatsInfo = ref(false);
+const showCapturedData = ref(false);
 const showClearInfo = ref(false);
 const busy = ref(false);
 const { message, messageType, setMessage, clearMessage } = useModalMessage();
@@ -415,6 +432,16 @@ const cookieCount = computed(() => captureInfo.value?.cookies.length ?? 0);
 const localCount = computed(() => Object.keys(captureInfo.value?.localStorage ?? {}).length);
 const sessionCount = computed(() => Object.keys(captureInfo.value?.sessionStorage ?? {}).length);
 const isSensitiveDomain = computed(() => captureInfo.value ? Domain.isSensitive(captureInfo.value.domain) : false);
+const capturedDataSession = computed<Session | null>(() => captureInfo.value ? {
+  id: 'captured-data',
+  name: 'Current tab capture',
+  domain: captureInfo.value.domain,
+  originalUrl: captureInfo.value.url,
+  cookies: captureInfo.value.cookies,
+  localStorage: captureInfo.value.localStorage,
+  sessionStorage: captureInfo.value.sessionStorage,
+  timestamp: Date.now(),
+} : null);
 const importPreview = computed(() => {
   const raw = importText.value.trim();
   if (!raw) return { valid: false, text: '' };
@@ -467,6 +494,7 @@ function resetForm(): void {
   cleanAfterSave.value = false;
   captureIconUrl.value = null;
   showStatsInfo.value = false;
+  showCapturedData.value = false;
   showClearInfo.value = false;
   clearMessage();
 }
@@ -1011,6 +1039,8 @@ async function submit(): Promise<void> {
   font-size: var(--fs-sm);
   line-height: 1.4;
 }
+
+.inspect-captured-data-btn { width: 100%; justify-content: center; margin-top: 8px; }
 
 .import-cookie-textarea {
   width: 100%;

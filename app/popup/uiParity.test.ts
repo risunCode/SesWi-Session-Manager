@@ -355,7 +355,7 @@ describe('tips and shortcuts', () => {
     expect(wrapper.text()).toContain('Fast Lock');
     expect(wrapper.text()).toContain('Open / Close SesWi');
     expect(wrapper.text()).not.toContain('Clear Window');
-    expect(wrapper.findAll('kbd').map((key) => key.text())).toEqual(['Ctrl', 'N', 'Ctrl', 'X', 'Ctrl', 'D', 'Alt', 'Q']);
+    expect(wrapper.findAll('kbd').map((key) => key.text())).toEqual(['Alt', 'N', 'Ctrl', 'X', 'Ctrl', 'D', 'Alt', 'Q']);
     expect(wrapper.findAll('.shortcut-scope').map((scope) => scope.text())).toEqual(['Popup', 'Popup', 'Popup', 'Browser']);
     expect(wrapper.findAll('.menu-tip strong').map((label) => label.text())).toEqual(['Current', 'Groups', '2FA', 'Manage']);
   });
@@ -385,10 +385,13 @@ describe('current tab pagination shortcuts', () => {
     expect(wrapper.find('.sw-pagination__label').text()).toContain('Page 2 of 2');
   });
 
-  it('keeps old Ctrl+N and Ctrl+X shortcut contracts in App', () => {
+  it('keeps Alt+N and Ctrl+X shortcut contracts in App', () => {
     const source = readFileSync('app/popup/App.vue', 'utf8');
 
     expect(source).toContain("key === 'n'");
+    expect(source).toContain('event.altKey && !event.ctrlKey && !event.metaKey');
+    expect(source).toContain('event.stopImmediatePropagation()');
+    expect(source).toContain("window.addEventListener('keydown', handleShortcut, { capture: true })");
     expect(source).toContain("openModal('addSession')");
     expect(source).toContain("key === 'x'");
     expect(source).toContain('now - lastCtrlXAt.value < 2_000');
@@ -762,11 +765,16 @@ describe('approved cleanup architecture', () => {
     expect(cleanTabModal).toContain('CurrentTabSnapshot.collect({ includeHistory: true })');
     expect(cleanTabModal).toContain('void loadPreview();\n  void loadWindowTabs();');
     expect(cleanTabModal).toContain("setMessage('No data available for the current tab.', 'error')");
-    expect(readFileSync('app/popup/modals/AddSessionModal.vue', 'utf8')).toContain('CurrentTabSnapshot.collect({ force })');
+    const addSessionModal = readFileSync('app/popup/modals/AddSessionModal.vue', 'utf8');
+    expect(addSessionModal).toContain('CurrentTabSnapshot.collect({ force })');
+    expect(addSessionModal).toContain('Inspect Data');
+    expect(addSessionModal).toContain('SavedDataModal');
+    expect(addSessionModal).toContain('capturedDataSession');
     const sessionStorage = readFileSync('app/features/sessions/sessionStorage.ts', 'utf8');
     const cookies = readFileSync('app/features/sessions/cookies.ts', 'utf8');
     expect(cookies).toContain('browser.cookies.getAll({ domain, ...(targetStoreId ? { storeId: targetStoreId } : {}) })');
     expect(cookies).toContain('browser.cookies.getAll({ url: tab.url, ...(targetStoreId ? { storeId: targetStoreId } : {}) })');
+    expect(sessionStorage).toContain('invalidate(): void');
     expect(sessionStorage).toContain("const localData = ls && typeof ls === 'object' ? ls : {};");
     expect(sessionStorage).toContain("const sessionData = ss && typeof ss === 'object' ? ss : {};");
     expect(sessionStorage).toContain("if (!result.localKeys || !result.sessionKeys) return Response.error('Page storage verification failed after restore'");
@@ -1245,11 +1253,11 @@ describe('master password modal', () => {
 describe('popup shell', () => {
   it('renders the SesWi icon and update badge beside the branded footer identity', () => {
     const wrapper = mount(AppFooter, {
-      props: { version: 'v4.0.0', hasUpdate: true, latestVersion: '4.1.0', updateUrl: 'https://github.com/risunCode/SesWi-Session-Manager/releases/tag/v4.1.0' },
+      props: { version: 'v4.0.2', hasUpdate: true, latestVersion: '4.1.0', updateUrl: 'https://github.com/risunCode/SesWi-Session-Manager/releases/tag/v4.1.0' },
     });
 
     const identity = wrapper.get('.app-footer__identity');
-    expect(identity.text()).toContain('SesWi v4.0.0 by risunCode');
+    expect(identity.text()).toContain('SesWi v4.0.2 by risunCode');
     expect(identity.get('.app-footer__icon').classes()).toContain('fa-cookie-bite');
     expect(identity.get('.app-footer__update').text()).toContain('New v4.1.0');
     expect(wrapper.text()).toContain('Open Project Page');

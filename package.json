@@ -1,6 +1,6 @@
 {
   "name": "seswi-session-manager",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "description": "Chrome/Firefox extension for managing cookies, login sessions, and 2FA TOTP vaults with encrypted backup, quick restore, tab cleanup, and master-password protection",
   "type": "module",
   "scripts": {

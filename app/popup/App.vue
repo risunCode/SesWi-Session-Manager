@@ -58,7 +58,7 @@
       </section>
 
       <AppFooter
-        version="v4.0.0"
+        version="v4.0.2"
         :has-update="updateStatus?.hasUpdate ?? false"
         :latest-version="updateStatus?.latestVersion ?? ''"
         :update-url="updateStatus?.releaseUrl ?? null"
@@ -229,7 +229,7 @@ const selectedSession = ref<Session | null>(null);
 const selectedTwoFactorEntry = ref<TwoFactorEntry | null>(null);
 const refreshKey = ref(0);
 const updateStatus = ref<UpdateStatus | null>(null);
-const updateBadge = computed(() => updateStatus.value?.hasUpdate ? `v${updateStatus.value.latestVersion}` : 'v4.0.0');
+const updateBadge = computed(() => updateStatus.value?.hasUpdate ? `v${updateStatus.value.latestVersion}` : 'v4.0.2');
 const { toasts, show } = useToast();
 const { activeModal, renderedModal, openModal, closeModal: dismissModal } = useModalStack();
 const masterLock = useMasterLock();
@@ -277,6 +277,7 @@ function openTwoFactorAddChoice(choice: 'manual' | 'scan' | 'import'): void {
 }
 
 function handleDataChanged(message?: string): void {
+  TabInfo.invalidate();
   refreshKey.value += 1;
   if (message === 'Master password enabled') masterLock.markEnabledUnlocked();
   if (message === 'Master password disabled') masterLock.markDisabled();
@@ -487,12 +488,13 @@ function handleShortcut(event: KeyboardEvent): void {
     window.close();
     return;
   }
-  if (!event.ctrlKey || event.metaKey || event.altKey || event.repeat || isEditableTarget(event.target)) return;
-  if (key === 'n') {
+  if (event.altKey && !event.ctrlKey && !event.metaKey && !event.repeat && key === 'n') {
     event.preventDefault();
-    openModal('addSession');
+    event.stopImmediatePropagation();
+    if (!isEditableTarget(event.target)) openModal('addSession');
     return;
   }
+  if (!event.ctrlKey || event.metaKey || event.altKey || event.repeat || isEditableTarget(event.target)) return;
   if (key === 'd') {
     event.preventDefault();
     closeModal();
@@ -566,7 +568,7 @@ function scheduleUpdateStatus(): void {
 }
 
 onMounted(async () => {
-  window.addEventListener('keydown', handleShortcut);
+  window.addEventListener('keydown', handleShortcut, { capture: true });
   browser.runtime.onMessage.addListener(handleRuntimeMessage);
 
   const currentTab = loadCurrentTab();
@@ -576,7 +578,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleShortcut);
+  window.removeEventListener('keydown', handleShortcut, { capture: true });
   browser.runtime.onMessage.removeListener(handleRuntimeMessage);
 });
 </script>

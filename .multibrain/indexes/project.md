@@ -2,6 +2,8 @@
 
 Current active architecture, product boundaries, and verified release state. Follow the pointed context only when deeper history is needed.
 
+- 2026-07-15 00:28 UTC — Main: added Add New Session raw capture inspector, refreshed Current Tab active markers after session changes, and bumped packaged/UI version to v4.0.2 without touching the working Railway capture path -> `.multibrain/context/2026-07-15-0028-add-session-inspector-active-version.md`
+
 - 2026-07-13 23:18 UTC — Main: completed independent v4 audit remediation for restore integrity, 2FA mutations/imports, userscript tab scope, Master Password lifetime/recovery, and Chrome command support -> `.multibrain/context/2026-07-13-2318-v4-audit-remediation.md`
 
 - 2026-07-13 22:10 UTC — Main: split Session Manager and 2FA Manager, adding confirmation-gated full-domain session deletion and batch 2FA deletion -> `.multibrain/context/2026-07-13-2210-session-twofa-manager-split.md`

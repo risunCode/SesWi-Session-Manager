@@ -26,7 +26,7 @@
       <div class="shortcut-list">
         <article class="shortcut-row">
           <div class="shortcut-row__keys">
-            <kbd>Ctrl</kbd><span>+</span><kbd>N</kbd>
+            <kbd>Alt</kbd><span>+</span><kbd>N</kbd>
           </div>
           <div class="shortcut-row__copy">
             <strong>Add Session</strong>

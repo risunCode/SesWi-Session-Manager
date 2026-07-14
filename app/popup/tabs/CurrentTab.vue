@@ -99,7 +99,15 @@ onMounted(async () => {
   activeSessionId.value = null;
   const result = await SessionStorage.getByDomain(tabInfo.data.domain);
   sessions.value = result.success ? result.data : [];
-  const matching = sessions.value.filter(session => session.originalUrl === tabInfo.data.url);
+  const currentOrigin = new URL(tabInfo.data.url).origin;
+  const matching = sessions.value.filter((session) => {
+    if (!session.originalUrl) return false;
+    try {
+      return new URL(session.originalUrl).origin === currentOrigin;
+    } catch {
+      return false;
+    }
+  });
   activeSessionId.value = matching.sort((left, right) => (right.lastRestoredAt ?? right.timestamp) - (left.lastRestoredAt ?? left.timestamp))[0]?.id ?? null;
 });
 </script>
