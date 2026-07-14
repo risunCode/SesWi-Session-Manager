@@ -3,7 +3,7 @@
     <div class="twofa-card__avatar" :style="{ backgroundColor: avatarColor }" aria-hidden="true">{{ initial }}</div>
     <div class="twofa-card__identity">
       <strong>{{ entry.accountName }}</strong>
-      <button class="twofa-card__code" type="button" @click="emit('copy', entry)">{{ code }}</button>
+      <button class="twofa-card__code" type="button" :aria-label="isCodeVisible ? 'Copy visible OTP code' : 'Copy hidden OTP code'" @click="emit('copy', entry)">{{ isCodeVisible ? code : '••••••' }}</button>
     </div>
     <div class="twofa-card__actions">
       <button class="sw-btn sw-btn--secondary sw-btn--sm" type="button" @click="emit('edit', entry)">
@@ -20,7 +20,7 @@
 import { computed } from 'vue';
 import type { TwoFactorEntry } from '@features/two-factor/twoFactor.types';
 
-const props = defineProps<{ entry: TwoFactorEntry; code: string }>();
+const props = defineProps<{ entry: TwoFactorEntry; code: string; isCodeVisible: boolean }>();
 const emit = defineEmits<{ copy: [entry: TwoFactorEntry]; edit: [entry: TwoFactorEntry]; delete: [entry: TwoFactorEntry] }>();
 
 const initial = computed(() => props.entry.accountName.trim().charAt(0).toUpperCase() || '?');

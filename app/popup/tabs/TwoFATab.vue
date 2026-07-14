@@ -11,16 +11,29 @@
         placeholder="Search 2FA..."
         label="Search two factor entries"
       />
-      <button
-        class="sw-btn sw-btn--primary sw-btn--sm"
-        type="button"
-        @click="$emit('open-modal', 'twoFactorAdd')"
-      >
-        <i
-          class="fa-solid fa-plus"
-          aria-hidden="true"
-        /> Add New
-      </button>
+      <div class="twofa-toolbar__actions">
+        <button
+          class="sw-btn sw-btn--secondary sw-btn--sm"
+          type="button"
+          :aria-pressed="areCodesVisible"
+          @click="areCodesVisible = !areCodesVisible"
+        >
+          <i
+            :class="areCodesVisible ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+            aria-hidden="true"
+          /> {{ areCodesVisible ? 'Hide OTP' : 'Show OTP' }}
+        </button>
+        <button
+          class="sw-btn sw-btn--primary sw-btn--sm"
+          type="button"
+          @click="$emit('open-modal', 'twoFactorAdd')"
+        >
+          <i
+            class="fa-solid fa-plus"
+            aria-hidden="true"
+          /> Add New
+        </button>
+      </div>
     </div>
     <div v-if="entries.length" class="twofa-refresh" aria-live="polite">
       <span>Automatically refreshes at {{ nextRefresh.timeRemaining }}s</span>
@@ -39,6 +52,7 @@
           :key="entry.id"
           :entry="entry"
           :code="codes[entry.id]?.code ?? '------'"
+          :is-code-visible="areCodesVisible"
           @copy="copyCode"
           @edit="$emit('edit-entry', entry)"
           @delete="$emit('delete-entry', entry)"
@@ -74,6 +88,7 @@ const emit = defineEmits<{
 
 const entries = ref<TwoFactorEntry[]>([]);
 const query = ref('');
+const areCodesVisible = ref(false);
 const codes = reactive<Record<string, TOTPCode>>({});
 const counters = reactive<Record<string, number>>({});
 const { now } = useTwoFactorTicker();
@@ -148,6 +163,11 @@ onMounted(async () => {
   grid-template-columns: 1fr auto;
   gap: 6px;
   align-items: start;
+}
+
+.twofa-toolbar__actions {
+  display: flex;
+  gap: 6px;
 }
 
 .twofa-refresh {

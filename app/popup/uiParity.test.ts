@@ -669,9 +669,12 @@ describe('card primitives', () => {
   });
 
   it('renders a deterministic 2FA avatar and explicit entry actions', async () => {
-    const wrapper = mount(TwoFactorCard, { props: { entry: twoFactorEntry, code: '123456' } });
+    const wrapper = mount(TwoFactorCard, { props: { entry: twoFactorEntry, code: '123456', isCodeVisible: false } });
 
     expect(wrapper.get('.twofa-card__avatar').text()).toBe(twoFactorEntry.accountName.charAt(0).toUpperCase());
+    expect(wrapper.get('.twofa-card__code').text()).toBe('••••••');
+    await wrapper.setProps({ isCodeVisible: true });
+    expect(wrapper.get('.twofa-card__code').text()).toBe('123456');
     expect(wrapper.text()).toContain('Edit');
     expect(wrapper.text()).toContain('Delete');
     await wrapper.get('.twofa-card__code').trigger('click');
